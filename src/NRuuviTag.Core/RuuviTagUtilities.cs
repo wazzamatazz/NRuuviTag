@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
@@ -9,38 +8,6 @@ namespace NRuuviTag {
     /// Utility methods.
     /// </summary>
     public static class RuuviTagUtilities {
-
-        /// <summary>
-        /// Converts a <see cref="ulong"/> RuuviTag MAC address to its string representation.
-        /// </summary>
-        /// <param name="address">
-        ///   The <see cref="ulong"/> MAC address.
-        /// </param>
-        /// <returns>
-        ///   The string representation of the MAC address.
-        /// </returns>
-        public static string GetMacAddressAsString(ulong address) {
-            var bytes = BitConverter.GetBytes(address);
-            return ToMacAddressString(BitConverter.IsLittleEndian
-                ? bytes.Reverse()
-                : bytes
-            );
-        }
-
-
-        /// <summary>
-        /// Converts a <see cref="ulong"/> RuuviTag MAC address to its string representation.
-        /// </summary>
-        /// <param name="address">
-        ///   The bytes from the <see cref="ulong"/> MAC address.
-        /// </param>
-        /// <returns>
-        ///   The string representation of the MAC address.
-        /// </returns>
-        private static string ToMacAddressString(IEnumerable<byte> bytes) {
-            return string.Join(":", bytes.Select(x => x.ToString("X2")));
-        }
-
 
         /// <summary>
         /// Gets raw bytes for an instrument reading from the specified payload data.

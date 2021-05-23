@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -15,6 +16,38 @@ namespace NRuuviTag.Client.Windows {
     /// Windows SDK.
     /// </summary>
     public class WindowsSdkListener : IRuuviTagListener {
+
+        /// <summary>
+        /// Converts a <see cref="ulong"/> RuuviTag MAC address to its string representation.
+        /// </summary>
+        /// <param name="address">
+        ///   The <see cref="ulong"/> MAC address.
+        /// </param>
+        /// <returns>
+        ///   The string representation of the MAC address.
+        /// </returns>
+        private static string GetMacAddressAsString(ulong address) {
+            var bytes = BitConverter.GetBytes(address);
+            return ToMacAddressString(BitConverter.IsLittleEndian
+                ? bytes.Reverse()
+                : bytes
+            );
+        }
+
+
+        /// <summary>
+        /// Converts a <see cref="ulong"/> RuuviTag MAC address to its string representation.
+        /// </summary>
+        /// <param name="address">
+        ///   The bytes from the <see cref="ulong"/> MAC address.
+        /// </param>
+        /// <returns>
+        ///   The string representation of the MAC address.
+        /// </returns>
+        private static string ToMacAddressString(IEnumerable<byte> bytes) {
+            return string.Join(":", bytes.Select(x => x.ToString("X2")));
+        }
+
 
         /// <inheritdoc/>
         public async IAsyncEnumerable<RuuviTagSample> ListenAsync(
@@ -35,7 +68,7 @@ namespace NRuuviTag.Client.Windows {
 
             watcher.AdvertisementFilter.Advertisement.ManufacturerData.Add(manufacturerDataFilter);
             watcher.Received += (sender, args) => { 
-                if (filter != null && !filter.Invoke(RuuviTagUtilities.GetMacAddressAsString(args.BluetoothAddress))) {
+                if (filter != null && !filter.Invoke(GetMacAddressAsString(args.BluetoothAddress))) {
                     return;
                 }
 
