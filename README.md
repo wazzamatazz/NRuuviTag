@@ -10,3 +10,32 @@ The repository consists of a [core library](/src/NRuuviTag.Core) that defines co
 The repository uses [Cake](https://cakebuild.net/) for cross-platform build automation. The build script allows for metadata such as a build counter to be specified when called by a continuous integration system such as TeamCity.
 
 A build can be run from the command line using the [build.ps1](/build.ps1) PowerShell script. For documentation about the available build script parameters, see [build.cake](/build.cake).
+
+
+# Example Usage
+
+> See the [samples](/samples) folder for more details examples of usage.
+
+Usage is very straightforward. For example, to listen using the Windows SDK:
+
+```csharp
+var client = new WindowsSdkListener();
+
+await foreach (var sample in client.ListenAsync(cancellationToken)) {
+    // sample is a RuuviTagSample object.
+}
+```
+
+To only observe specific RuuviTag devices using the Windows SDK using MAC address filtering:
+
+```csharp
+var client = new WindowsSdkListener();
+
+bool CanHandle(string macAddress) {
+    return string.Equals(macAddress, "AB:CD:EF:01:23:45");
+}
+
+await foreach (var sample in client.ListenAsync( cancellationToken)) {
+    // sample is a RuuviTagSample object.
+}
+```
