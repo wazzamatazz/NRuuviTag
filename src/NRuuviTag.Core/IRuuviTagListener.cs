@@ -10,6 +10,19 @@ namespace NRuuviTag {
     public interface IRuuviTagListener {
 
         /// <summary>
+        /// Listens for advertisements broadcast by all nearby RuuviTag devices until cancelled.
+        /// </summary>
+        /// <param name="cancellationToken">
+        ///   A cancellation token that can be cancelled when the listener should stop.
+        /// </param>
+        /// <returns>
+        ///   An <see cref="IAsyncEnumerable{RuuviTagSample}"/> that will emit the received 
+        ///   samples as they occur.
+        /// </returns>
+        IAsyncEnumerable<RuuviTagSample> ListenAsync(CancellationToken cancellationToken);
+
+
+        /// <summary>
         /// Listens for advertisements broadcast by RuuviTag devices until cancelled.
         /// </summary>
         /// <param name="filter">

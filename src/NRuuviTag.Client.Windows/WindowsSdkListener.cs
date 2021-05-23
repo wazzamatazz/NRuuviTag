@@ -15,7 +15,7 @@ namespace NRuuviTag.Client.Windows {
     /// Client that can be used to listen for Bluetooth LE advertisements from RuuviTags using the 
     /// Windows SDK.
     /// </summary>
-    public class WindowsSdkListener : IRuuviTagListener {
+    public class WindowsSdkListener : RuuviTagListener {
 
         /// <summary>
         /// Converts a <see cref="ulong"/> RuuviTag MAC address to its string representation.
@@ -50,7 +50,7 @@ namespace NRuuviTag.Client.Windows {
 
 
         /// <inheritdoc/>
-        public async IAsyncEnumerable<RuuviTagSample> ListenAsync(
+        public override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
             Func<string, bool>? filter,
             [EnumeratorCancellation]
             CancellationToken cancellationToken
