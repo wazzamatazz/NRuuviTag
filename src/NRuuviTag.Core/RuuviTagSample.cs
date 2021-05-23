@@ -1,12 +1,15 @@
 ﻿using System;
-using System.Globalization;
-using System.Linq;
 
 namespace NRuuviTag {
 
     /// <summary>
-    /// Describes a sample retrieved from a RuuviTag sensor.
+    /// Describes a sample received from a RuuviTag sensor.
     /// </summary>
+    /// <remarks>
+    ///   See https://docs.ruuvi.com/communication/bluetooth-advertisements for details about 
+    ///   Bluetooth LE advertisements.
+    /// </remarks>
+    /// <seealso cref="RuuviTagUtilities.CreateSampleFromPayload"/>
     public class RuuviTagSample {
 
         /// <summary>
