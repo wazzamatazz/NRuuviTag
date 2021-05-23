@@ -1,0 +1,55 @@
+<Project>
+  
+  <!-- Recursively import the Directory.Build.targets file from the parent folder if it exists. -->
+  <PropertyGroup>
+    <ParentProject>$([MSBuild]::GetPathOfFileAbove('$(MSBuildThisFile)', '$(MSBuildThisFileDirectory)../'))</ParentProject>
+  </PropertyGroup>
+  <Import Project="$(ParentProject)" Condition=" '$(ParentProject)' != '' " />
+
+  <ItemGroup>
+    <!-- MSBuild Extensions (for setting copyright notice and version numbers) -->
+    <PackageReference Remove="Jaahas.MSBuild.Extensions" />
+    <PackageReference Include="Jaahas.MSBuild.Extensions" Version="$(JaahasMSBuildExtensionsVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  
+  <!-- Opt in to .NET analyzer and SourceLink package references by default. Projects in the 
+       samples and test folders are pre-configured to opt out. -->
+  <PropertyGroup>
+    <IncludeDevelopmentPackages Condition=" '$(IncludeDevelopmentPackages)' == '' ">true</IncludeDevelopmentPackages>
+  </PropertyGroup>
+
+  <!-- SourceLink settings -->
+  <PropertyGroup Condition=" '$(IncludeDevelopmentPackages)' == 'true' ">
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(IncludeDevelopmentPackages)' == 'true' ">    
+    <!-- .NET Analyzers NuGet Package -->
+    <PackageReference Remove="Microsoft.CodeAnalysis.NetAnalyzers" />
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+
+    <!-- SourceLink NuGet Package -->
+    <PackageReference Remove="Microsoft.SourceLink.GitHub" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- .NET Framework targeting support (required to allow compilation against .NET Framework in 
+       non-Windows environments). -->
+  <Import Project=".\build\NetFX.targets" />
+
+  <!-- Extension point to allow Continuous Integration systems to inject their own configuration. -->
+  <Import Project="CI.targets" Condition="Exists('CI.targets')" />
+
+</Project>

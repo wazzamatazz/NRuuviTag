@@ -1,0 +1,16 @@
+<Project>
+  
+  <!-- Recursively import the Directory.Build.props file from the parent folder if it exists. -->
+  <PropertyGroup>
+    <ParentProject>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentProject>
+  </PropertyGroup>
+  <Import Project="$(ParentProject)" Condition=" '$(ParentProject)' != '' " /> 
+  
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <SignOutput>false</SignOutput>
+    <DeterministicSourcePaths>false</DeterministicSourcePaths>
+    <IncludeDevelopmentPackages>false</IncludeDevelopmentPackages>
+  </PropertyGroup>
+
+</Project>

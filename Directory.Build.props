@@ -1,0 +1,26 @@
+﻿<Project>
+  
+  <!-- Recursively import the Directory.Build.props file from the parent folder if it exists. -->
+  <PropertyGroup>
+    <ParentProject>$([MSBuild]::GetPathOfFileAbove('$(MSBuildThisFile)', '$(MSBuildThisFileDirectory)../'))</ParentProject>
+  </PropertyGroup>
+  <Import Project="$(ParentProject)" Condition=" '$(ParentProject)' != '' " /> 
+  
+  <!-- Import common NuGet package versions -->
+  <Import Project=".\build\Dependencies.props" Condition="Exists('.\build\Dependencies.props')" />
+
+  <PropertyGroup>
+    <Authors>{{AUTHORS}}</Authors>
+    <Company>{{COMPANY_NAME}}</Company>
+    <PackageProjectUrl>https://github.com/{{GITHUB_USER_OR_ORG_NAME}}/{{REPO_NAME}}</PackageProjectUrl>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)artifacts\packages\$(Configuration)</PackageOutputPath>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <NeutralLanguage>en</NeutralLanguage>
+    <CopyrightStartYear>{{COPYRIGHT_START_YEAR}}</CopyrightStartYear>
+    <VersionPropertiesInputFile Condition="Exists('$(MSBuildThisFileDirectory)build\version.json')">$(MSBuildThisFileDirectory)build\version.json</VersionPropertiesInputFile>
+  </PropertyGroup>
+
+  <!-- Extension point to allow Continuous Integration systems to inject their own configuration. -->
+  <Import Project="CI.props" Condition="Exists('CI.props')" />
+
+</Project>
