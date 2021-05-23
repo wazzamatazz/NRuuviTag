@@ -13,7 +13,7 @@
   <!-- Dev/Test/Benchmark Packages -->
   <PropertyGroup>
     <CoverletCollectorVersion>3.0.3</CoverletCollectorVersion>
-    <JaahasMSBuildExtensionsVersion>1.0.3</JaahasMSBuildExtensionsVersion>
+    <JaahasMSBuildExtensionsVersion>1.0.4</JaahasMSBuildExtensionsVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>5.0.3</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <MicrosoftNETTestSdkVersion>16.9.4</MicrosoftNETTestSdkVersion>
     <MicrosoftSourceLinkGitHubVersion>1.0.0</MicrosoftSourceLinkGitHubVersion>
