@@ -31,11 +31,11 @@ To only observe specific RuuviTag devices using the Windows SDK using MAC addres
 ```csharp
 var client = new WindowsSdkListener();
 
-bool CanHandle(string macAddress) {
+bool CanProcessMessage(string macAddress) {
     return string.Equals(macAddress, "AB:CD:EF:01:23:45");
 }
 
-await foreach (var sample in client.ListenAsync( cancellationToken)) {
+await foreach (var sample in client.ListenAsync(CanProcessMessage, cancellationToken)) {
     // sample is a RuuviTagSample object.
 }
 ```
