@@ -12,7 +12,7 @@
   
   <!-- Dev/Test/Benchmark Packages -->
   <PropertyGroup>
-    <BenchmarkDotNetVersion>0.12.1</BenchmarkDotNetVersion>
+    <CoverletCollectorVersion>3.0.3</CoverletCollectorVersion>
     <JaahasMSBuildExtensionsVersion>1.0.2</JaahasMSBuildExtensionsVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>5.0.3</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <MicrosoftNETTestSdkVersion>16.9.4</MicrosoftNETTestSdkVersion>

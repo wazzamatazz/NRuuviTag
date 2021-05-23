@@ -10,14 +10,15 @@
   <Import Project=".\build\Dependencies.props" Condition="Exists('.\build\Dependencies.props')" />
 
   <PropertyGroup>
-    <Authors>{{AUTHORS}}</Authors>
-    <Company>{{COMPANY_NAME}}</Company>
-    <PackageProjectUrl>https://github.com/{{GITHUB_USER_OR_ORG_NAME}}/{{REPO_NAME}}</PackageProjectUrl>
+    <Authors>Graham Watts</Authors>
+    <PackageProjectUrl>https://github.com/wazzamatazz/NRuuviTag</PackageProjectUrl>
     <PackageOutputPath>$(MSBuildThisFileDirectory)artifacts\packages\$(Configuration)</PackageOutputPath>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <NeutralLanguage>en</NeutralLanguage>
-    <CopyrightStartYear>{{COPYRIGHT_START_YEAR}}</CopyrightStartYear>
+    <CopyrightStartYear>2021</CopyrightStartYear>
     <VersionPropertiesInputFile Condition="Exists('$(MSBuildThisFileDirectory)build\version.json')">$(MSBuildThisFileDirectory)build\version.json</VersionPropertiesInputFile>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <!-- Extension point to allow Continuous Integration systems to inject their own configuration. -->
