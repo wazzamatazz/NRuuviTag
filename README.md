@@ -5,6 +5,13 @@ A collection of .NET libraries to simplify interacting with RuuviTag IoT sensors
 The repository consists of a [core library](/src/NRuuviTag.Core) that defines common types, and a [listener implementation](/src/NRuuviTag.Client.Windows) that uses the Windows 10 SDK to observe the Bluetooth LE advertisements emitted by RuuviTag devices.
 
 
+# Getting Started
+
+## Windows
+
+Add the [NRuuviTag.Client.Windows](https://www.nuget.org/packages/NRuuviTag.Client.Windows) NuGet package to your project.
+
+
 # Building the Solution
 
 The repository uses [Cake](https://cakebuild.net/) for cross-platform build automation. The build script allows for metadata such as a build counter to be specified when called by a continuous integration system such as TeamCity.
