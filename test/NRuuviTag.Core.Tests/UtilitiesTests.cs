@@ -54,7 +54,7 @@ namespace NRuuviTag.Core.Tests {
             Assert.AreEqual(-0.004, sample.AccelerationY);
             Assert.AreEqual(1.036, sample.AccelerationZ);
             Assert.AreEqual(4, sample.TxPower);
-            Assert.AreEqual(2.977, sample.Voltage);
+            Assert.AreEqual(2.977, sample.BatteryVoltage);
             Assert.AreEqual((byte) 66, sample.MovementCounter);
             Assert.AreEqual((ushort) 205, sample.MeasurementSequence);
             Assert.AreEqual("CB:B8:33:4C:88:4F", sample.MacAddress);

@@ -58,9 +58,9 @@ namespace NRuuviTag {
         public double? AccelerationZ { get; set; }
 
         /// <summary>
-        /// Voltage (V).
+        /// Battery voltage (V).
         /// </summary>
-        public double? Voltage { get; set; }
+        public double? BatteryVoltage { get; set; }
 
         /// <summary>
         /// TX power (dBm).

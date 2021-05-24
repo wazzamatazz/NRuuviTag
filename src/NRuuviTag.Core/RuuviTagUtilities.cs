@@ -123,7 +123,7 @@ namespace NRuuviTag {
             var voltageRaw = powerInfoRaw / 32; // 11 most-significant bits are voltage
             var txPowerRaw = powerInfoRaw % 32; // 5 least-significant bits are TX power
 
-            result.Voltage = voltageRaw == 2047
+            result.BatteryVoltage = voltageRaw == 2047
                 ? null
                 : Math.Round((voltageRaw + 1600) * 0.001, 3);
 
