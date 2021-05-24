@@ -4,10 +4,12 @@
 
   <!-- CoreFX Packages -->
   <PropertyGroup>
+    <SystemTextJsonVersion>5.0.2</SystemTextJsonVersion>
   </PropertyGroup>
   
   <!-- ASP.NET Core/Microsoft Extension Packages -->
   <PropertyGroup>
+    <MicrosoftExtensionsLoggingAbstractionsVersion>5.0.0</MicrosoftExtensionsLoggingAbstractionsVersion>
   </PropertyGroup>
   
   <!-- Dev/Test/Benchmark Packages -->
@@ -23,6 +25,7 @@
   
   <!-- Other Packages -->
   <PropertyGroup>
+    <MqttNetVersion>3.0.15</MqttNetVersion>
   </PropertyGroup>
   
 </Project>
