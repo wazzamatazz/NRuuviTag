@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+
+using MQTTnet.Formatter;
 
 namespace NRuuviTag.Mqtt {
 
@@ -10,24 +10,48 @@ namespace NRuuviTag.Mqtt {
     public class MqttBridgeOptions {
 
         /// <summary>
-        /// Broker hostname.
+        /// The default value for <see cref="TopicName"/>.
+        /// </summary>
+        /// <seealso cref="TopicName"/>
+        public const string DefaultTopicName = "devices/{deviceId}";
+
+        /// <summary>
+        /// The MQTT connection type to use.
+        /// </summary>
+        public ConnectionType ConnectionType { get; set; }
+
+        /// <summary>
+        /// Broker hostname (and optional port).
         /// </summary>
         public string Hostname { get; set; } = "localhost";
 
         /// <summary>
-        /// Broker port number.
+        /// Specifies if TLS should be used for the MQTT connection.
         /// </summary>
-        public ushort? Port { get; set; }
-
+        /// <remarks>
+        ///   Note that TLS is enabled by default.
+        /// </remarks>
         public bool UseTls { get; set; } = true;
 
+        /// <summary>
+        /// The MQTT client ID to use.
+        /// </summary>
         public string ClientId { get; set; } = Guid.NewGuid().ToString("N");
 
+        /// <summary>
+        /// The user name for the connection.
+        /// </summary>
         public string? UserName { get; set; }
 
+        /// <summary>
+        /// The password for the connection.
+        /// </summary>
         public string? Password { get; set; }
 
-        public MQTTnet.Formatter.MqttProtocolVersion ProtocolVersion { get; set; } = MQTTnet.Formatter.MqttProtocolVersion.V500;
+        /// <summary>
+        /// The MQTT protocol version to use.
+        /// </summary>
+        public MqttProtocolVersion ProtocolVersion { get; set; } = MqttProtocolVersion.V500;
 
         /// <summary>
         /// The publishing type for the <see cref="MqttBridge"/>.
@@ -35,19 +59,21 @@ namespace NRuuviTag.Mqtt {
         public PublishType PublishType { get; set; }
 
         /// <summary>
-        /// The channel that MQTT messages will be published to. When <see cref="PublishType"/> is 
-        /// <see cref="PublishType.ChannelPerMeasurement"/>, the <see cref="PublishChannel"/> is 
+        /// The topic that MQTT messages will be published to. When <see cref="PublishType"/> is 
+        /// <see cref="PublishType.TopicPerMeasurement"/>, the <see cref="TopicName"/> is 
         /// used as a prefix for the individual measurement channels.
         /// </summary>
         /// <remarks>
-        ///   The <c>{deviceId}</c> placeholder will be replaced at runtime with the device ID for 
-        ///   the sample that is being published. The <see cref="GetDeviceId"/> callback can be 
-        ///   used to define the device ID to use for a given <see cref="RuuviTagSample"/>.
+        ///   The topic name can include <c>{deviceId}</c> as a placeholder. At runtime, the 
+        ///   placeholder will be replaced with the device ID for the sample that is being 
+        ///   published. The <see cref="GetDeviceId"/> callback can be used to define the 
+        ///   device ID to use for a given <see cref="RuuviTagSample"/>.
         /// </remarks>
-        public string PublishChannel { get; set; } = "devices/{deviceId}";
+        /// <seealso cref="DefaultTopicName"/>
+        public string TopicName { get; set; } = DefaultTopicName;
 
         /// <summary>
-        /// A callback that can be used to generate the device ID to use for a given 
+        /// A callback that is used to generate the device ID to use for a given 
         /// <see cref="RuuviTagSample"/> object.
         /// </summary>
         /// <remarks>
@@ -56,6 +82,28 @@ namespace NRuuviTag.Mqtt {
         ///   incoming sample.
         /// </remarks>
         public Func<RuuviTagSample, string>? GetDeviceId { get; set; }
+
+        /// <summary>
+        /// A callback that is used to prepare a sample prior to publishing it to an MQTT topic or 
+        /// topics.
+        /// </summary>
+        /// <remarks>
+        /// 
+        /// <para>
+        ///   Use the <see cref="PrepareForPublish"/> callback to modify a <see cref="RuuviTagSample"/> 
+        ///   instance prior to it being published to the MQTT broker (e.g. to perform unit conversion). 
+        ///   Set any property on a sample to its default value (i.e. <see langword="null"/> for nullable 
+        ///   properties, or <see langword="default"/> for non-nullable properties) to exclude that 
+        ///   property from the publish.
+        /// </para>
+        /// 
+        /// <para>
+        ///   Note that the <see cref="RuuviTagSample.MacAddress"/> and <see cref="RuuviTagSample.DataFormat"/> 
+        ///   properties are never included in the published payload.
+        /// </para>
+        /// 
+        /// </remarks>
+        public Action<RuuviTagSample>? PrepareForPublish { get; set; }
 
     }
 

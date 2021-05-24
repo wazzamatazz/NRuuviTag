@@ -79,6 +79,24 @@ namespace NRuuviTag.Mqtt {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Connected to MQTT broker..
+        /// </summary>
+        internal static string LogMessage_MqttClientConnected {
+            get {
+                return ResourceManager.GetString("LogMessage_MqttClientConnected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Disconnected from MQTT broker..
+        /// </summary>
+        internal static string LogMessage_MqttClientDisconnected {
+            get {
+                return ResourceManager.GetString("LogMessage_MqttClientDisconnected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to MQTT publish error..
         /// </summary>
         internal static string LogMessage_MqttPublishError {

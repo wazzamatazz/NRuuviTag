@@ -6,15 +6,15 @@
     public enum PublishType {
 
         /// <summary>
-        /// Samples are published to a single MQTT channel.
+        /// Samples are published to a single MQTT topic.
         /// </summary>
-        SingleChannel,
+        SingleTopic,
 
         /// <summary>
-        /// Samples are published to multiple channels, one per instrument (i.e. separate channels 
+        /// Samples are published to multiple topics, one per instrument (i.e. separate topics 
         /// for temperature, pressure, and so on).
         /// </summary>
-        ChannelPerMeasurement
+        TopicPerMeasurement
         
     }
 }

@@ -123,6 +123,12 @@
   <data name="LogMessage_MqttBridgeStopped" xml:space="preserve">
     <value>Stopped MQTT bridge.</value>
   </data>
+  <data name="LogMessage_MqttClientConnected" xml:space="preserve">
+    <value>Connected to MQTT broker.</value>
+  </data>
+  <data name="LogMessage_MqttClientDisconnected" xml:space="preserve">
+    <value>Disconnected from MQTT broker.</value>
+  </data>
   <data name="LogMessage_MqttPublishError" xml:space="preserve">
     <value>MQTT publish error.</value>
   </data>
