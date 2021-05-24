@@ -65,6 +65,11 @@ namespace NRuuviTag.Mqtt {
         private readonly MqttBridgeOptions _options;
 
         /// <summary>
+        /// The template for the MQTT topic that messages will be published to.
+        /// </summary>
+        private readonly string _topicTemplate;
+
+        /// <summary>
         /// JSON serializer options for serializing message payloads.
         /// </summary>
         private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions() { 
@@ -99,9 +104,20 @@ namespace NRuuviTag.Mqtt {
 
             _jsonOptions.Converters.Add(new RuuviTagSampleJsonConverter());
 
+            // If no client ID was specified, we'll generate one.
+            var clientId = string.IsNullOrWhiteSpace(_options.ClientId) 
+                ? Guid.NewGuid().ToString("N") 
+                : _options.ClientId;
+
+            // Set the template for the MQTT topic to post to. We can replace the {clientId}
+            // placeholder immediately.
+            _topicTemplate = string.IsNullOrWhiteSpace(_options.TopicName)
+                ? MqttBridgeOptions.DefaultTopicName.Replace("{clientId}", clientId)
+                : _options.TopicName.Replace("{clientId}", clientId);
+
             var clientOptionsBuilder = new MqttClientOptionsBuilder()
                 .WithCleanSession(true)
-                .WithClientId(string.IsNullOrWhiteSpace(_options.ClientId) ? Guid.NewGuid().ToString("N") : _options.ClientId);
+                .WithClientId(clientId);
 
             if (_options.ConnectionType == ConnectionType.Websocket) {
                 clientOptionsBuilder = clientOptionsBuilder.WithWebSocketServer(_options.Hostname);
@@ -110,8 +126,9 @@ namespace NRuuviTag.Mqtt {
                 // Check in case hostname was specified in '<hostname>:<port>' format.
                 var m = s_hostnameParser.Match(_options.Hostname);
 
-                // Get hostname; use 'localhost' as a fallback.
+                // Get hostname from match; use 'localhost' as a fallback.
                 var hostname = m.Groups["hostname"]?.Value ?? "localhost";
+                // Get port if defined.
                 var port = ushort.TryParse(m.Groups["port"]?.Value, out var p)
                     ? p
                     : (ushort?) null;
@@ -119,8 +136,21 @@ namespace NRuuviTag.Mqtt {
                 clientOptionsBuilder = clientOptionsBuilder.WithTcpServer(hostname, port);
             }
 
-            if (_options.UseTls) {
-                clientOptionsBuilder = clientOptionsBuilder.WithTls();
+            if (_options.TlsOptions?.UseTls ?? false) {
+                clientOptionsBuilder = clientOptionsBuilder.WithTls(tlsOptions => {
+                    tlsOptions.UseTls = true;
+
+                    if (_options.TlsOptions.ClientCertificates != null) {
+                        tlsOptions.Certificates = _options.TlsOptions.ClientCertificates;
+                    }
+
+                    tlsOptions.AllowUntrustedCertificates = _options.TlsOptions.AllowUntrustedCertificates;
+                    tlsOptions.IgnoreCertificateChainErrors = _options.TlsOptions.IgnoreCertificateChainErrors;
+
+                    if (_options.TlsOptions.ValidateServerCertificate != null) {
+                        tlsOptions.CertificateValidationHandler = context => _options.TlsOptions.ValidateServerCertificate.Invoke(context.Certificate, context.Chain, context.SslPolicyErrors);
+                    }
+                });
             }
 
             if (!string.IsNullOrWhiteSpace(_options.UserName) || !string.IsNullOrWhiteSpace(_options.Password)) {

@@ -13,7 +13,7 @@ namespace NRuuviTag.Mqtt {
         /// The default value for <see cref="TopicName"/>.
         /// </summary>
         /// <seealso cref="TopicName"/>
-        public const string DefaultTopicName = "devices/{deviceId}";
+        public const string DefaultTopicName = "{clientId}/devices/{deviceId}";
 
         /// <summary>
         /// The MQTT connection type to use.
@@ -26,12 +26,9 @@ namespace NRuuviTag.Mqtt {
         public string Hostname { get; set; } = "localhost";
 
         /// <summary>
-        /// Specifies if TLS should be used for the MQTT connection.
+        /// TLS-related options.
         /// </summary>
-        /// <remarks>
-        ///   Note that TLS is enabled by default.
-        /// </remarks>
-        public bool UseTls { get; set; } = true;
+        public MqttBridgeTlsOptions TlsOptions { get; set; } = new MqttBridgeTlsOptions();
 
         /// <summary>
         /// The MQTT client ID to use.
@@ -64,10 +61,11 @@ namespace NRuuviTag.Mqtt {
         /// used as a prefix for the individual measurement channels.
         /// </summary>
         /// <remarks>
-        ///   The topic name can include <c>{deviceId}</c> as a placeholder. At runtime, the 
-        ///   placeholder will be replaced with the device ID for the sample that is being 
-        ///   published. The <see cref="GetDeviceId"/> callback can be used to define the 
-        ///   device ID to use for a given <see cref="RuuviTagSample"/>.
+        ///   The topic name can include <c>{clientId}</c> and <c>{deviceId}</c> as placeholders. 
+        ///   At runtime, <c>{clientId}</c> will be replaced with the <see cref="ClientId"/> for 
+        ///   the MQTT connection, and <c>{deviceId}</c> will be replaced with the device ID for 
+        ///   the sample that is being published. The <see cref="GetDeviceId"/> callback can be 
+        ///   used to define the device ID to use for a given <see cref="RuuviTagSample"/>.
         /// </remarks>
         /// <seealso cref="DefaultTopicName"/>
         public string TopicName { get; set; } = DefaultTopicName;
