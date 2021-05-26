@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>NRuuviTag</RootNamespace>
+    <Description>Core type definitions for NRuuviTag - a library for reading RuuviTag IoT sensors.</Description>
   </PropertyGroup>
 
   <ItemGroup>

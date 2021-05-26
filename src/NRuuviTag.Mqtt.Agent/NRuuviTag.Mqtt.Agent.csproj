@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>NRuuviTag.Mqtt</RootNamespace>
+    <Description>A library that can publish readings from RuuviTag IoT sensors to an MQTT broker.</Description>
   </PropertyGroup>
 
   <ItemGroup>
