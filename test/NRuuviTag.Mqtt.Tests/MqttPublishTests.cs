@@ -59,12 +59,12 @@ namespace NRuuviTag.Mqtt.Tests {
         public async Task ShouldPublishSampleToSingleTopic() {
             var listener = new TestRuuviTagListener();
 
-            var bridge = new MqttBridge(listener, new MqttBridgeOptions() { 
+            var bridge = new MqttAgent(listener, new MqttAgentOptions() { 
                 Hostname = "localhost:" + Port,
                 ClientId = TestContext.TestName,
                 ProtocolVersion = MQTTnet.Formatter.MqttProtocolVersion.V500,
                 PublishType = PublishType.SingleTopic,
-                TlsOptions = new MqttBridgeTlsOptions() {
+                TlsOptions = new MqttAgentTlsOptions() {
                     UseTls = false
                 }
             }, new MqttFactory());
@@ -135,12 +135,12 @@ namespace NRuuviTag.Mqtt.Tests {
         public async Task SingleTopicPublishShouldExcludeSpecifiedMeasurements() {
             var listener = new TestRuuviTagListener();
 
-            var bridge = new MqttBridge(listener, new MqttBridgeOptions() {
+            var bridge = new MqttAgent(listener, new MqttAgentOptions() {
                 Hostname = "localhost:" + Port,
                 ClientId = TestContext.TestName,
                 ProtocolVersion = MQTTnet.Formatter.MqttProtocolVersion.V500,
                 PublishType = PublishType.SingleTopic,
-                TlsOptions = new MqttBridgeTlsOptions() {
+                TlsOptions = new MqttAgentTlsOptions() {
                     UseTls = false
                 },
                 PrepareForPublish = s => {
@@ -214,12 +214,12 @@ namespace NRuuviTag.Mqtt.Tests {
         public async Task ShouldPublishSampleToMultipleTopics() {
             var listener = new TestRuuviTagListener();
 
-            var bridge = new MqttBridge(listener, new MqttBridgeOptions() {
+            var bridge = new MqttAgent(listener, new MqttAgentOptions() {
                 Hostname = "localhost:" + Port,
                 ClientId = TestContext.TestName,
                 ProtocolVersion = MQTTnet.Formatter.MqttProtocolVersion.V500,
                 PublishType = PublishType.TopicPerMeasurement,
-                TlsOptions = new MqttBridgeTlsOptions() {
+                TlsOptions = new MqttAgentTlsOptions() {
                     UseTls = false
                 }
             }, new MqttFactory());
@@ -338,12 +338,12 @@ namespace NRuuviTag.Mqtt.Tests {
         public async Task MultipleTopicPublishShouldExcludeSpecifiedMeasurements() {
             var listener = new TestRuuviTagListener();
 
-            var bridge = new MqttBridge(listener, new MqttBridgeOptions() {
+            var bridge = new MqttAgent(listener, new MqttAgentOptions() {
                 Hostname = "localhost:" + Port,
                 ClientId = TestContext.TestName,
                 ProtocolVersion = MQTTnet.Formatter.MqttProtocolVersion.V500,
                 PublishType = PublishType.TopicPerMeasurement,
-                TlsOptions = new MqttBridgeTlsOptions() {
+                TlsOptions = new MqttAgentTlsOptions() {
                     UseTls = false
                 },
                 PrepareForPublish = s => {

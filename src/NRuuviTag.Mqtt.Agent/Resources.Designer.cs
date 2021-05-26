@@ -70,6 +70,15 @@ namespace NRuuviTag.Mqtt {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to An error occurred in the background publish task..
+        /// </summary>
+        internal static string LogMessage_ErrorInBackgroundPublishTask {
+            get {
+                return ResourceManager.GetString("LogMessage_ErrorInBackgroundPublishTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Stopped MQTT bridge..
         /// </summary>
         internal static string LogMessage_MqttBridgeStopped {
@@ -102,6 +111,15 @@ namespace NRuuviTag.Mqtt {
         internal static string LogMessage_MqttPublishError {
             get {
                 return ResourceManager.GetString("LogMessage_MqttPublishError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Skipping sample from unknown MAC address: {0}.
+        /// </summary>
+        internal static string LogMessage_SkippingSampleFromUnknownDevice {
+            get {
+                return ResourceManager.GetString("LogMessage_SkippingSampleFromUnknownDevice", resourceCulture);
             }
         }
         
