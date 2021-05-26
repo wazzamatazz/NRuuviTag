@@ -48,6 +48,6 @@ await foreach (var sample in client.ListenAsync(CanProcessMessage, cancellationT
 ```
 
 
-# `nruuvitag-mqtt`
+# Command-Line Application
 
 `nruuvitag-mqtt` is a command-line tool for [Windows](/src/NRuuviTag.Mqtt.Agent.Cli.Windows) that can be used to observe RuuviTag broadcasts and forward the samples to an MQTT broker.
