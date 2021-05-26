@@ -48,6 +48,11 @@ await foreach (var sample in client.ListenAsync(CanProcessMessage, cancellationT
 ```
 
 
+# Publishing RuuviTag Samples to MQTT
+
+The [NRuuviTag.Mqtt.Agent](https://www.nuget.org/packages/NRuuviTag.Mqtt.Agent) NuGet package ([source](/src/NRuuviTag.Mqtt.Agent)) can be used to observe RuuviTag broadcasts and forward the samples to an MQTT broker.
+
+
 # Command-Line Application
 
-`nruuvitag-mqtt` is a command-line tool for [Windows](/src/NRuuviTag.Mqtt.Agent.Cli.Windows) that can be used to observe RuuviTag broadcasts and forward the samples to an MQTT broker.
+`nruuvitag-mqtt` is a command-line tool for [Windows](/src/NRuuviTag.Mqtt.Agent.Cli.Windows) that uses [NRuuviTag.Mqtt.Agent](/src/NRuuviTag.Mqtt.Agent) to publish RuuviTag samples to an MQTT broker.
