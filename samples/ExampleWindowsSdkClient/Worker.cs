@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-using NRuuviTag;
-using NRuuviTag.Client.Windows;
+using NRuuviTag.Listener.Windows;
 
 namespace ExampleWindowsSdkClient {
     public class Worker : BackgroundService {

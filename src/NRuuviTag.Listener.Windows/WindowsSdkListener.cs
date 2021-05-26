@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Storage.Streams;
 
-namespace NRuuviTag.Client.Windows {
+namespace NRuuviTag.Listener.Windows {
 
     /// <summary>
     /// Client that can be used to listen for Bluetooth LE advertisements from RuuviTags using the 
