@@ -10,6 +10,7 @@
   <!-- ASP.NET Core/Microsoft Extension Packages -->
   <PropertyGroup>
     <MicrosoftExtensionsLoggingAbstractionsVersion>5.0.0</MicrosoftExtensionsLoggingAbstractionsVersion>
+    <MicrosoftExtensionsHostingVersion>5.0.0</MicrosoftExtensionsHostingVersion>
   </PropertyGroup>
   
   <!-- Dev/Test/Benchmark Packages -->
@@ -26,6 +27,7 @@
   <!-- Other Packages -->
   <PropertyGroup>
     <MqttNetVersion>3.0.15</MqttNetVersion>
+    <SpectreConsoleVersion>0.39.0</SpectreConsoleVersion>
   </PropertyGroup>
   
 </Project>
