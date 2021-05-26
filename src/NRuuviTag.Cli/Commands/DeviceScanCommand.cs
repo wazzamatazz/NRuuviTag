@@ -8,10 +8,12 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
+using NRuuviTag.Mqtt;
+
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace NRuuviTag.Mqtt.Cli.Commands {
+namespace NRuuviTag.Cli.Commands {
     public class DeviceScanCommand : AsyncCommand<DeviceScanCommandSettings> {
 
         /// <summary>

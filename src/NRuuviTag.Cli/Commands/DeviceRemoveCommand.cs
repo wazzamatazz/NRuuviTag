@@ -10,7 +10,7 @@ using Microsoft.Extensions.Hosting;
 
 using Spectre.Console.Cli;
 
-namespace NRuuviTag.Mqtt.Cli.Commands {
+namespace NRuuviTag.Cli.Commands {
 
     /// <summary>
     /// <see cref="CommandApp"/> command for registering a known RuuviTag device.

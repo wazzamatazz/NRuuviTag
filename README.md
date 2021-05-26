@@ -2,7 +2,9 @@
 
 A collection of .NET libraries to simplify interacting with RuuviTag IoT sensors from [Ruuvi](https://www.ruuvi.com/).
 
-The repository consists of a [core library](/src/NRuuviTag.Core) that defines common types, and a [listener implementation](/src/NRuuviTag.Listener.Windows) that uses the Windows 10 SDK to observe the Bluetooth LE advertisements emitted by RuuviTag devices.
+The repository contains a [core library](/src/NRuuviTag.Core) that defines common types, and a [listener implementation](/src/NRuuviTag.Listener.Windows) that uses the Windows 10 SDK to observe the Bluetooth LE advertisements emitted by RuuviTag devices. Samples received from RuuviTags can be automatically [published to an MQTT broker](#publishing-samples-to-mqtt).
+
+The `nruuvitag` [command-line tool](#command-line-application) can be used to as a turnkey solution to start receiving and publishing RuuviTag sensor data to an MQTT broker.
 
 
 # Example Usage
@@ -41,7 +43,33 @@ The [NRuuviTag.Mqtt.Agent](https://www.nuget.org/packages/NRuuviTag.Mqtt.Agent) 
 
 # Command-Line Application
 
-`nruuvitag-mqtt` is a command-line tool for [Windows](/src/NRuuviTag.Mqtt.Agent.Cli.Windows) that uses [NRuuviTag.Mqtt.Agent](/src/NRuuviTag.Mqtt.Agent) to publish RuuviTag samples to an MQTT broker.
+`nruuvitag` is a command-line tool for [Windows](/src/NRuuviTag.Cli.Windows) that can scan for nearby RuuviTags, and publish device readings to the console or to an MQTT broker.
+
+Examples:
+
+```
+# Scan for nearby devices
+
+nruuvitag devices scan
+```
+
+```
+# Write sensor readings from all nearby devices to the console
+
+nruuvitag publish console
+```
+
+```
+# Add a device to the known devices list
+
+nruuvitag devices add "AB:CD:EF:01:23:45" --id "bedroom-1" --name "Master Bedroom"
+```
+
+```
+# Publish readings from known devices to an MQTT broker
+
+nruuvitag publish mqtt my-mqtt-service.local:1883 --client-id "MY_CLIENT_ID" --topic "{clientId}/my-ruuvi-tags/{deviceId}" --known-devices
+```
 
 
 # Building the Solution

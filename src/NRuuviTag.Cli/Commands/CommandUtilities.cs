@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿using System.IO;
 
 using Microsoft.Extensions.Hosting;
 
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace NRuuviTag.Mqtt.Cli.Commands {
+namespace NRuuviTag.Cli.Commands {
 
     /// <summary>
     /// Utility methods for use in <see cref="CommandApp"/> commands.
@@ -34,14 +31,20 @@ namespace NRuuviTag.Mqtt.Cli.Commands {
             var app = new CommandApp(typeRegistrar);
 
             app.Configure(options => {
-                options.AddCommand<ListenCommand>("listen")
-                    .WithDescription("Listens for RuuviTag BLE broadcasts and writes them to the console.");
+                options.AddBranch("publish", branchOptions => {
+                    branchOptions.SetDescription("Observes RuuviTag BLE broadcasts and writes them to a destination.");
 
-                options.AddCommand<PublishCommand>("publish")
-                    .WithDescription("Listens for RuuviTag BLE broadcasts and publishes the samples to an MQTT broker.")
-                    .WithExample(new[] { "test.mosquitto.org", "--client-id \"MY_CLIENT_ID\"", "--publish-interval 5", "--known-devices" });
+                    branchOptions.AddCommand<PublishConsoleCommand>("console")
+                        .WithAlias("stdout")
+                        .WithDescription("Publishes RuuviTag samples to the console as JSON.")
+                        .WithExample(new[] { "publish", "console" });
 
-                options.AddBranch("device", branchOptions => {
+                    branchOptions.AddCommand<PublishMqttCommand>("mqtt")
+                        .WithDescription("Publishes RuuviTag samples to an MQTT broker.")
+                        .WithExample(new[] { "publish", "mqtt", "test.mosquitto.org", "--client-id", "\"MY_CLIENT_ID\"", "--publish-interval", "5", "--known-devices" });
+                });
+
+                options.AddBranch("devices", branchOptions => {
                     branchOptions.SetDescription("Commands related to RuuviTag device management.");
 
                     branchOptions.AddCommand<DeviceScanCommand>("scan")
@@ -51,10 +54,14 @@ namespace NRuuviTag.Mqtt.Cli.Commands {
                         .WithDescription("Lists known RuuviTags.");
 
                     branchOptions.AddCommand<DeviceAddCommand>("add")
-                        .WithDescription("Adds a RuuviTag to the known devices list.");
+                        .WithDescription("Adds a RuuviTag to the known devices list.")
+                        .WithExample(new[] { "devices", "add", "\"AB:CD:EF:01:23:45\"", "--id", "\"bedroom-1\"", "--name", "\"Master Bedroom\"" });
 
                     branchOptions.AddCommand<DeviceRemoveCommand>("remove")
-                        .WithDescription("Removes a RuuviTag from the known devices list.");
+                        .WithDescription("Removes a RuuviTag from the known devices list.")
+                        .WithExample(new[] { "devices", "remove", "\"AB:CD:EF:01:23:45\"" })
+                        .WithExample(new[] { "devices", "remove", "bedroom-1" })
+                        .WithExample(new[] { "devices", "remove", "\"Master Bedroom\"" });
                 });
             });
 

@@ -1,6 +1,6 @@
 ﻿using System;
 
-using NRuuviTag.Mqtt.Cli.Commands;
+using NRuuviTag.Cli.Commands;
 
 namespace Microsoft.Extensions.Configuration {
 

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using NRuuviTag.Mqtt.Cli;
+using NRuuviTag.Cli;
 
 using Spectre.Console.Cli;
 

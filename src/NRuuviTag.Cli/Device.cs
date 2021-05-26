@@ -1,4 +1,4 @@
-﻿namespace NRuuviTag.Mqtt.Cli {
+﻿namespace NRuuviTag.Cli {
 
     /// <summary>
     /// Device definition from the application's <see cref="Microsoft.Extensions.Configuration.IConfiguration"/>.

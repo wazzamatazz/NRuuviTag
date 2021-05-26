@@ -5,8 +5,8 @@ using Microsoft.Extensions.Configuration;
 using MQTTnet;
 
 using NRuuviTag;
-using NRuuviTag.Mqtt.Cli;
-using NRuuviTag.Mqtt.Cli.Commands;
+using NRuuviTag.Cli;
+using NRuuviTag.Cli.Commands;
 
 using Spectre.Console.Cli;
 

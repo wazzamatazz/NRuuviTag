@@ -15,16 +15,18 @@ using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Formatter;
 
+using NRuuviTag.Mqtt;
+
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace NRuuviTag.Mqtt.Cli.Commands {
+namespace NRuuviTag.Cli.Commands {
 
     /// <summary>
     /// <see cref="CommandApp"/> command for listening to RuuviTag broadcasts and publishing the
     /// samples to an MQTT broker.
     /// </summary>
-    public class PublishCommand : AsyncCommand<PublishCommandSettings> {
+    public class PublishMqttCommand : AsyncCommand<PublishMqttCommandSettings> {
 
         /// <summary>
         /// The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
@@ -53,7 +55,7 @@ namespace NRuuviTag.Mqtt.Cli.Commands {
 
 
         /// <summary>
-        /// Creates a new <see cref="PublishCommand"/> object.
+        /// Creates a new <see cref="PublishMqttCommand"/> object.
         /// </summary>
         /// <param name="listener">
         ///   The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
@@ -70,7 +72,7 @@ namespace NRuuviTag.Mqtt.Cli.Commands {
         /// <param name="loggerFactory">
         ///   The <see cref="ILoggerFactory"/> for the application.
         /// </param>
-        public PublishCommand(
+        public PublishMqttCommand(
             IRuuviTagListener listener, 
             IMqttFactory mqttFactory, 
             IOptionsMonitor<DeviceCollection> devices, 
@@ -86,7 +88,7 @@ namespace NRuuviTag.Mqtt.Cli.Commands {
 
 
         /// <inheritdoc/>
-        public override async Task<int> ExecuteAsync(CommandContext context, PublishCommandSettings settings) {
+        public override async Task<int> ExecuteAsync(CommandContext context, PublishMqttCommandSettings settings) {
             if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
                 try { await Task.Delay(-1, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
                 catch (OperationCanceledException) { }
@@ -168,9 +170,9 @@ namespace NRuuviTag.Mqtt.Cli.Commands {
 
 
     /// <summary>
-    /// Settings for <see cref="PublishCommand"/>.
+    /// Settings for <see cref="PublishMqttCommand"/>.
     /// </summary>
-    public class PublishCommandSettings : CommandSettings {
+    public class PublishMqttCommandSettings : CommandSettings {
 
         [CommandArgument(0, "<HOSTNAME_OR_URL>")]
         [Description("The hostname, IP address, or URL for the MQTT broker (e.g. 'my-broker.local:21883', 'ws://mybroker.local:8080/mqtt'). The port number is only required when connecting on a non-default port. When specifying a URL, the '--use-tls' flag is implied if the 'https' or 'wss' scheme is specified in the URL.")]
@@ -253,7 +255,7 @@ namespace NRuuviTag.Mqtt.Cli.Commands {
         }
 
 
-        private static FileInfo? GetClientCertificateFile(PublishCommandSettings settings) {
+        private static FileInfo? GetClientCertificateFile(PublishMqttCommandSettings settings) {
             if (string.IsNullOrWhiteSpace(settings?.ClientCertificateFile)) {
                 return null;
             }

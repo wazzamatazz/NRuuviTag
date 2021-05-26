@@ -9,15 +9,17 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
+using NRuuviTag.Mqtt;
+
 using Spectre.Console.Cli;
 
-namespace NRuuviTag.Mqtt.Cli.Commands {
+namespace NRuuviTag.Cli.Commands {
 
     /// <summary>
     /// <see cref="CommandApp"/> command for listening to RuuviTag broadcasts without forwarding 
     /// them to an MQTT broker.
     /// </summary>
-    public class ListenCommand : AsyncCommand<ListenCommandSettings> {
+    public class PublishConsoleCommand : AsyncCommand<PublishConsoleCommandSettings> {
 
         /// <summary>
         /// The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
@@ -36,7 +38,7 @@ namespace NRuuviTag.Mqtt.Cli.Commands {
 
 
         /// <summary>
-        /// Creates a new <see cref="ListenCommand"/> object.
+        /// Creates a new <see cref="PublishConsoleCommand"/> object.
         /// </summary>
         /// <param name="listener">
         ///   The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
@@ -47,7 +49,7 @@ namespace NRuuviTag.Mqtt.Cli.Commands {
         /// <param name="appLifetime">
         ///   The <see cref="IHostApplicationLifetime"/> for the .NET host application.
         /// </param>
-        public ListenCommand(IRuuviTagListener listener, IOptionsMonitor<DeviceCollection> devices, IHostApplicationLifetime appLifetime) {
+        public PublishConsoleCommand(IRuuviTagListener listener, IOptionsMonitor<DeviceCollection> devices, IHostApplicationLifetime appLifetime) {
             _listener = listener;
             _devices = devices;
             _appLifetime = appLifetime;
@@ -55,7 +57,7 @@ namespace NRuuviTag.Mqtt.Cli.Commands {
 
 
         /// <inheritdoc/>
-        public override async Task<int> ExecuteAsync(CommandContext context, ListenCommandSettings settings) {
+        public override async Task<int> ExecuteAsync(CommandContext context, PublishConsoleCommandSettings settings) {
             // Wait until the host application has started if required.
             if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
                 try { await Task.Delay(-1, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
@@ -107,9 +109,9 @@ namespace NRuuviTag.Mqtt.Cli.Commands {
 
 
     /// <summary>
-    /// Settings for <see cref="ListenCommand"/>.
+    /// Settings for <see cref="PublishConsoleCommand"/>.
     /// </summary>
-    public class ListenCommandSettings : CommandSettings {
+    public class PublishConsoleCommandSettings : CommandSettings {
 
         [CommandOption("--known-devices")]
         [Description("Specifies if only samples from pre-registered devices should be observed.")]

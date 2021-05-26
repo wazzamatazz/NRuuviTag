@@ -6,7 +6,7 @@ using Microsoft.Extensions.Hosting;
 
 using NRuuviTag.Listener.Windows;
 
-namespace NRuuviTag.Mqtt.Agent.Cli.Windows {
+namespace NRuuviTag.Cli.Windows {
 
     /// <summary>
     /// RuuviTag MQTT agent command-line application.

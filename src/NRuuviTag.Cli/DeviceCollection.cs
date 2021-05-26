@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace NRuuviTag.Mqtt.Cli {
+namespace NRuuviTag.Cli {
 
     /// <summary>
     /// Lookup from device ID to device information from the application's 

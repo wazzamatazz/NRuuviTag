@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>NRuuviTag.Mqtt.Cli</RootNamespace>
     <!-- We'll pack this assembly with the OS-specific builds of this tool. -->
     <IsPackable>false</IsPackable>
   </PropertyGroup>

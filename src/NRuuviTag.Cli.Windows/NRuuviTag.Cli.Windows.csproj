@@ -3,13 +3,13 @@
   <PropertyGroup>
     <TargetFramework>net5.0-windows10.0.19041.0</TargetFramework>
     <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
-    <AssemblyName>nruuvitag-mqtt</AssemblyName>
+    <AssemblyName>nruuvitag</AssemblyName>
     <Description>Command-line tool that can receive broadcasts from RuuviTag IoT sensors and publish readings to an MQTT broker.</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\NRuuviTag.Listener.Windows\NRuuviTag.Listener.Windows.csproj" />
-    <ProjectReference Include="..\NRuuviTag.Mqtt.Agent.Cli\NRuuviTag.Mqtt.Agent.Cli.csproj" />
+    <ProjectReference Include="..\NRuuviTag.Cli\NRuuviTag.Cli.csproj" />
   </ItemGroup>
   
 </Project>
