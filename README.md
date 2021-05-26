@@ -2,14 +2,14 @@
 
 A collection of .NET libraries to simplify interacting with RuuviTag IoT sensors from [Ruuvi](https://www.ruuvi.com/).
 
-The repository consists of a [core library](/src/NRuuviTag.Core) that defines common types, and a [listener implementation](/src/NRuuviTag.Client.Windows) that uses the Windows 10 SDK to observe the Bluetooth LE advertisements emitted by RuuviTag devices.
+The repository consists of a [core library](/src/NRuuviTag.Core) that defines common types, and a [listener implementation](/src/NRuuviTag.Listener.Windows) that uses the Windows 10 SDK to observe the Bluetooth LE advertisements emitted by RuuviTag devices.
 
 
 # Getting Started
 
 ## Windows
 
-Add the [NRuuviTag.Client.Windows](https://www.nuget.org/packages/NRuuviTag.Client.Windows) NuGet package to your project.
+Add the [NRuuviTag.Listener.Windows](https://www.nuget.org/packages/NRuuviTag.Listener.Windows) NuGet package to your project.
 
 
 # Building the Solution
@@ -46,3 +46,8 @@ await foreach (var sample in client.ListenAsync(CanProcessMessage, cancellationT
     // sample is a RuuviTagSample object.
 }
 ```
+
+
+# `nruuvitag-mqtt`
+
+`nruuvitag-mqtt` is a command-line tool for [Windows](/src/NRuuviTag.Mqtt.Agent.Cli.Windows) that can be used to observe RuuviTag broadcasts and forward the samples to an MQTT broker.

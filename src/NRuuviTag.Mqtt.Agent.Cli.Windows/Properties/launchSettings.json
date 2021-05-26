@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "NRuuviTag.Mqtt.Agent.Cli.Windows": {
+      "commandName": "Project",
+      "commandLineArgs": "publish localhost --client-id test",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": "true"
+    }
+  }
+}
