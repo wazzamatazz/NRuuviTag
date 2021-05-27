@@ -26,11 +26,9 @@ await foreach (var sample in client.ListenAsync(cancellationToken)) {
 }
 ```
 
-To only observe specific RuuviTag devices using the Windows SDK using MAC address filtering:
+To only observe specific RuuviTag devices using MAC address filtering:
 
 ```csharp
-var client = new WindowsSdkListener();
-
 bool CanProcessMessage(string macAddress) {
     return string.Equals(macAddress, "AB:CD:EF:01:23:45");
 }
