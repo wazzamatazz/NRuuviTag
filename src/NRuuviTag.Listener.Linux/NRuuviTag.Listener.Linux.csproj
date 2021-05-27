@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Description>Linux BlueZ-based listener for NRuuviTag - a library for reading RuuviTag IoT sensors.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HashtagChris.DotNetBlueZ" Version="$(HashtagChrisDotNetBlueZVersion)" />
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
+    <PackageReference Include="System.Threading.Channels" Version="$(SystemThreadingChannelsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NRuuviTag.Core\NRuuviTag.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

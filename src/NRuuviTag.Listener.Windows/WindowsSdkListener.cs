@@ -12,8 +12,8 @@ using Windows.Storage.Streams;
 namespace NRuuviTag.Listener.Windows {
 
     /// <summary>
-    /// Client that can be used to listen for Bluetooth LE advertisements from RuuviTags using the 
-    /// Windows SDK.
+    /// <see cref="IRuuviTagListener"/> that uses the Windows 10 SDK to listen for RuuviTag 
+    /// Bluetooth LE advertisements.
     /// </summary>
     public class WindowsSdkListener : RuuviTagListener {
 
