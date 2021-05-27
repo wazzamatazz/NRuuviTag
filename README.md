@@ -2,7 +2,12 @@
 
 A collection of .NET libraries to simplify interacting with RuuviTag IoT sensors from [Ruuvi](https://www.ruuvi.com/).
 
-The repository contains a [core library](/src/NRuuviTag.Core) that defines common types, and a [listener implementation](/src/NRuuviTag.Listener.Windows) that uses the Windows 10 SDK to observe the Bluetooth LE advertisements emitted by RuuviTag devices. Samples received from RuuviTags can be automatically [published to an MQTT broker](#publishing-samples-to-mqtt).
+The repository contains a [core library](/src/NRuuviTag.Core) that defines common types, and listener implementations that observe the Bluetooth LE advertisements emitted by RuuviTag devices. Samples received from RuuviTags can be automatically [published to an MQTT broker](#publishing-samples-to-mqtt).
+
+The repository contains the following listener implementations:
+
+- [Windows](/src/NRuuviTag.Listener.Windows) (using the Windows 10 SDK)
+- [Linux](/src/NRuuviTag.Listener.Linux) (using [DotNet-BlueZ](https://github.com/hashtagchris/DotNet-BlueZ) to receive advertisements from BlueZ's D-Bus APIs)
 
 The `nruuvitag` [command-line tool](#command-line-application) can be used to as a turnkey solution to start receiving and publishing RuuviTag sensor data to an MQTT broker.
 
@@ -43,7 +48,7 @@ The [NRuuviTag.Mqtt.Agent](https://www.nuget.org/packages/NRuuviTag.Mqtt.Agent) 
 
 # Command-Line Application
 
-`nruuvitag` is a command-line tool for [Windows](/src/NRuuviTag.Cli.Windows) that can scan for nearby RuuviTags, and publish device readings to the console or to an MQTT broker.
+`nruuvitag` is a command-line tool for [Windows](/src/NRuuviTag.Cli.Windows) and [Linux](/src/NRuuviTag.Cli.Linux) that can scan for nearby RuuviTags, and publish device readings to the console or to an MQTT broker.
 
 Examples:
 
