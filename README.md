@@ -14,7 +14,7 @@ The `nruuvitag` [command-line tool](#command-line-application) can be used to as
 
 # Example Usage
 
-> See the [samples](/samples) folder for more details examples of usage.
+> See the [samples](/samples) folder for more detailed examples of usage.
 
 Usage is very straightforward. For example, to listen via the Windows 10 SDK using the [NRuuviTag.Listener.Windows](https://www.nuget.org/packages/NRuuviTag.Listener.Windows) NuGet package ([source](/src/NRuuviTag.Listener.Windows)):
 
