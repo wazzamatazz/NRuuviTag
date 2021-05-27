@@ -51,7 +51,22 @@ await foreach (var sample in client.ListenAsync(CanProcessMessage, cancellationT
 
 # Publishing Samples to MQTT
 
-The [NRuuviTag.Mqtt.Agent](https://www.nuget.org/packages/NRuuviTag.Mqtt.Agent) NuGet package ([source](/src/NRuuviTag.Mqtt.Agent)) can be used to observe RuuviTag broadcasts and forward the samples to an MQTT broker.
+The [NRuuviTag.Mqtt.Agent](https://www.nuget.org/packages/NRuuviTag.Mqtt.Agent) NuGet package ([source](/src/NRuuviTag.Mqtt.Agent)) can be used to observe RuuviTag broadcasts and forward the samples to an MQTT broker:
+
+```csharp
+public async Task RunMqttAgent(
+  IRuuviTagListener listener,
+  ILogger<MqttAgent>? logger = null,
+  CancellationToken cancellationToken = default
+) {
+  var agentOptions = new MqttAgentOptions() {
+    Hostname = "my-mqtt-service.local:1883",
+    ClientId = "MY_CLIENT_ID"
+  };
+  var agent = new MqttAgent(listener, agentOptions, new MqttFactory(), logger);
+  await agent.RunAsync(cancellationToken);
+}
+```
 
 
 # Command-Line Application
