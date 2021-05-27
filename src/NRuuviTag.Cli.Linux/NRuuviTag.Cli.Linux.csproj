@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RuntimeIdentifiers>linux-arm;linux-arm64;linux-x64</RuntimeIdentifiers>
+    <AssemblyName>nruuvitag</AssemblyName>
+    <Description>Command-line tool that can receive broadcasts from RuuviTag IoT sensors and publish readings to an MQTT broker.</Description>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\NRuuviTag.Cli\NRuuviTag.Cli.csproj" />
+    <ProjectReference Include="..\NRuuviTag.Listener.Linux\NRuuviTag.Listener.Linux.csproj" />
+  </ItemGroup>
+</Project>

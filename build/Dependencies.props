@@ -5,6 +5,7 @@
   <!-- CoreFX Packages -->
   <PropertyGroup>
     <SystemTextJsonVersion>5.0.2</SystemTextJsonVersion>
+    <SystemThreadingChannelsVersion>5.0.0</SystemThreadingChannelsVersion>
   </PropertyGroup>
   
   <!-- ASP.NET Core/Microsoft Extension Packages -->
@@ -26,6 +27,7 @@
   
   <!-- Other Packages -->
   <PropertyGroup>
+    <HashtagChrisDotNetBlueZVersion>1.3.1</HashtagChrisDotNetBlueZVersion>
     <MqttNetVersion>3.0.15</MqttNetVersion>
     <SpectreConsoleVersion>0.39.0</SpectreConsoleVersion>
   </PropertyGroup>

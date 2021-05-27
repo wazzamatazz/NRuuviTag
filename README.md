@@ -2,14 +2,19 @@
 
 A collection of .NET libraries to simplify interacting with RuuviTag IoT sensors from [Ruuvi](https://www.ruuvi.com/).
 
-The repository contains a [core library](/src/NRuuviTag.Core) that defines common types, and a [listener implementation](/src/NRuuviTag.Listener.Windows) that uses the Windows 10 SDK to observe the Bluetooth LE advertisements emitted by RuuviTag devices. Samples received from RuuviTags can be automatically [published to an MQTT broker](#publishing-samples-to-mqtt).
+The repository contains a [core library](/src/NRuuviTag.Core) that defines common types, and listener implementations that observe the Bluetooth LE advertisements emitted by RuuviTag devices. Samples received from RuuviTags can be automatically [published to an MQTT broker](#publishing-samples-to-mqtt).
+
+The repository contains the following listener implementations:
+
+- [Windows](/src/NRuuviTag.Listener.Windows) (using the Windows 10 SDK)
+- [Linux](/src/NRuuviTag.Listener.Linux) (using [DotNet-BlueZ](https://github.com/hashtagchris/DotNet-BlueZ) to receive advertisements from BlueZ's D-Bus APIs)
 
 The `nruuvitag` [command-line tool](#command-line-application) can be used to as a turnkey solution to start receiving and publishing RuuviTag sensor data to an MQTT broker.
 
 
 # Example Usage
 
-> See the [samples](/samples) folder for more details examples of usage.
+> See the [samples](/samples) folder for more detailed examples of usage.
 
 Usage is very straightforward. For example, to listen via the Windows 10 SDK using the [NRuuviTag.Listener.Windows](https://www.nuget.org/packages/NRuuviTag.Listener.Windows) NuGet package ([source](/src/NRuuviTag.Listener.Windows)):
 
@@ -21,11 +26,19 @@ await foreach (var sample in client.ListenAsync(cancellationToken)) {
 }
 ```
 
-To only observe specific RuuviTag devices using the Windows SDK using MAC address filtering:
+To listen via BlueZ on Linux using the [NRuuviTag.Listener.Linux](https://www.nuget.org/packages/NRuuviTag.Listener.Linux) NuGet package ([source](/src/NRuuviTag.Listener.Linux)):
 
 ```csharp
-var client = new WindowsSdkListener();
+var client = new BlueZListener("hci0");
 
+await foreach (var sample in client.ListenAsync(cancellationToken)) {
+    // sample is a RuuviTagSample object.
+}
+```
+
+To only observe specific RuuviTag devices using MAC address filtering:
+
+```csharp
 bool CanProcessMessage(string macAddress) {
     return string.Equals(macAddress, "AB:CD:EF:01:23:45");
 }
@@ -43,7 +56,7 @@ The [NRuuviTag.Mqtt.Agent](https://www.nuget.org/packages/NRuuviTag.Mqtt.Agent) 
 
 # Command-Line Application
 
-`nruuvitag` is a command-line tool for [Windows](/src/NRuuviTag.Cli.Windows) that can scan for nearby RuuviTags, and publish device readings to the console or to an MQTT broker.
+`nruuvitag` is a command-line tool for [Windows](/src/NRuuviTag.Cli.Windows) and [Linux](/src/NRuuviTag.Cli.Linux) that can scan for nearby RuuviTags, and publish device readings to the console or to an MQTT broker.
 
 Examples:
 
