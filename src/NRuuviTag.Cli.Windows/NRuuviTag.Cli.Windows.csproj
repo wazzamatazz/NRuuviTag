@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NRuuviTag.Listener.Windows\NRuuviTag.Listener.Windows.csproj" />
     <ProjectReference Include="..\NRuuviTag.Cli\NRuuviTag.Cli.csproj" />
+    <ProjectReference Include="..\NRuuviTag.Listener.Windows\NRuuviTag.Listener.Windows.csproj" />
   </ItemGroup>
   
 </Project>
