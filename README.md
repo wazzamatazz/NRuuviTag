@@ -26,6 +26,16 @@ await foreach (var sample in client.ListenAsync(cancellationToken)) {
 }
 ```
 
+To listen via BlueZ on Linux using the [NRuuviTag.Listener.Linux](https://www.nuget.org/packages/NRuuviTag.Listener.Linux) NuGet package ([source](/src/NRuuviTag.Listener.Linux)):
+
+```csharp
+var client = new BlueZListener("hci0");
+
+await foreach (var sample in client.ListenAsync(cancellationToken)) {
+    // sample is a RuuviTagSample object.
+}
+```
+
 To only observe specific RuuviTag devices using MAC address filtering:
 
 ```csharp
