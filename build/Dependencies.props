@@ -10,6 +10,7 @@
   
   <!-- ASP.NET Core/Microsoft Extension Packages -->
   <PropertyGroup>
+    <MicrosoftBclAsyncInterfacesVersion>5.0.0</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftExtensionsLoggingAbstractionsVersion>5.0.0</MicrosoftExtensionsLoggingAbstractionsVersion>
     <MicrosoftExtensionsHostingVersion>5.0.0</MicrosoftExtensionsHostingVersion>
   </PropertyGroup>

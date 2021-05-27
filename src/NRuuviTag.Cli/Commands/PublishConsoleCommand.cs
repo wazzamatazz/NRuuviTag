@@ -91,13 +91,12 @@ namespace NRuuviTag.Cli.Commands {
 
             UpdateDevices(_devices.CurrentValue);
 
+            var publisher = new ConsoleJsonPublisher(_listener, CanProcessSample);
+
             using (_devices.OnChange(newDevices => UpdateDevices(newDevices)))
             using (var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping)) {
                 try {
-                    await foreach (var sample in _listener.ListenAsync(CanProcessSample, ctSource.Token).ConfigureAwait(false)) {
-                        Console.WriteLine();
-                        Console.WriteLine(JsonSerializer.Serialize(sample));
-                    }
+                    await publisher.RunAsync(ctSource.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) { }
             }

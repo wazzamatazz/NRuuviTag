@@ -23,7 +23,7 @@ namespace NRuuviTag.Mqtt {
     /// Observes measurements emitted by an <see cref="IRuuviTagListener"/> and publishes them to 
     /// an MQTT broker.
     /// </summary>
-    public class MqttAgent {
+    public class MqttAgent : RuuviTagPublisher {
 
         /// <summary>
         /// For creating device IDs if no callback for performing this task is specified.
@@ -39,16 +39,6 @@ namespace NRuuviTag.Mqtt {
         /// Device ID for all devices where the device ID cannot be determined.
         /// </summary>
         private const string UnknownDeviceId = "unknown";
-
-        /// <summary>
-        /// Logging.
-        /// </summary>
-        private readonly ILogger _logger;
-
-        /// <summary>
-        /// The <see cref="IRuuviTagListener"/> to observe.
-        /// </summary>
-        private readonly IRuuviTagListener _listener;
 
         /// <summary>
         /// MQTT client.
@@ -98,10 +88,9 @@ namespace NRuuviTag.Mqtt {
         /// <param name="logger">
         ///   The logger for the bridge.
         /// </param>
-        public MqttAgent(IRuuviTagListener listener, MqttAgentOptions options, IMqttFactory factory, ILogger<MqttAgent>? logger = null) {
-            _listener = listener ?? throw new ArgumentNullException(nameof(listener));
+        public MqttAgent(IRuuviTagListener listener, MqttAgentOptions options, IMqttFactory factory, ILogger<MqttAgent>? logger = null)
+            : base(listener, options?.PublishInterval ?? 0, null, logger) {
             _options = options ?? throw new ArgumentNullException(nameof(options));
-            _logger = logger ?? (ILogger) Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
 
             _jsonOptions.Converters.Add(new RuuviTagSampleJsonConverter());
 
@@ -266,7 +255,7 @@ namespace NRuuviTag.Mqtt {
         ///   The event arguments.
         /// </param>
         private void OnConnected(MqttClientConnectedEventArgs args) {
-            _logger.LogInformation(Resources.LogMessage_MqttClientConnected);
+            Logger.LogInformation(Resources.LogMessage_MqttClientConnected);
         }
 
 
@@ -277,7 +266,7 @@ namespace NRuuviTag.Mqtt {
         ///   The event arguments.
         /// </param>
         private void OnDisconnected(MqttClientDisconnectedEventArgs args) {
-            _logger.LogWarning(Resources.LogMessage_MqttClientDisconnected);
+            Logger.LogWarning(Resources.LogMessage_MqttClientDisconnected);
         }
 
 
@@ -309,7 +298,7 @@ namespace NRuuviTag.Mqtt {
         ///   The sample.
         /// </param>
         /// <returns>
-        ///   The device ID.
+        ///   The device information.
         /// </returns>
         private DeviceInfo GetDeviceInfo(RuuviTagSample sample) {
             if (string.IsNullOrWhiteSpace(sample.MacAddress)) {
@@ -523,144 +512,40 @@ namespace NRuuviTag.Mqtt {
         }
 
 
-        /// <summary>
-        /// Runs the <see cref="MqttAgent"/> until the specified cancellation token requests 
-        /// cancellation.
-        /// </summary>
-        /// <param name="cancellationToken">
-        ///   The cancellation token to observe.
-        /// </param>
-        /// <returns>
-        ///   A <see cref="Task"/> that will run the <see cref="MqttAgent"/> until <paramref name="cancellationToken"/> 
-        ///   requests cancellation.
-        /// </returns>
-        /// <exception cref="InvalidOperationException">
-        ///   The <see cref="MqttAgent"/> is already running.
-        /// </exception>
-        public async Task RunAsync(CancellationToken cancellationToken) {
-            if (Interlocked.CompareExchange(ref _running, 1, 0) != 0) {
-                // Already running.
-                throw new InvalidOperationException(Resources.Error_MqttBridgeIsAlreadyRunning);
-            }
+        /// <inheritdoc/>
+        protected override async Task RunAsyncCore(RuuviTagPublisherContext context, CancellationToken cancellationToken) {
+            Logger.LogInformation(Resources.LogMessage_StartingMqttBridge);
 
-            var publishInterval = _options.PublishInterval;
-            var useBackgroundPublish = publishInterval > 0;
-            var pendingPublish = useBackgroundPublish 
-                ? new Dictionary<string, IEnumerable<MqttApplicationMessage>>(StringComparer.Ordinal)
-                : null;
-
-            // Publishes the specified MQTT messages.
-            async Task PublishMessages(IEnumerable<MqttApplicationMessage> messages, CancellationToken ct) {
-                try {
-                    await _mqttClient.PublishAsync(messages).ConfigureAwait(false);
-                    ct.ThrowIfCancellationRequested();
-                }
-                catch (OperationCanceledException e) {
-                    if (ct.IsCancellationRequested) {
-                        // Cancellation requested; rethrow and let the caller handle it.
-                        throw;
-                    }
-                    _logger.LogError(e, Resources.LogMessage_MqttPublishError);
-                }
-                catch (Exception e) {
-                    _logger.LogError(e, Resources.LogMessage_MqttPublishError);
-                }
-            }
-
-            // Publishes all pending MQTT messages and clears the pendingPublish dictionary.
-            async Task PublishPendingMessages(CancellationToken ct) {
-                if (!useBackgroundPublish) {
-                    return;
-                }
-
-                MqttApplicationMessage[] messages;
-                lock (pendingPublish!) {
-                    messages = pendingPublish.SelectMany(x => x.Value).ToArray();
-                    pendingPublish.Clear();
-                }
-
-                if (messages.Length == 0) {
-                    return;
-                }
-
-                await PublishMessages(messages, cancellationToken).ConfigureAwait(false);
-            }
-
+            await _mqttClient.StartAsync(_mqttClientOptions).ConfigureAwait(false);
             try {
-                _logger.LogInformation(Resources.LogMessage_StartingMqttBridge);
-
-                await _mqttClient.StartAsync(_mqttClientOptions).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
-
-                if (useBackgroundPublish) {
-                    // We're using a scheduled publish interval - start the background task that
-                    // will perform this job.
-                    _ = Task.Run(async () => { 
-                        try {
-                            while (!cancellationToken.IsCancellationRequested) {
-                                await Task.Delay(TimeSpan.FromSeconds(publishInterval), cancellationToken).ConfigureAwait(false);
-                                await PublishPendingMessages(cancellationToken).ConfigureAwait(false);
-                            }
-                        }
-                        catch (OperationCanceledException) { }
-                    }, cancellationToken);
-                }
-
-                // Start the listener,
-                await foreach (var item in _listener.ListenAsync(cancellationToken).ConfigureAwait(false)) {
-                    try {
-                        var deviceInfo = GetDeviceInfo(item);
-                        if (_options.KnownDevicesOnly && string.Equals(deviceInfo.DeviceId, UnknownDeviceId, StringComparison.OrdinalIgnoreCase)) {
-                            // Unknown device.
-                            if (_logger.IsEnabled(LogLevel.Trace)) {
-                                _logger.LogTrace(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_SkippingSampleFromUnknownDevice, item.MacAddress));
-                            }
-                            continue;
-                        }
-
-                        if (_logger.IsEnabled(LogLevel.Debug)) {
-                            _logger.LogDebug($"{(string.IsNullOrWhiteSpace(deviceInfo.DisplayName) ? deviceInfo.DeviceId : deviceInfo.DisplayName)}: {JsonSerializer.Serialize(item)}");
-                        }
-
-                        var messages = BuildMqttMessages(item, deviceInfo).ToArray();
-                        
-                        if (useBackgroundPublish) {
-                            // Add messages to pending publish list.
-                            lock (pendingPublish!) {
-                                pendingPublish[deviceInfo.DeviceId] = messages;
-                            }
-                        }
-                        else {
-                            // Publish immediately.
-                            await PublishMessages(messages, cancellationToken).ConfigureAwait(false);
-                        }
-                    }
-                    catch (OperationCanceledException e) {
-                        if (cancellationToken.IsCancellationRequested) {
-                            // Cancellation requested; rethrow and let the outer catch handle it.
-                            throw;
-                        }
-                        _logger.LogError(e, Resources.LogMessage_MqttPublishError);
-                    }
-                    catch (Exception e) {
-                        _logger.LogError(e, Resources.LogMessage_MqttPublishError);
-                    }
-                }
-            }
-            catch (OperationCanceledException) {
-                if (!cancellationToken.IsCancellationRequested) {
-                    // This exception was not caused by cancellationToken requesting cancellation.
-                    throw;
-                }
+                await base.RunAsyncCore(context, cancellationToken).ConfigureAwait(false);
             }
             finally {
-                if (useBackgroundPublish) {
-                    // Flush any pending values.
-                    await PublishPendingMessages(default).ConfigureAwait(false);
-                }
                 await _mqttClient.StopAsync().ConfigureAwait(false);
-                _logger.LogInformation(Resources.LogMessage_MqttBridgeStopped);
-                _running = 0;
+                Logger.LogInformation(Resources.LogMessage_MqttBridgeStopped);
+            }
+        }
+
+
+        /// <inheritdoc/>
+        protected override async Task PublishAsyncCore(RuuviTagPublisherContext context, IEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
+            foreach (var item in samples) {
+                var deviceInfo = GetDeviceInfo(item);
+                if (_options.KnownDevicesOnly && string.Equals(deviceInfo.DeviceId, UnknownDeviceId, StringComparison.OrdinalIgnoreCase)) {
+                    // Unknown device.
+                    if (Logger.IsEnabled(LogLevel.Trace)) {
+                        Logger.LogTrace(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_SkippingSampleFromUnknownDevice, item.MacAddress));
+                    }
+                    continue;
+                }
+
+                if (Logger.IsEnabled(LogLevel.Debug)) {
+                    Logger.LogDebug($"{(string.IsNullOrWhiteSpace(deviceInfo.DisplayName) ? deviceInfo.DeviceId : deviceInfo.DisplayName)}: {JsonSerializer.Serialize(item)}");
+                }
+
+                var messages = BuildMqttMessages(item, deviceInfo).ToArray();
+                await _mqttClient.PublishAsync(messages).ConfigureAwait(false);
             }
         }
 

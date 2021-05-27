@@ -61,6 +61,24 @@ namespace NRuuviTag {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The publisher is already running..
+        /// </summary>
+        internal static string Error_PublisherIsAlreadyRunning {
+            get {
+                return ResourceManager.GetString("Error_PublisherIsAlreadyRunning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Error during publish..
+        /// </summary>
+        internal static string Error_PublishError {
+            get {
+                return ResourceManager.GetString("Error_PublishError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Expected a payload that uses data format {0}, but data format {1} was specified..
         /// </summary>
         internal static string Error_UnexpectedDataFormat {

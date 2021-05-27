@@ -117,6 +117,12 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Error_PublisherIsAlreadyRunning" xml:space="preserve">
+    <value>The publisher is already running.</value>
+  </data>
+  <data name="Error_PublishError" xml:space="preserve">
+    <value>Error during publish.</value>
+  </data>
   <data name="Error_UnexpectedDataFormat" xml:space="preserve">
     <value>Expected a payload that uses data format {0}, but data format {1} was specified.</value>
     <comment>{0} - expected data format version
