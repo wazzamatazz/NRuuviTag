@@ -91,7 +91,7 @@ public async Task AzureEventHubAgent(
 
 # Command-Line Application
 
-`nruuvitag` is a command-line tool for [Windows](/src/NRuuviTag.Cli.Windows) and [Linux](/src/NRuuviTag.Cli.Linux) that can scan for nearby RuuviTags, and publish device readings to the console or to an MQTT broker.
+`nruuvitag` is a command-line tool for [Windows](/src/NRuuviTag.Cli.Windows) and [Linux](/src/NRuuviTag.Cli.Linux) that can scan for nearby RuuviTags, and publish device readings to the console or to an MQTT server or Azure Event Hub.
 
 Examples:
 
