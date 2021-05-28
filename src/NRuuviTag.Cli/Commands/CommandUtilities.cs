@@ -41,7 +41,11 @@ namespace NRuuviTag.Cli.Commands {
 
                     branchOptions.AddCommand<PublishMqttCommand>("mqtt")
                         .WithDescription("Publishes RuuviTag samples to an MQTT broker.")
-                        .WithExample(new[] { "publish", "mqtt", "test.mosquitto.org", "--client-id", "\"MY_CLIENT_ID\"", "--publish-interval", "5", "--known-devices" });
+                        .WithExample(new[] { "publish", "mqtt", "test.mosquitto.org", "--client-id", "\"MY_CLIENT_ID\"", "--sample-rate", "5", "--known-devices" });
+
+                    branchOptions.AddCommand<PublishAzureEventHubCommand>("az")
+                        .WithDescription("Publishes RuuviTag samples to an Azure Event Hub.")
+                        .WithExample(new[] { "publish", "az", "\"MY_CONNECTION_STRING\"", "\"MY_HUB\"", "--batch-size-limit", "100" });
                 });
 
                 options.AddBranch("devices", branchOptions => {

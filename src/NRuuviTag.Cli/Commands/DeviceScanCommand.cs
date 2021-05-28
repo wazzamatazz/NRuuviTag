@@ -59,13 +59,13 @@ namespace NRuuviTag.Cli.Commands {
                 catch (OperationCanceledException) { }
             }
 
-            Dictionary<string, DeviceInfo>? devices;
+            Dictionary<string, MqttDeviceInfo>? devices;
 
             // Updates the set of known devices when _devices reports that the options have been
             // updated.
             void UpdateDevices(DeviceCollection? devicesFromConfig) {
                 lock (this) {
-                    devices = devicesFromConfig?.ToDictionary(x => x.Value.MacAddress, x => new DeviceInfo() {
+                    devices = devicesFromConfig?.ToDictionary(x => x.Value.MacAddress, x => new MqttDeviceInfo() {
                         DeviceId = x.Key,
                         MacAddress = x.Value.MacAddress,
                         DisplayName = x.Value.DisplayName

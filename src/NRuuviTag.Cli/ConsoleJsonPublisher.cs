@@ -10,13 +10,11 @@ namespace NRuuviTag.Cli {
         public ConsoleJsonPublisher(IRuuviTagListener listener, Func<string, bool>? filter) : base(listener, 0, filter) { }
 
 
-        protected override Task PublishAsyncCore(RuuviTagPublisherContext context, IEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
-            foreach (var sample in samples) {
+        protected override async Task RunAsync(IAsyncEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
+            await foreach (var item in samples.ConfigureAwait(false)) {
                 Console.WriteLine();
-                Console.WriteLine(JsonSerializer.Serialize(sample));
+                Console.WriteLine(JsonSerializer.Serialize(item));
             }
-
-            return Task.CompletedTask;
         }
 
     }
