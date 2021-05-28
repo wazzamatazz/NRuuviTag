@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ namespace NRuuviTag.Cli.Windows {
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
+                .UseContentRoot(AppContext.BaseDirectory)
                 .ConfigureAppConfiguration(config => {
                     config.AddRuuviTagMqttDeviceConfiguration();
                 })
