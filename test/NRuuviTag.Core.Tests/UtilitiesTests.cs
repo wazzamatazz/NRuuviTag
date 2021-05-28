@@ -46,7 +46,7 @@ namespace NRuuviTag.Core.Tests {
 
             // Expected values taken from https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-5-rawv2#case-valid-data
 
-            Assert.AreEqual(5, sample.DataFormat);
+            Assert.AreEqual((byte) 5, sample.DataFormat);
             Assert.AreEqual(24.3, sample.Temperature);
             Assert.AreEqual(1000.44, sample.Pressure);
             Assert.AreEqual(53.49, sample.Humidity);

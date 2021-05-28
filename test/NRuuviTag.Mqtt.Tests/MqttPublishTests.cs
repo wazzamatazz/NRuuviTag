@@ -229,7 +229,7 @@ namespace NRuuviTag.Mqtt.Tests {
 
             var sample = RuuviTagUtilities.CreateSampleFromPayload(now, signalStrength, s_rawPayload);
             var expectedTopicPrefix = bridge.GetTopicNameForSample(sample);
-            const int expectedMessageCount = 12;
+            const int expectedMessageCount = 13;
 
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var receivedMessages = new List<MqttApplicationMessage>();
@@ -290,6 +290,9 @@ namespace NRuuviTag.Mqtt.Tests {
                             case "/humidity":
                                 sampleFromMqtt.Humidity = JsonSerializer.Deserialize<double>(json);
                                 break;
+                            case "/mac-address":
+                                sampleFromMqtt.MacAddress = JsonSerializer.Deserialize<string>(json);
+                                break;
                             case "/measurement-sequence":
                                 sampleFromMqtt.MeasurementSequence = JsonSerializer.Deserialize<ushort>(json);
                                 break;
@@ -310,6 +313,9 @@ namespace NRuuviTag.Mqtt.Tests {
                                 break;
                             case "/tx-power":
                                 sampleFromMqtt.TxPower = JsonSerializer.Deserialize<double>(json);
+                                break;
+                            default:
+                                Assert.Fail("Unexpected field: " + fieldName);
                                 break;
                         }
                     }
@@ -348,6 +354,7 @@ namespace NRuuviTag.Mqtt.Tests {
                 },
                 PrepareForPublish = s => {
                     s.AccelerationX = null;
+                    s.MacAddress = null;
                 }
             }, new MqttFactory());
 
@@ -437,6 +444,9 @@ namespace NRuuviTag.Mqtt.Tests {
                                 break;
                             case "/tx-power":
                                 sampleFromMqtt.TxPower = JsonSerializer.Deserialize<double>(json);
+                                break;
+                            default:
+                                Assert.Fail("Unexpected field: " + fieldName);
                                 break;
                         }
                     }
