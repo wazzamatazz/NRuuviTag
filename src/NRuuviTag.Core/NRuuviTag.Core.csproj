@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <RootNamespace>NRuuviTag</RootNamespace>
     <Description>Core type definitions for NRuuviTag - a library for reading RuuviTag IoT sensors.</Description>
   </PropertyGroup>
@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(MicrosoftExtensionsLoggingAbstractionsVersion)" />
+    <PackageReference Include="System.Threading.Channels" Version="$(SystemThreadingChannelsVersion)" />
   </ItemGroup>
 
   <ItemGroup>

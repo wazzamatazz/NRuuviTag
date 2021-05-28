@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
@@ -12,7 +13,12 @@ namespace NRuuviTag {
     /// Base class for an agent that can observe RuuviTag broadcasts and publish them to a 
     /// destination.
     /// </summary>
-    public abstract class RuuviTagPublisher {
+    public abstract class RuuviTagPublisher : IAsyncDisposable {
+
+        /// <summary>
+        /// Flags if the publisher has been disposed.
+        /// </summary>
+        private bool _disposed;
 
         /// <summary>
         /// Logging.
@@ -27,7 +33,7 @@ namespace NRuuviTag {
         /// <summary>
         /// The publish interval to use, in seconds.
         /// </summary>
-        private readonly uint _publishInterval;
+        private readonly int _publishInterval;
 
         /// <summary>
         /// A callback that receives the MAC address for a RuuviTag broadcast and returns a flag 
@@ -61,7 +67,12 @@ namespace NRuuviTag {
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="listener"/> is <see langword="null"/>.
         /// </exception>
-        protected RuuviTagPublisher(IRuuviTagListener listener, uint publishInterval, Func<string, bool>? filter = null, ILogger? logger = null) {
+        protected RuuviTagPublisher(
+            IRuuviTagListener listener, 
+            int publishInterval, 
+            Func<string, bool>? filter = null, 
+            ILogger? logger = null
+        ) {
             _listener = listener ?? throw new ArgumentNullException(nameof(listener));
             _publishInterval = publishInterval;
             _filter = filter;
@@ -88,23 +99,19 @@ namespace NRuuviTag {
                 throw new InvalidOperationException(Resources.Error_PublisherIsAlreadyRunning);
             }
 
-            await using (var context = new RuuviTagPublisherContext()) {
-                try {
-                    await RunAsyncCore(context, cancellationToken).ConfigureAwait(false);
-                }
-                finally {
-                    _running = 0;
-                }
+            try {
+                await RunAsyncCore(cancellationToken).ConfigureAwait(false);
             }
+            finally {
+                _running = 0;
+            }
+
         }
 
 
         /// <summary>
         /// Runs the agent.
         /// </summary>
-        /// <param name="context">
-        ///   The context for the operation.
-        /// </param>
         /// <param name="cancellationToken">
         ///   A cancellation token that will request cancellation when the agent should stop.
         /// </param>
@@ -112,28 +119,29 @@ namespace NRuuviTag {
         ///   A <see cref="Task"/> that will run until <paramref name="cancellationToken"/> requests 
         ///   cancellation.
         /// </returns>
-        /// <remarks>
-        /// 
-        /// <para>
-        ///   Override this method in your implementation if you need to add items to the 
-        ///   <paramref name="context"/> that are required by your <see cref="PublishAsyncCore"/> 
-        ///   method. Call the base <see cref="RunAsyncCore"/> at the <em>end</em> of your 
-        ///   implementation.
-        /// </para>
-        /// 
-        /// <para>
-        ///   All <see cref="IDisposable"/> and <see cref="IAsyncDisposable"/> items added to the 
-        ///   <paramref name="context"/> will be disposed when <see cref="RunAsync"/> exits.
-        /// </para>
-        /// 
-        /// </remarks>
-        protected virtual async Task RunAsyncCore(RuuviTagPublisherContext context, CancellationToken cancellationToken) {
+        private async Task RunAsyncCore(CancellationToken cancellationToken) {
+            var publishChannel = Channel.CreateUnbounded<RuuviTagSample>(new UnboundedChannelOptions() { 
+                SingleReader = true,
+                SingleWriter = true
+            });
+
             var useBackgroundPublish = _publishInterval > 0;
 
             // Samples pending publish, indexed by MAC address.
             var pendingPublish = useBackgroundPublish
                 ? new Dictionary<string, RuuviTagSample>(StringComparer.OrdinalIgnoreCase)
                 : null;
+
+            _ = Task.Run(async () => { 
+                try {
+                    await RunAsync(publishChannel.Reader.ReadAllAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) { }
+                catch (ChannelClosedException) { }
+                catch (Exception e) {
+                    Logger.LogError(e, Resources.Error_PublishError);
+                }
+            }, cancellationToken);
 
             // Publishes all pending samples and clears the pendingPublish dictionary.
             async Task PublishPendingSamples(CancellationToken ct) {
@@ -151,7 +159,7 @@ namespace NRuuviTag {
                     return;
                 }
 
-                await PublishAsync(context, samples, cancellationToken).ConfigureAwait(false);
+                await PublishAsync(publishChannel, samples, cancellationToken).ConfigureAwait(false);
             }
 
             if (useBackgroundPublish) {
@@ -183,7 +191,7 @@ namespace NRuuviTag {
                     }
                     else {
                         // Publish immediately.
-                        await PublishAsync(context, new[] { item! }, cancellationToken).ConfigureAwait(false);
+                        await PublishAsync(publishChannel, new[] { item! }, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
@@ -205,41 +213,22 @@ namespace NRuuviTag {
         /// <summary>
         /// Publishes the specified samples.
         /// </summary>
-        /// <param name="context">
-        ///   The context for the publish operation.
-        /// </param>
         /// <param name="samples">
-        ///   The samples.
+        ///   An <see cref="IAsyncEnumerable{RuuviTagSample}"/> that will emit the observed samples.
         /// </param>
         /// <param name="cancellationToken">
         ///   The cancellation token for the operation.
         /// </param>
         /// <returns>
-        ///   A <see cref="Task"/> that will perform the publish operation.
+        ///   A <see cref="Task"/> that will complete when <paramref name="samples"/> stops 
+        ///   emitting new items.
         /// </returns>
-        private async Task PublishAsync(RuuviTagPublisherContext context, IEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
-            try {
-                await PublishAsyncCore(context, samples, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException e) {
-                if (cancellationToken.IsCancellationRequested) {
-                    // Cancellation requested; rethrow and let the caller handle it.
-                    throw;
-                }
-                Logger.LogError(e, Resources.Error_PublishError);
-            }
-            catch (Exception e) {
-                Logger.LogError(e, Resources.Error_PublishError);
-            }
-        }
+        protected abstract Task RunAsync(IAsyncEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken);
 
 
         /// <summary>
         /// Publishes the specified samples.
         /// </summary>
-        /// <param name="context">
-        ///   The context for the publish operation.
-        /// </param>
         /// <param name="samples">
         ///   The samples.
         /// </param>
@@ -249,7 +238,33 @@ namespace NRuuviTag {
         /// <returns>
         ///   A <see cref="Task"/> that will perform the publish operation.
         /// </returns>
-        protected abstract Task PublishAsyncCore(RuuviTagPublisherContext context, IEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken);
+        private async Task PublishAsync(ChannelWriter<RuuviTagSample> channel, IEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
+            foreach (var sample in samples) {
+                await channel.WriteAsync(sample, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+
+        /// <inheritdoc/>
+        async ValueTask IAsyncDisposable.DisposeAsync() {
+            if (_disposed) {
+                return;
+            }
+
+            await DisposeAsyncCore().ConfigureAwait(false);
+            _disposed = true;
+        }
+
+
+        /// <summary>
+        /// Performs tasks related to freeing unmanaged resources asynchronously.
+        /// </summary>
+        /// <returns>
+        ///   A <see cref="ValueTask"/> that will perform any required clean-up.
+        /// </returns>
+        protected virtual ValueTask DisposeAsyncCore() {
+            return new ValueTask();
+        }
 
     }
 }
