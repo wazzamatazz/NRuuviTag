@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 using Microsoft.Extensions.Hosting;
 
@@ -13,9 +14,14 @@ namespace NRuuviTag.Cli.Commands {
     internal static class CommandUtilities {
 
         /// <summary>
+        /// Folder under the user's profile that the devices.json will be stored in.
+        /// </summary>
+        private const string LocalDataFolderName = ".nruuvitag";
+
+        /// <summary>
         /// The file name that contains known devices.
         /// </summary>
-        internal const string DevicesJsonFileName = "devices.json";
+        private const string DevicesJsonFileName = "devices.json";
 
 
         /// <summary>
@@ -41,7 +47,11 @@ namespace NRuuviTag.Cli.Commands {
 
                     branchOptions.AddCommand<PublishMqttCommand>("mqtt")
                         .WithDescription("Publishes RuuviTag samples to an MQTT broker.")
-                        .WithExample(new[] { "publish", "mqtt", "test.mosquitto.org", "--client-id", "\"MY_CLIENT_ID\"", "--publish-interval", "5", "--known-devices" });
+                        .WithExample(new[] { "publish", "mqtt", "test.mosquitto.org", "--client-id", "\"MY_CLIENT_ID\"", "--sample-rate", "5", "--known-devices" });
+
+                    branchOptions.AddCommand<PublishAzureEventHubCommand>("az")
+                        .WithDescription("Publishes RuuviTag samples to an Azure Event Hub.")
+                        .WithExample(new[] { "publish", "az", "\"MY_CONNECTION_STRING\"", "\"MY_HUB\"", "--batch-size-limit", "100" });
                 });
 
                 options.AddBranch("devices", branchOptions => {
@@ -73,14 +83,15 @@ namespace NRuuviTag.Cli.Commands {
         /// Gets a <see cref="FileInfo"/> object for the <c>devices.json</c> file containing known 
         /// device configurations.
         /// </summary>
-        /// <param name="hostEnvironment">
-        ///   The <see cref="IHostEnvironment"/> for the app.
-        /// </param>
         /// <returns>
         ///   A new <see cref="FileInfo"/> object.
         /// </returns>
-        internal static FileInfo GetDevicesJsonFile(IHostEnvironment hostEnvironment) {
-            return new FileInfo(Path.Combine(hostEnvironment.ContentRootPath, DevicesJsonFileName));
+        internal static FileInfo GetDevicesJsonFile() {
+            return new FileInfo(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                LocalDataFolderName,
+                DevicesJsonFileName
+            ));
         }
 
 

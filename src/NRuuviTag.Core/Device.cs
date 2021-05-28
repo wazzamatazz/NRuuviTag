@@ -1,7 +1,7 @@
-﻿namespace NRuuviTag.Cli {
+﻿namespace NRuuviTag {
 
     /// <summary>
-    /// Device definition from the application's <see cref="Microsoft.Extensions.Configuration.IConfiguration"/>.
+    /// Describes a RuuviTag device.
     /// </summary>
     public class Device {
 

@@ -2,9 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0-windows10.0.19041.0</TargetFramework>
-    <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
     <AssemblyName>nruuvitag</AssemblyName>
-    <Description>Command-line tool that can receive broadcasts from RuuviTag IoT sensors and publish readings to an MQTT broker.</Description>
+    <Description>Command-line tool that can receive broadcasts from RuuviTag IoT sensors and publish readings to a destination.</Description>
   </PropertyGroup>
 
   <ItemGroup>

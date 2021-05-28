@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 using MQTTnet.Formatter;
 
@@ -51,12 +52,11 @@ namespace NRuuviTag.Mqtt {
         public PublishType PublishType { get; set; }
 
         /// <summary>
-        /// The publish interval to use (in seconds). If zero is specified, a publish will be 
-        /// performed as soon as a sample is observed. Otherwise, one sample for each observed 
-        /// device will be performed every <see cref="PublishInterval"/> seconds, if a new sample 
-        /// has been observed since the previous publish.
+        /// The fastest rate (in seconds) that values will be sampled at for each observed device. 
+        /// Less than zero means that all observed values are immediately passed to the <see cref="MqttAgent"/> 
+        /// for processing.
         /// </summary>
-        public ushort PublishInterval { get; set; }
+        public int SampleRate { get; set; }
 
         /// <summary>
         /// The topic that MQTT messages will be published to. When <see cref="PublishType"/> is 
@@ -71,17 +71,18 @@ namespace NRuuviTag.Mqtt {
         ///   used to define the device ID to use for a given <see cref="RuuviTagSample"/>.
         /// </remarks>
         /// <seealso cref="DefaultTopicName"/>
+        [Required]
         public string TopicName { get; set; } = DefaultTopicName;
 
         /// <summary>
         /// A callback that is used to retrieve the device information to use for a given 
-        /// <see cref="RuuviTagSample"/> object.
+        ///MAC address.
         /// </summary>
         /// <remarks>
-        ///   If <see cref="GetDeviceInfo"/> is <see langword="null"/>, a default <see cref="DeviceInfo"/> 
+        ///   If <see cref="GetDeviceInfo"/> is <see langword="null"/>, a default <see cref="MqttDeviceInfo"/> 
         ///   will be generated for the sample.
         /// </remarks>
-        public Func<RuuviTagSample, DeviceInfo?>? GetDeviceInfo { get; set; }
+        public Func<string, MqttDeviceInfo?>? GetDeviceInfo { get; set; }
 
         /// <summary>
         /// When <see langword="true"/>, only samples from known devices will be published. See 
@@ -103,18 +104,12 @@ namespace NRuuviTag.Mqtt {
         /// <para>
         ///   Use the <see cref="PrepareForPublish"/> callback to modify a <see cref="RuuviTagSample"/> 
         ///   instance prior to it being published to the MQTT broker (e.g. to perform unit conversion). 
-        ///   Set any property on a sample to its default value (i.e. <see langword="null"/> for nullable 
-        ///   properties, or <see langword="default"/> for non-nullable properties) to exclude that 
-        ///   property from the publish.
-        /// </para>
-        /// 
-        /// <para>
-        ///   Note that the <see cref="RuuviTagSample.MacAddress"/> and <see cref="RuuviTagSample.DataFormat"/> 
-        ///   properties are never included in the published payload.
+        ///   Set any property on a sample to <see langword="null"/> to exclude that property from the 
+        ///   publish.
         /// </para>
         /// 
         /// </remarks>
-        public Action<RuuviTagSample>? PrepareForPublish { get; set; }
+        public Action<RuuviTagSampleWithDisplayName>? PrepareForPublish { get; set; }
 
     }
 

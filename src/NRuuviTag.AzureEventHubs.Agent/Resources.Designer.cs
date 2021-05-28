@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace NRuuviTag {
+namespace NRuuviTag.AzureEventHubs {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace NRuuviTag {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("NRuuviTag.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("NRuuviTag.AzureEventHubs.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -61,47 +61,38 @@ namespace NRuuviTag {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The publisher is already running..
+        ///   Looks up a localized string similar to Batch with {0} items published to event hub..
         /// </summary>
-        internal static string Error_PublisherIsAlreadyRunning {
+        internal static string LogMessage_EventHubBatchPublished {
             get {
-                return ResourceManager.GetString("Error_PublisherIsAlreadyRunning", resourceCulture);
+                return ResourceManager.GetString("LogMessage_EventHubBatchPublished", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Error during publish..
+        ///   Looks up a localized string similar to Starting event hub client..
         /// </summary>
-        internal static string Error_PublishError {
+        internal static string LogMessage_EventHubClientStarting {
             get {
-                return ResourceManager.GetString("Error_PublishError", resourceCulture);
+                return ResourceManager.GetString("LogMessage_EventHubClientStarting", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Expected a payload that uses data format {0}, but data format {1} was specified..
+        ///   Looks up a localized string similar to Event hub client stopped..
         /// </summary>
-        internal static string Error_UnexpectedDataFormat {
+        internal static string LogMessage_EventHubClientStopped {
             get {
-                return ResourceManager.GetString("Error_UnexpectedDataFormat", resourceCulture);
+                return ResourceManager.GetString("LogMessage_EventHubClientStopped", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Expected a 24-byte payload..
+        ///   Looks up a localized string similar to Event hub publish error..
         /// </summary>
-        internal static string Error_UnexpectedPayloadLength {
+        internal static string LogMessage_EventHubPublishError {
             get {
-                return ResourceManager.GetString("Error_UnexpectedPayloadLength", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Data format {0} is unknown..
-        /// </summary>
-        internal static string Error_UnknownDataFormat {
-            get {
-                return ResourceManager.GetString("Error_UnknownDataFormat", resourceCulture);
+                return ResourceManager.GetString("LogMessage_EventHubPublishError", resourceCulture);
             }
         }
     }

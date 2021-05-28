@@ -2,7 +2,7 @@
 
 A collection of .NET libraries to simplify interacting with RuuviTag IoT sensors from [Ruuvi](https://www.ruuvi.com/).
 
-The repository contains a [core library](/src/NRuuviTag.Core) that defines common types, and listener implementations that observe the Bluetooth LE advertisements emitted by RuuviTag devices. Samples received from RuuviTags can be automatically [published to an MQTT broker](#publishing-samples-to-mqtt).
+The repository contains a [core library](/src/NRuuviTag.Core) that defines common types, and listener implementations that observe the Bluetooth LE advertisements emitted by RuuviTag devices. Samples received from RuuviTags can be automatically published to an [MQTT server](#publishing-samples-to-mqtt) or to an [Azure Event Hub](#publishing-samples-to-azure-event-hubs).
 
 The repository contains the following listener implementations:
 
@@ -51,19 +51,39 @@ await foreach (var sample in client.ListenAsync(CanProcessMessage, cancellationT
 
 # Publishing Samples to MQTT
 
-The [NRuuviTag.Mqtt.Agent](https://www.nuget.org/packages/NRuuviTag.Mqtt.Agent) NuGet package ([source](/src/NRuuviTag.Mqtt.Agent)) can be used to observe RuuviTag broadcasts and forward the samples to an MQTT broker:
+The [NRuuviTag.Mqtt.Agent](https://www.nuget.org/packages/NRuuviTag.Mqtt.Agent) NuGet package ([source](/src/NRuuviTag.Mqtt.Agent)) can be used to observe RuuviTag broadcasts and forward the samples to an MQTT server:
 
 ```csharp
 public async Task RunMqttAgent(
   IRuuviTagListener listener,
-  ILogger<MqttAgent>? logger = null,
+  ILoggerFactory? loggerFactory = null,
   CancellationToken cancellationToken = default
 ) {
   var agentOptions = new MqttAgentOptions() {
     Hostname = "my-mqtt-service.local:1883",
     ClientId = "MY_CLIENT_ID"
   };
-  var agent = new MqttAgent(listener, agentOptions, new MqttFactory(), logger);
+  var agent = new MqttAgent(listener, agentOptions, new MqttFactory(), loggerFactory?.CreateLogger<MqttAgent>());
+  await agent.RunAsync(cancellationToken);
+}
+```
+
+
+# Publishing Samples to Azure Event Hubs
+
+The [NRuuviTag.AzureEventHubs.Agent](https://www.nuget.org/packages/NRuuviTag.AzureEventHubs.Agent) NuGet package ([source](/src/NRuuviTag.AzureEventHubs.Agent)) can be used to observe RuuviTag broadcasts and forward the samples to an Azure Event Hub:
+
+```csharp
+public async Task AzureEventHubAgent(
+  IRuuviTagListener listener,
+  ILoggerFactory? loggerFactory = null,
+  CancellationToken cancellationToken = default
+) {
+  var agentOptions = new AzureEventHubAgentOptions() {
+    ConnectionString = "Endpoint=sb://MY_NAMESPACE.servicebus.windows.net/;SharedAccessKeyName=MY_KEY_NAME;SharedAccessKey=MY_KEY",
+    EventHubName = "MY_EVENT_HUB"
+  };
+  var agent = new AzureEventHubAgent(listener, agentOptions, loggerFactory?.CreateLogger<AzureEventHubAgent>());
   await agent.RunAsync(cancellationToken);
 }
 ```
@@ -71,7 +91,7 @@ public async Task RunMqttAgent(
 
 # Command-Line Application
 
-`nruuvitag` is a command-line tool for [Windows](/src/NRuuviTag.Cli.Windows) and [Linux](/src/NRuuviTag.Cli.Linux) that can scan for nearby RuuviTags, and publish device readings to the console or to an MQTT broker.
+`nruuvitag` is a command-line tool for [Windows](/src/NRuuviTag.Cli.Windows) and [Linux](/src/NRuuviTag.Cli.Linux) that can scan for nearby RuuviTags, and publish device readings to the console, or to an MQTT server or Azure Event Hub.
 
 Examples:
 
@@ -94,9 +114,15 @@ nruuvitag devices add "AB:CD:EF:01:23:45" --id "bedroom-1" --name "Master Bedroo
 ```
 
 ```
-# Publish readings from known devices to an MQTT broker
+# Publish readings from known devices to an MQTT server
 
 nruuvitag publish mqtt my-mqtt-service.local:1883 --client-id "MY_CLIENT_ID" --topic "{clientId}/my-ruuvi-tags/{deviceId}" --known-devices
+```
+
+```
+# Publish readings from nearby devices to an Azure Event Hub in batches of up to 100 samples
+
+nruuvitag publish az "MY_CONNECTION_STRING" "MY_EVENT_HUB" --batch-size-limit 100
 ```
 
 
@@ -105,3 +131,8 @@ nruuvitag publish mqtt my-mqtt-service.local:1883 --client-id "MY_CLIENT_ID" --t
 The repository uses [Cake](https://cakebuild.net/) for cross-platform build automation. The build script allows for metadata such as a build counter to be specified when called by a continuous integration system such as TeamCity.
 
 A build can be run from the command line using the [build.ps1](/build.ps1) PowerShell script. For documentation about the available build script parameters, see [build.cake](/build.cake).
+
+
+# TODO
+
+- [ ] Add support for running `nruuvitag` as a service on Windows and Linux

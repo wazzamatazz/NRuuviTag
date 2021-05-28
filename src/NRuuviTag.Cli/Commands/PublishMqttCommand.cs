@@ -112,11 +112,11 @@ namespace NRuuviTag.Cli.Commands {
                 }
             }
 
-            Dictionary<string, DeviceInfo>? devices;
+            Dictionary<string, MqttDeviceInfo>? devices;
 
             void UpdateDevices(DeviceCollection? devicesFromConfig) {
                 lock (this) {
-                    devices = devicesFromConfig?.ToDictionary(x => x.Value.MacAddress, x => new DeviceInfo() {
+                    devices = devicesFromConfig?.ToDictionary(x => x.Value.MacAddress, x => new MqttDeviceInfo() {
                         DeviceId = x.Key,
                         MacAddress = x.Value.MacAddress,
                         DisplayName = x.Value.DisplayName
@@ -133,7 +133,7 @@ namespace NRuuviTag.Cli.Commands {
                 Password = settings.Password,
                 ProtocolVersion = version,
                 TopicName = settings.TopicName,
-                PublishInterval = settings.PublishInterval,
+                SampleRate = settings.SampleRate,
                 PublishType = settings.PublishType,
                 KnownDevicesOnly = settings.KnownDevicesOnly,
                 TlsOptions = new MqttAgentTlsOptions() { 
@@ -142,9 +142,9 @@ namespace NRuuviTag.Cli.Commands {
                     IgnoreCertificateChainErrors = settings.IgnoreCertificateChainErrors,
                     ClientCertificates = settings.GetClientCertificates()
                 },
-                GetDeviceInfo = sample => {
+                GetDeviceInfo = addr => {
                     lock (this) { 
-                        if (devices != null && devices.TryGetValue(sample!.MacAddress!, out var device)) {
+                        if (devices != null && devices.TryGetValue(addr, out var device)) {
                             return device;
                         }
 
@@ -195,9 +195,9 @@ namespace NRuuviTag.Cli.Commands {
         [Description("MQTT protocol version to use e.g. 5, 3.1.1 (default)")]
         public string? ProtocolVersion { get; set; }
 
-        [CommandOption("--interval <INTERVAL>")]
-        [Description("The MQTT publish interval to use, in seconds. If not specified, samples will be published as soon as they are observed.")]
-        public ushort PublishInterval { get; set; }
+        [CommandOption("--sample-rate <INTERVAL>")]
+        [Description("The sample rate to use, in seconds. If not specified, samples will be published as soon as they are observed.")]
+        public int SampleRate { get; set; }
 
         [CommandOption("--publish-type <PUBLISH_TYPE>")]
         [DefaultValue(PublishType.SingleTopic)]
