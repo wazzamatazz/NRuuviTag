@@ -109,7 +109,7 @@ namespace NRuuviTag.Listener.Linux {
 
                 // Adds a watcher for the specified device so that we can emit new samples when the
                 // device properties change.
-                async Task AddDeviceWatcher(Device device, Device1Properties properties) {
+                async Task AddDeviceWatcher(HashtagChris.DotNetBlueZ.Device device, Device1Properties properties) {
                     if (!running || cancellationToken.IsCancellationRequested) {
                         return;
                     }
