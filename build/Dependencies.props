@@ -4,12 +4,15 @@
 
   <!-- CoreFX Packages -->
   <PropertyGroup>
+    <SystemComponentModelAnnotationsVersion>5.0.0</SystemComponentModelAnnotationsVersion>
+    <SystemNetWebSocketsClientVersion>4.3.2</SystemNetWebSocketsClientVersion>
     <SystemTextJsonVersion>5.0.2</SystemTextJsonVersion>
     <SystemThreadingChannelsVersion>5.0.0</SystemThreadingChannelsVersion>
   </PropertyGroup>
   
-  <!-- ASP.NET Core/Microsoft Extension Packages -->
+  <!-- Other Microsoft Packages -->
   <PropertyGroup>
+    <AzureMessagingEventHubsVersion>5.4.1</AzureMessagingEventHubsVersion>
     <MicrosoftBclAsyncInterfacesVersion>5.0.0</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftExtensionsLoggingAbstractionsVersion>5.0.0</MicrosoftExtensionsLoggingAbstractionsVersion>
     <MicrosoftExtensionsHostingVersion>5.0.0</MicrosoftExtensionsHostingVersion>

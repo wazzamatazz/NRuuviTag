@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 using MQTTnet.Formatter;
 
@@ -70,6 +71,7 @@ namespace NRuuviTag.Mqtt {
         ///   used to define the device ID to use for a given <see cref="RuuviTagSample"/>.
         /// </remarks>
         /// <seealso cref="DefaultTopicName"/>
+        [Required]
         public string TopicName { get; set; } = DefaultTopicName;
 
         /// <summary>

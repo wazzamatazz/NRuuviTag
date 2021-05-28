@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Text.Json;
 using System.Threading;
@@ -71,7 +72,7 @@ namespace NRuuviTag.AzureEventHubs {
         ///   Agent options.
         /// </param>
         /// <param name="logger">
-        ///   The logger for the bridge.
+        ///   The logger for the agent.
         /// </param>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="listener"/> is <see langword="null"/>.
@@ -79,11 +80,16 @@ namespace NRuuviTag.AzureEventHubs {
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="options"/> is <see langword="null"/>.
         /// </exception>
+        /// <exception cref="ValidationException">
+        ///   <paramref name="options"/> fails validation.
+        /// </exception>
         public AzureEventHubAgent(IRuuviTagListener listener, AzureEventHubAgentOptions options, ILogger<AzureEventHubAgent>? logger = null) 
             : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), logger) { 
             if (options == null) {
                 throw new ArgumentNullException(nameof(options));
             }
+            Validator.ValidateObject(options, new ValidationContext(options), true);
+
 
             _connectionString = options.ConnectionString; 
             _eventHubName = options.EventHubName;

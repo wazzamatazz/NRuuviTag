@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 
 namespace NRuuviTag.AzureEventHubs {
@@ -8,11 +9,13 @@ namespace NRuuviTag.AzureEventHubs {
         /// <summary>
         /// The Event Hub connection string.
         /// </summary>
+        [Required]
         public string ConnectionString { get; set; } = default!;
 
         /// <summary>
         /// The Event Hub name.
         /// </summary>
+        [Required]
         public string EventHubName { get; set; } = default!;
 
         /// <summary>

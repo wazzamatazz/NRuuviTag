@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
@@ -76,17 +77,27 @@ namespace NRuuviTag.Mqtt {
         ///   The <see cref="IRuuviTagListener"/> to observe for sensor readings.
         /// </param>
         /// <param name="options">
-        ///   Bridge options.
+        ///   Agent options.
         /// </param>
         /// <param name="factory">
         ///   The factory to use when creating MQTT clients.
         /// </param>
         /// <param name="logger">
-        ///   The logger for the bridge.
+        ///   The logger for the agent.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="listener"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="options"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ValidationException">
+        ///   <paramref name="options"/> fails validation.
+        /// </exception>
         public MqttAgent(IRuuviTagListener listener, MqttAgentOptions options, IMqttFactory factory, ILogger<MqttAgent>? logger = null)
             : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), logger) {
             _options = options ?? throw new ArgumentNullException(nameof(options));
+            Validator.ValidateObject(options, new ValidationContext(options), true);
 
             // If no client ID was specified, we'll generate one.
             var clientId = string.IsNullOrWhiteSpace(_options.ClientId) 
