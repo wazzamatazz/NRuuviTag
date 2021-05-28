@@ -19,23 +19,6 @@ namespace NRuuviTag.Cli.Commands {
     /// </summary>
     public class DeviceAddCommand : AsyncCommand<DeviceAddCommandSettings> {
 
-        /// <summary>
-        /// The <see cref="IHostEnvironment"/> for the .NET host application.
-        /// </summary>
-        private readonly IHostEnvironment _hostEnvironment;
-
-
-        /// <summary>
-        /// Creates a new <see cref="DeviceAddCommand"/> object.
-        /// </summary>
-        /// <param name="hostEnvironment">
-        ///   The <see cref="IHostEnvironment"/> for the .NET host application. 
-        /// </param>
-        public DeviceAddCommand(IHostEnvironment hostEnvironment) {
-            _hostEnvironment = hostEnvironment;
-        }
-
-
         /// <inheritdoc/>
         public override async Task<int> ExecuteAsync(CommandContext context, DeviceAddCommandSettings settings) {
             var device = new Device() { 
@@ -47,7 +30,7 @@ namespace NRuuviTag.Cli.Commands {
                 ? MqttAgent.GetDefaultDeviceId(device.MacAddress)
                 : settings.DeviceId!;
 
-            var devicesJsonFile = CommandUtilities.GetDevicesJsonFile(_hostEnvironment);
+            var devicesJsonFile = CommandUtilities.GetDevicesJsonFile();
 
             DeviceCollection? devices = null;
 
@@ -89,6 +72,9 @@ namespace NRuuviTag.Cli.Commands {
             var updatedDeviceConfig = new {
                 Devices = devices
             };
+
+            // Esnure directory exists.
+            devicesJsonFile.Directory.Create();
 
             using (var stream = devicesJsonFile.Open(FileMode.Create, FileAccess.Write)) {
                 await JsonSerializer.SerializeAsync(stream, updatedDeviceConfig, new JsonSerializerOptions() { WriteIndented = true }).ConfigureAwait(false);

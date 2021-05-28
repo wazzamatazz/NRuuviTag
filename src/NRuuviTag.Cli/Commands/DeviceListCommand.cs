@@ -14,26 +14,9 @@ namespace NRuuviTag.Cli.Commands {
     /// </summary>
     public class DeviceListCommand : AsyncCommand<DeviceListCommandSettings> {
 
-        /// <summary>
-        /// The <see cref="IHostEnvironment"/> for the .NET host application.
-        /// </summary>
-        private readonly IHostEnvironment _hostEnvironment;
-
-
-        /// <summary>
-        /// Creates a new <see cref="DeviceAddCommand"/> object.
-        /// </summary>
-        /// <param name="hostEnvironment">
-        ///   The <see cref="IHostEnvironment"/> for the .NET host application. 
-        /// </param>
-        public DeviceListCommand(IHostEnvironment hostEnvironment) {
-            _hostEnvironment = hostEnvironment;
-        }
-
-
         /// <inheritdoc/>
         public override async Task<int> ExecuteAsync(CommandContext context, DeviceListCommandSettings settings) {
-            var devicesJsonFile = CommandUtilities.GetDevicesJsonFile(_hostEnvironment);
+            var devicesJsonFile = CommandUtilities.GetDevicesJsonFile();
 
             if (!devicesJsonFile.Exists) {
                 Console.WriteLine();

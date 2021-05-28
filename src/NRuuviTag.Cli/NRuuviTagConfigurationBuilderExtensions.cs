@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Configuration {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            builder.AddJsonFile(CommandUtilities.DevicesJsonFileName, optional: true, reloadOnChange: true);
+            builder.AddJsonFile(CommandUtilities.GetDevicesJsonFile().FullName, optional: true, reloadOnChange: true);
 
             return builder;
         }
