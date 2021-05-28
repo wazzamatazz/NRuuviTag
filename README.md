@@ -114,7 +114,7 @@ nruuvitag devices add "AB:CD:EF:01:23:45" --id "bedroom-1" --name "Master Bedroo
 ```
 
 ```
-# Publish readings from known devices to an MQTT broker
+# Publish readings from known devices to an MQTT server
 
 nruuvitag publish mqtt my-mqtt-service.local:1883 --client-id "MY_CLIENT_ID" --topic "{clientId}/my-ruuvi-tags/{deviceId}" --known-devices
 ```
