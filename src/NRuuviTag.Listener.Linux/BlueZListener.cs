@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -105,7 +106,7 @@ namespace NRuuviTag.Listener.Linux {
             using (var @lock = new SemaphoreSlim(1, 1)) {
 
                 // Registrations for devices that we are observing.
-                var watchers = new HashSet<IDisposable>();
+                var watchers = new Dictionary<string, IDisposable>(StringComparer.OrdinalIgnoreCase);
 
                 // Adds a watcher for the specified device so that we can emit new samples when the
                 // device properties change.
@@ -116,9 +117,13 @@ namespace NRuuviTag.Listener.Linux {
 
                     await @lock.WaitAsync(cancellationToken).ConfigureAwait(false);
                     try {
-                        watchers.Add(await device.WatchPropertiesAsync(changes => {
+                        if (watchers.ContainsKey(properties.Address)) {
+                            return;
+                        }
+
+                        watchers[properties.Address] = await device.WatchPropertiesAsync(changes => {
                             UpdateDeviceProperties(properties, changes);
-                        }).ConfigureAwait(false));
+                        }).ConfigureAwait(false);
                     }
                     finally {
                         @lock.Release();
@@ -169,7 +174,7 @@ namespace NRuuviTag.Listener.Linux {
                     // Dispose of the watcher registrations.
                     await @lock.WaitAsync().ConfigureAwait(false);
                     try {
-                        foreach (var item in watchers) {
+                        foreach (var item in watchers.Values) {
                             item.Dispose();
                         }
                         watchers.Clear();
