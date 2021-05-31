@@ -126,7 +126,7 @@ nruuvitag publish az "MY_CONNECTION_STRING" "MY_EVENT_HUB" --batch-size-limit 10
 ```
 
 
-## Linux Service
+# Linux Service
 
 The command-line application can be run as a Linux service using systemd. See [here](/docs/LinuxSystemdService.md) for details.
 
