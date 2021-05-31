@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Worker">
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
@@ -6,6 +6,20 @@
     <AssemblyName>nruuvitag</AssemblyName>
     <Description>Command-line tool that can receive broadcasts from RuuviTag IoT sensors and publish readings to a destination.</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="nruuvitag.service" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="nruuvitag.service">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="5.0.1" />
+  </ItemGroup>
   
   <ItemGroup>
     <ProjectReference Include="..\NRuuviTag.Cli\NRuuviTag.Cli.csproj" />

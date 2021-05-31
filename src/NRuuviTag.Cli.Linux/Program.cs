@@ -22,6 +22,7 @@ namespace NRuuviTag.Cli.Windows {
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
+                .UseSystemd()
                 .UseContentRoot(AppContext.BaseDirectory)
                 .ConfigureAppConfiguration(config => {
                     config.AddRuuviTagMqttDeviceConfiguration();
