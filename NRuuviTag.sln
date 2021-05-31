@@ -57,7 +57,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NRuuviTag.Listener.Linux", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NRuuviTag.Cli.Linux", "src\NRuuviTag.Cli.Linux\NRuuviTag.Cli.Linux.csproj", "{DB8F5EA9-C673-48B9-B1E4-1C867CF02D74}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NRuuviTag.AzureEventHubs.Agent", "src\NRuuviTag.AzureEventHubs.Agent\NRuuviTag.AzureEventHubs.Agent.csproj", "{8463074C-230A-4754-9888-886AC52207DE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NRuuviTag.AzureEventHubs.Agent", "src\NRuuviTag.AzureEventHubs.Agent\NRuuviTag.AzureEventHubs.Agent.csproj", "{8463074C-230A-4754-9888-886AC52207DE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{5EBF2BEB-FB94-4259-99D3-1D05633DBC16}"
+	ProjectSection(SolutionItems) = preProject
+		docs\LinuxSystemdService.md = docs\LinuxSystemdService.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
