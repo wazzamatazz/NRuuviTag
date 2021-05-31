@@ -2,6 +2,9 @@
 
 The `nruuvitag` tool can be run as a systemd service on Linux.
 
+
+## Publishing the Executable
+
 Firstly, publish the [NRuuviTag.Cli.Linux](/src/NRuuviTag.Cli.Linux) project using one of the available [publish profiles](/src/NRuuviTag.Cli.Linux/Properties/PublishProfiles) using Visual Studio or the `dotnet` command-line tool. For example, to publish the tool for 32-bit ARM CPUs (such as the ARMv7 used in older Raspberry PI models):
 
 ```sh
@@ -9,6 +12,9 @@ dotnet publish NRuuviTag.Cli.Linux.csproj /p:PublishProfile=Arm
 ``` 
 
 The publish profiles are configured to create self-contained, trimmed, single-file executables that can be deployed without requiring the .NET SDK or runtime to be installed on the target machine. The published files can be found at `artifacts/publish/NRuuviTag.Cli.Linux/<Runtime Identifier>` under the root of your checked-out code.
+
+
+## Configuring the Service
 
 Once you have built the executable, follow these instructions on the target machine:
 
