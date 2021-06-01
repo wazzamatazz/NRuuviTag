@@ -19,7 +19,7 @@ ExecStart=/usr/local/bin/nruuvitag $NRUUVITAG_OPTIONS
 SysLogIdentifier=nruuvitag
 
 # User to run the service as.
-User=pi
+User=<user>
 
 # Ensure the service restarts after crashing.
 Restart=always
