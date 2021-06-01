@@ -1,11 +1,11 @@
-# Running a systemd Linux Service
+﻿# Running a systemd Linux Service
 
 The `nruuvitag` tool can be run as a systemd service on Linux.
 
 
 ## Publishing the Executable
 
-Firstly, publish the [NRuuviTag.Cli.Linux](/src/NRuuviTag.Cli.Linux) project using one of the available [publish profiles](/src/NRuuviTag.Cli.Linux/Properties/PublishProfiles) using Visual Studio or the `dotnet` command-line tool. For example, to publish the tool for 32-bit ARM CPUs (such as the ARMv7 used in older Raspberry PI models):
+Publish the [NRuuviTag.Cli.Linux](/src/NRuuviTag.Cli.Linux) project using one of the available [publish profiles](/src/NRuuviTag.Cli.Linux/Properties/PublishProfiles) that best suits the architecture of the target machine, using Visual Studio or the `dotnet` command-line tool. For example, to publish the tool for 32-bit ARM CPUs (such as the ARMv7 used in older Raspberry PI models):
 
 ```sh
 dotnet publish NRuuviTag.Cli.Linux.csproj /p:PublishProfile=Arm
@@ -16,33 +16,39 @@ The publish profiles are configured to create self-contained, trimmed, single-fi
 
 ## Configuring the Service
 
-Once you have built the executable, follow these instructions on the target machine:
+Once you have built the executable, follow the instructions below.
 
-Copy the `nruuvitag` executable, `appsettings.json`, and `nruuvitag.service` (the systemd service definition file) to the destination machine.
+Copy the following files to the destination machine:
 
-On the machine, create a folder at `/usr/local/services/nruuvitag` and move the `nruuvitag` executable and `appsettings.json` to that folder.
+- `nruuvitag`
+- `appsettings.json`
+- `nruuvitag.service`
 
-Make the user account that will run the service the owner of the folder created in the previous step and ensure that `nruuvitag` is executable: 
+On the destination machine, move the first two files to the correct location and set the user that will run the service to be the owner:
 
 ```sh
+sudo mkdir -p /usr/local/services/nruuvitag
+sudo mv nruuvitag appsettings.json /usr/local/services/nruuvitag
 sudo chown <user> -R /usr/local/services/nruuvitag
 sudo chmod u+x /usr/local/services/nruuvitag/nruuvitag
 sudo ln -s /usr/local/services/nruuvitag/nruuvitag /usr/local/bin/nruuvitag
 ```
 
-Edit `nruuvitag.service` and set the `User` property to the user that will run the service.
-
-Create `/etc/nruuvitag.conf` and set the `NRUUVITAG_OPTIONS` environment variable to specify the arguments to pass to `nruuvitag` when the service starts:
+Create file `/etc/nruuvitag.d/nruuvitag.conf` and set the `NRUUVITAG_OPTIONS` environment variable to specify the arguments to pass to `nruuvitag` when the service starts, customising them to fit your requirements:
 
 ```sh
-echo "NRUUVITAG_OPTIONS=publish az <MY_AZURE_EVENT_HUB_CONNECTION_STRING> <MY_EVENT_HUB_NAME> --sample-interval 15" >> nruuvitag.conf
-sudo mv nruuvitag.conf /etc/nruuvitag.conf
+echo "NRUUVITAG_OPTIONS=publish az <MY_AZURE_EVENT_HUB_CONNECTION_STRING> <MY_EVENT_HUB_NAME> --sample-interval 15" > nruuvitag.conf
+sudo mkdir /etc/nruuvitag.d
+sudo mv nruuvitag.conf /etc/nruuvitag.d
 ```
 
-Move `nruuvitag.service` to `/etc/systemd/system` and start the service:
+Edit `nruuvitag.service` (the systemd unit configuration file) and set the `User` property to the user that will run the service.
+
+Install the service definition:
 
 ```sh
-sudo mv nruuvitag.service /etc/systemd/system
+sudo mv nruuvitag.service /usr/lib/systemd/user
+sudo ln -s /usr/lib/systemd/user/nruuvitag.service /etc/systemd/system/nruuvitag.service
 sudo systemctl daemon-reload
 sudo systemctl start nruuvitag
 ```
@@ -52,3 +58,15 @@ Finally, query systemd to confirm that the service started up correctly:
 ```sh
 systemctl status nruuvitag
 ```  
+
+You should see output similar to the following:
+
+```
+● nruuvitag.service - NRuuviTag IoT data collector
+   Loaded: loaded (/usr/lib/systemd/user/nruuvitag.service; linked; vendor preset: enabled)
+   Active: active (running) since DAY YYYY-MM-DD HH:MM:SS TZ; Xmin ago
+ Main PID: 12345 (nruuvitag)
+    Tasks: 18 (limit: 2062)
+   CGroup: /system.slice/nruuvitag.service
+           └─20406 /usr/local/bin/nruuvitag publish az <MY_AZURE_EVENT_HUB_CONNECTION_STRING> ...
+```

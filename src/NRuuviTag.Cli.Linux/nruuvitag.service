@@ -1,7 +1,4 @@
-﻿# This is an example Systemd service file for NRuuviTag for use on a Raspberry 
-# PI. Update the ExecStart arguments as appropriate for your configuration.
-
-[Unit]
+﻿[Unit]
 # Service description.
 Description=NRuuviTag IoT data collector
 
@@ -10,16 +7,12 @@ Description=NRuuviTag IoT data collector
 # The service will notify systemd when it is ready.
 Type=notify
 
-# Load environment variables for the service from this file. The file should 
-# define an NRUUVITAG_OPTIONS variable containing the command-line parameters 
-# to pass to the nruuvitag executable e.g.
-#
-# NRUUVITAG_OPTIONS=publish az <MY_CONNECTION_STRING> <MY_EVENT_HUB> --sample-interval 5
-EnvironmentFile=-/etc/nruuvitag.conf
+# Load environment variables for the service from this file.
+EnvironmentFile=/etc/nruuvitag.d/nruuvitag.conf
 
-# Start the publish operation, passing in the NRUUVITAG_OPTIONS environment 
-# variable set in the file above so that it is split into multiple words at 
-# each white space character.
+# When the service starts, start the nruuvitag executable, passing in the 
+# NRUUVITAG_OPTIONS environment variable set in the file above so that it is 
+# split into multiple words at each white space character.
 ExecStart=/usr/local/bin/nruuvitag $NRUUVITAG_OPTIONS
 
 # Identifier for the service in the system logs.
