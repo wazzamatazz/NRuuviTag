@@ -54,7 +54,12 @@ sudo mkdir /etc/nruuvitag.d
 sudo mv nruuvitag.conf /etc/nruuvitag.d
 ```
 
-Edit `nruuvitag.service` (the systemd unit configuration file) and set the `User` property to the user that will run the service.
+Edit `nruuvitag.service` (the systemd unit configuration file) and set the `User` property to the user that will run the service:
+
+```ini
+# User to run the service as.
+User=<user>
+```
 
 Install the service definition:
 
