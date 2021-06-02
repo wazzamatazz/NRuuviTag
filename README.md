@@ -9,7 +9,7 @@ The repository contains the following listener implementations:
 - [Windows](/src/NRuuviTag.Listener.Windows) (using the Windows 10 SDK)
 - [Linux](/src/NRuuviTag.Listener.Linux) (using [DotNet-BlueZ](https://github.com/hashtagchris/DotNet-BlueZ) to receive advertisements from BlueZ's D-Bus APIs)
 
-The `nruuvitag` [command-line tool](#command-line-application) can be used to as a turnkey solution to start receiving and publishing RuuviTag sensor data to an MQTT broker.
+The `nruuvitag` [command-line tool](#command-line-application) can be used to as a turnkey solution to start receiving and publishing RuuviTag sensor data to an MQTT server or Azure Event Hub.
 
 
 # Example Usage
