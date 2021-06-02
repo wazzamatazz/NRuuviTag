@@ -142,7 +142,7 @@
     <value>Device removed:</value>
   </data>
   <data name="LogMessage_DeviceScanResultKnown" xml:space="preserve">
-    <value>{0} (Name = '{1}', MQTT Device ID = '{2}')</value>
+    <value>{0} (Name = '{1}', Device Identifier = '{2}')</value>
     <comment>{0} - MAC address
 {1} - display name
 {2} - device ID</comment>
@@ -155,7 +155,7 @@
     <value>Starting device scan...</value>
   </data>
   <data name="TableColumn_DeviceID" xml:space="preserve">
-    <value>MQTT Device ID</value>
+    <value>Device Identifier</value>
   </data>
   <data name="TableColumn_DisplayName" xml:space="preserve">
     <value>Display Name</value>

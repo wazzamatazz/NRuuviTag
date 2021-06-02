@@ -106,7 +106,7 @@ namespace NRuuviTag.Cli.Commands {
     public class DeviceRemoveCommandSettings : CommandSettings {
 
         [CommandArgument(0, "<DEVICE>")]
-        [Description("The ID, name, or MAC address of the device to remove.")]
+        [Description("The identifier, display name, or MAC address of the device to remove.")]
         public string Device { get; set; } = default!;
 
     }

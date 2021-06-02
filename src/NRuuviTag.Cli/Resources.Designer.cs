@@ -124,7 +124,7 @@ namespace NRuuviTag.Cli {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0} (Name = &apos;{1}&apos;, MQTT Device ID = &apos;{2}&apos;).
+        ///   Looks up a localized string similar to {0} (Name = &apos;{1}&apos;, Device Identifier = &apos;{2}&apos;).
         /// </summary>
         internal static string LogMessage_DeviceScanResultKnown {
             get {
@@ -151,7 +151,7 @@ namespace NRuuviTag.Cli {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to MQTT Device ID.
+        ///   Looks up a localized string similar to Device Identifier.
         /// </summary>
         internal static string TableColumn_DeviceID {
             get {
