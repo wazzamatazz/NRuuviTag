@@ -5,13 +5,25 @@ The `nruuvitag` tool can be run as a systemd service on Linux.
 
 ## Publishing the Executable
 
-Publish the [NRuuviTag.Cli.Linux](/src/NRuuviTag.Cli.Linux) project using one of the available [publish profiles](/src/NRuuviTag.Cli.Linux/Properties/PublishProfiles) that best suits the architecture of the target machine, using Visual Studio or the `dotnet` command-line tool. For example, to publish the tool for 32-bit ARM CPUs (such as the ARMv7 used in older Raspberry PI models):
+Publish the [NRuuviTag.Cli.Linux](/src/NRuuviTag.Cli.Linux) project using the build script:
 
-```sh
-dotnet publish NRuuviTag.Cli.Linux.csproj /p:PublishProfile=Arm
+**PowerShell**
+
+```pwsh
+./build.ps1 --target Publish --configuration Release
 ``` 
 
-The publish profiles are configured to create self-contained, trimmed, single-file executables that can be deployed without requiring the .NET SDK or runtime to be installed on the target machine. The published files can be found at `artifacts/publish/NRuuviTag.Cli.Linux/<Runtime Identifier>` under the root of your checked-out code.
+**Bash**
+
+```pwsh
+./build.sh --target Publish --configuration Release
+``` 
+
+The publish profiles create self-contained, trimmed, single-file executables that can be deployed without requiring the .NET SDK or runtime to be installed on the target machine. The published files can be found at `artifacts/publish/<Configuration>/NRuuviTag.Cli.Linux/<Runtime Identifier>` under the root of your checked-out code.
+
+See [here](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog#linux-rids) for information about the runtime identifiers.
+
+> The `linux-arm` runtime identifier is suitable for use with 32-bit ARM CPUs such as the ARMv7 used in older Raspberry Pi models running Raspberry Pi OS.
 
 
 ## Configuring the Service
