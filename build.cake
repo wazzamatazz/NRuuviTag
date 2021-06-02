@@ -217,6 +217,26 @@ Task("Pack")
     });
 
 
+Task("Publish")
+    .IsDependentOn("Test")
+    .Does<BuildState>(state => {
+        foreach (var projectFile in GetFiles("./**/*.*proj")) {
+            var projectDir = projectFile.GetDirectory();
+            foreach (var publishProfileFile in GetFiles(projectDir.FullPath + "/**/*.pubxml")) {
+                BuildUtilities.WriteLogMessage(BuildSystem, $"Publishing project {projectFile.GetFilename()} using profile {publishProfileFile.GetFilename()}.");
+
+                var buildSettings = new DotNetCorePublishSettings {
+                    MSBuildSettings = new DotNetCoreMSBuildSettings()
+                };
+
+                BuildUtilities.ApplyMSBuildProperties(buildSettings.MSBuildSettings, state);
+                buildSettings.MSBuildSettings.Properties["PublishProfile"] = new List<string> { publishProfileFile.FullPath };
+                DotNetCorePublish(projectFile.FullPath, buildSettings);
+            }
+        }
+    });
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // EXECUTION
 ///////////////////////////////////////////////////////////////////////////////////////////////////
