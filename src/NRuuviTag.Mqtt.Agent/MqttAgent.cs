@@ -334,18 +334,19 @@ namespace NRuuviTag.Mqtt {
         /// <returns>
         ///   The device information.
         /// </returns>
-        private MqttDeviceInfo GetDeviceInfo(RuuviTagSample sample) {
+        private Device GetDeviceInfo(RuuviTagSample sample) {
             if (string.IsNullOrWhiteSpace(sample.MacAddress)) {
-                return new MqttDeviceInfo() { DeviceId = UnknownDeviceId };
+                return new Device() { DeviceId = UnknownDeviceId };
             }
 
             var deviceInfo = _options.GetDeviceInfo?.Invoke(sample.MacAddress!);
             if (string.IsNullOrWhiteSpace(deviceInfo?.DeviceId)) {
                 return _options.KnownDevicesOnly
-                    ? new MqttDeviceInfo() { DeviceId = UnknownDeviceId }
-                    : new MqttDeviceInfo() {
+                    ? new Device() { DeviceId = UnknownDeviceId, MacAddress = sample.MacAddress }
+                    : new Device() {
                         DeviceId = GetDefaultDeviceId(sample.MacAddress!),
-                        DisplayName = deviceInfo?.DisplayName
+                        DisplayName = deviceInfo?.DisplayName,
+                        MacAddress = sample.MacAddress
                     };
             }
 
@@ -399,7 +400,7 @@ namespace NRuuviTag.Mqtt {
         ///   If the publishing mode for the bridge is <see cref="PublishType.TopicPerMeasurement"/>, 
         ///   the value returned by this method is the topic prefix to use.
         /// </remarks>
-        private string GetTopicNameForSample(RuuviTagSample sample, MqttDeviceInfo deviceInfo) {
+        private string GetTopicNameForSample(RuuviTagSample sample, Device deviceInfo) {
             if (sample == null) {
                 throw new ArgumentNullException(nameof(sample));
             }
@@ -487,12 +488,12 @@ namespace NRuuviTag.Mqtt {
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="sample"/> is <see langword="null"/>.
         /// </exception>
-        private IEnumerable<MqttApplicationMessage> BuildMqttMessages(RuuviTagSample sample, MqttDeviceInfo deviceInfo) {
+        private IEnumerable<MqttApplicationMessage> BuildMqttMessages(RuuviTagSample sample, Device deviceInfo) {
             if (sample == null) {
                 throw new ArgumentNullException(nameof(sample));
             }
 
-            var sampleWithDisplayName = RuuviTagSampleWithDisplayName.Create(sample, deviceInfo.DisplayName);
+            var sampleWithDisplayName = RuuviTagSampleExtended.Create(sample, deviceInfo.DeviceId, deviceInfo.DisplayName);
             var topic = GetTopicNameForSample(sampleWithDisplayName, deviceInfo);
 
             _options.PrepareForPublish?.Invoke(sampleWithDisplayName);

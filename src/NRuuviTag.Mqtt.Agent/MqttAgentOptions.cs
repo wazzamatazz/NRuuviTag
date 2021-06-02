@@ -79,10 +79,10 @@ namespace NRuuviTag.Mqtt {
         ///MAC address.
         /// </summary>
         /// <remarks>
-        ///   If <see cref="GetDeviceInfo"/> is <see langword="null"/>, a default <see cref="MqttDeviceInfo"/> 
+        ///   If <see cref="GetDeviceInfo"/> is <see langword="null"/>, a default <see cref="Device"/> 
         ///   will be generated for the sample.
         /// </remarks>
-        public Func<string, MqttDeviceInfo?>? GetDeviceInfo { get; set; }
+        public Func<string, Device?>? GetDeviceInfo { get; set; }
 
         /// <summary>
         /// When <see langword="true"/>, only samples from known devices will be published. See 
@@ -109,7 +109,7 @@ namespace NRuuviTag.Mqtt {
         /// </para>
         /// 
         /// </remarks>
-        public Action<RuuviTagSampleWithDisplayName>? PrepareForPublish { get; set; }
+        public Action<RuuviTagSampleExtended>? PrepareForPublish { get; set; }
 
     }
 

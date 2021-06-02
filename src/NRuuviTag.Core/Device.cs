@@ -8,7 +8,13 @@
         /// <summary>
         /// The MAC address for the device.
         /// </summary>
-        public string MacAddress { get; set; } = default!;
+        public string? MacAddress { get; set; }
+
+        /// <summary>
+        /// The identifier for the device. This identifier can be used in e.g. MQTT topic names 
+        /// when publishing device values to a destination.
+        /// </summary>
+        public string? DeviceId { get; set; }
 
         /// <summary>
         /// The display name for the device.

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -64,19 +63,15 @@ namespace NRuuviTag.Cli.Commands {
                 catch (OperationCanceledException) { }
             }
 
-            Dictionary<string, MqttDeviceInfo>? devices;
+            IEnumerable<Device> devices = Array.Empty<Device>();
 
-            // Updates the set of known devices when _devices reports that the options have been
-            // updated.
             void UpdateDevices(DeviceCollection? devicesFromConfig) {
                 lock (this) {
-                    devices = devicesFromConfig?.ToDictionary(x => x.Value.MacAddress, x => new MqttDeviceInfo() {
-                        DeviceId = x.Key,
-                        MacAddress = x.Value.MacAddress,
-                        DisplayName = x.Value.DisplayName
-                    });
+                    devices = devicesFromConfig?.GetDevices() ?? Array.Empty<Device>();
                 }
             }
+
+            UpdateDevices(_devices.CurrentValue);
 
             // Tests if a sample from the specified MAC address should be displayed.
             bool CanProcessSample(string macAddress) {
@@ -85,13 +80,19 @@ namespace NRuuviTag.Cli.Commands {
                 }
 
                 lock (this) {
-                    return devices?.ContainsKey(macAddress) ?? false;
+                    return devices?.Any(x => string.Equals(macAddress, x.MacAddress, StringComparison.OrdinalIgnoreCase)) ?? false;
+                }
+            }
+
+            Device? GetDeviceInfo(string macAddress) {
+                lock (this) {
+                    return devices.FirstOrDefault(x => string.Equals(macAddress, x.MacAddress, StringComparison.OrdinalIgnoreCase));
                 }
             }
 
             UpdateDevices(_devices.CurrentValue);
 
-            var publisher = new ConsoleJsonPublisher(_listener, CanProcessSample);
+            var publisher = new ConsoleJsonPublisher(_listener, CanProcessSample, GetDeviceInfo);
 
             using (_devices.OnChange(newDevices => UpdateDevices(newDevices)))
             using (var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping)) {

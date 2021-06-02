@@ -112,19 +112,15 @@ namespace NRuuviTag.Cli.Commands {
                 }
             }
 
-            Dictionary<string, MqttDeviceInfo>? devices;
+            IEnumerable<Device> devices = Array.Empty<Device>();
 
             void UpdateDevices(DeviceCollection? devicesFromConfig) {
                 lock (this) {
-                    devices = devicesFromConfig?.ToDictionary(x => x.Value.MacAddress, x => new MqttDeviceInfo() {
-                        DeviceId = x.Key,
-                        MacAddress = x.Value.MacAddress,
-                        DisplayName = x.Value.DisplayName
-                    });
+                    devices = devicesFromConfig?.GetDevices() ?? Array.Empty<Device>();
                 }
             }
 
-            UpdateDevices(_devices.CurrentValue); 
+            UpdateDevices(_devices.CurrentValue);
 
             var agentOptions = new MqttAgentOptions() {
                 Hostname = settings.Hostname,
@@ -143,12 +139,8 @@ namespace NRuuviTag.Cli.Commands {
                     ClientCertificates = settings.GetClientCertificates()
                 },
                 GetDeviceInfo = addr => {
-                    lock (this) { 
-                        if (devices != null && devices.TryGetValue(addr, out var device)) {
-                            return device;
-                        }
-
-                        return null;
+                    lock (this) {
+                        return devices.FirstOrDefault(x => string.Equals(addr, x.MacAddress, StringComparison.OrdinalIgnoreCase));
                     }
                 }
             };

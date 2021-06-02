@@ -23,12 +23,11 @@ namespace NRuuviTag.Cli.Commands {
         public override async Task<int> ExecuteAsync(CommandContext context, DeviceAddCommandSettings settings) {
             var device = new Device() { 
                 MacAddress = settings.MacAddress,
-                DisplayName = settings.DisplayName
+                DisplayName = settings.DisplayName,
+                DeviceId = string.IsNullOrWhiteSpace(settings.DeviceId)
+                    ? MqttAgent.GetDefaultDeviceId(settings.MacAddress)
+                    : settings.DeviceId!
             };
-
-            var deviceId = string.IsNullOrWhiteSpace(settings.DeviceId)
-                ? MqttAgent.GetDefaultDeviceId(device.MacAddress)
-                : settings.DeviceId!;
 
             var devicesJsonFile = CommandUtilities.GetDevicesJsonFile();
 
@@ -61,13 +60,16 @@ namespace NRuuviTag.Cli.Commands {
             // We need to ensure that we have not previously added another device with the same
             // MAC address but a different device ID.
             var existingWithSameMacAddress = devices.FirstOrDefault(x => string.Equals(x.Value.MacAddress, device.MacAddress, StringComparison.OrdinalIgnoreCase));
-            if (existingWithSameMacAddress.Key != null && !string.Equals(existingWithSameMacAddress.Key, deviceId, StringComparison.Ordinal)) {
+            if (existingWithSameMacAddress.Key != null && !string.Equals(existingWithSameMacAddress.Key, device.DeviceId, StringComparison.Ordinal)) {
                 throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, Resources.Error_DeviceWithSameMacAlreadyRegistered, device.MacAddress));
             }
 
             // Update devices collection and save JSON file.
 
-            devices[deviceId] = device;
+            devices[device.DeviceId] = new DeviceCollectionEntry() { 
+                DisplayName = device.DisplayName,
+                MacAddress = device.MacAddress
+            };
 
             var updatedDeviceConfig = new {
                 Devices = devices
@@ -84,7 +86,7 @@ namespace NRuuviTag.Cli.Commands {
             Console.WriteLine();
             Console.WriteLine(Resources.LogMessage_DeviceAdded);
             Console.WriteLine();
-            CommandUtilities.PrintDeviceToConsole(device, deviceId);
+            CommandUtilities.PrintDeviceToConsole(device);
             Console.WriteLine();
 
             return 0;

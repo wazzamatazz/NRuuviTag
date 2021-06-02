@@ -92,7 +92,7 @@ namespace NRuuviTag.Cli.Commands {
             Console.WriteLine();
             Console.WriteLine(Resources.LogMessage_DeviceRemoved);
             Console.WriteLine();
-            CommandUtilities.PrintDeviceToConsole(deviceToRemove.Value, deviceToRemove.Key);
+            CommandUtilities.PrintDeviceToConsole(deviceToRemove.Key, deviceToRemove.Value);
             Console.WriteLine();
 
             return 0;

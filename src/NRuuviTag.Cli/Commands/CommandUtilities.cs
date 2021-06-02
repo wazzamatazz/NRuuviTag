@@ -121,13 +121,28 @@ namespace NRuuviTag.Cli.Commands {
         /// <param name="device">
         ///   The device.
         /// </param>
-        /// <param name="id">
-        ///   The device ID.
-        /// </param>
-        internal static void PrintDeviceToConsole(Device device, string id) {
+        internal static void PrintDeviceToConsole(Device device) {
             var table = new Table();
             table.AddColumns(Resources.TableColumn_MacAddress, Resources.TableColumn_DisplayName, Resources.TableColumn_DeviceID);
-            table.AddRow(device.MacAddress, device.DisplayName ?? string.Empty, id);
+            table.AddRow(device.MacAddress ?? string.Empty, device.DisplayName ?? string.Empty, device.DeviceId ?? string.Empty);
+
+            AnsiConsole.Render(table);
+        }
+
+
+        /// <summary>
+        /// Prints information about the specified <see cref="Device"/> to the console.
+        /// </summary>
+        /// <param name="id">
+        ///   The device identifier.
+        /// </param>
+        /// <param name="deviceFromConfig">
+        ///   The device configuration.
+        /// </param>
+        internal static void PrintDeviceToConsole(string id, DeviceCollectionEntry deviceFromConfig) {
+            var table = new Table();
+            table.AddColumns(Resources.TableColumn_MacAddress, Resources.TableColumn_DisplayName, Resources.TableColumn_DeviceID);
+            table.AddRow(deviceFromConfig.MacAddress ?? string.Empty, deviceFromConfig.DisplayName ?? string.Empty, id);
 
             AnsiConsole.Render(table);
         }

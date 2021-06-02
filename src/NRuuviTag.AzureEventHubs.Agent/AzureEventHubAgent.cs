@@ -29,7 +29,7 @@ namespace NRuuviTag.AzureEventHubs {
         /// A delegate that can be used to make final modifications to a sample prior to 
         /// publishing it to the event hub.
         /// </summary>
-        private readonly Action<RuuviTagSampleWithDisplayName>? _prepareForPublish;
+        private readonly Action<RuuviTagSampleExtended>? _prepareForPublish;
 
         /// <summary>
         /// Event hub connection string.
@@ -151,7 +151,7 @@ namespace NRuuviTag.AzureEventHubs {
                 try {
                     await foreach (var item in samples.ConfigureAwait(false)) {
                         var device = _getDeviceInfo?.Invoke(item.MacAddress!);
-                        var sample = RuuviTagSampleWithDisplayName.Create(item, device?.DisplayName);
+                        var sample = RuuviTagSampleExtended.Create(item, device?.DeviceId, device?.DisplayName);
                         _prepareForPublish?.Invoke(sample);
                         batch.TryAdd(new EventData(JsonSerializer.SerializeToUtf8Bytes(sample, _jsonOptions)));
 

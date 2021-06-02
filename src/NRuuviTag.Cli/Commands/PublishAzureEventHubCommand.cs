@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -78,20 +80,11 @@ namespace NRuuviTag.Cli.Commands {
                 catch (OperationCanceledException) { }
             }
 
-            DeviceCollection? devices = null;
+            IEnumerable<Device> devices = Array.Empty<Device>();
 
             void UpdateDevices(DeviceCollection? devicesFromConfig) {
                 lock (this) {
-                    if (devicesFromConfig == null) {
-                        return;
-                    }
-                    devices = new DeviceCollection();
-                    foreach (var item in devicesFromConfig) {
-                        devices[item.Key] = new Device() { 
-                            DisplayName = item.Value.DisplayName,
-                            MacAddress = item.Value.MacAddress
-                        };
-                    }
+                    devices = devicesFromConfig?.GetDevices() ?? Array.Empty<Device>();
                 }
             }
 
@@ -106,11 +99,7 @@ namespace NRuuviTag.Cli.Commands {
                 KnownDevicesOnly = settings.KnownDevicesOnly,
                 GetDeviceInfo = addr => {
                     lock (this) {
-                        if (devices != null && devices.TryGetValue(addr, out var device)) {
-                            return device;
-                        }
-
-                        return null;
+                        return devices.FirstOrDefault(x => string.Equals(addr, x.MacAddress, StringComparison.OrdinalIgnoreCase));
                     }
                 }
             };

@@ -67,7 +67,7 @@ namespace NRuuviTag.AzureEventHubs {
         /// </para>
         /// 
         /// </remarks>
-        public Action<RuuviTagSampleWithDisplayName>? PrepareForPublish { get; set; }
+        public Action<RuuviTagSampleExtended>? PrepareForPublish { get; set; }
 
     }
 }
