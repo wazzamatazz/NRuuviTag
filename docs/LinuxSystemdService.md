@@ -15,7 +15,7 @@ Publish the [NRuuviTag.Cli.Linux](/src/NRuuviTag.Cli.Linux) project using the bu
 
 **Bash**
 
-```bash
+```sh
 ./build.sh --target Publish --configuration Release
 ``` 
 
