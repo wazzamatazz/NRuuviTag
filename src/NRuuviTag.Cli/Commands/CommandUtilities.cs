@@ -37,6 +37,13 @@ namespace NRuuviTag.Cli.Commands {
             var app = new CommandApp(typeRegistrar);
 
             app.Configure(options => {
+#if DEBUG
+                options.PropagateExceptions();
+                options.ValidateExamples();
+#endif
+
+                options.SetApplicationName("nruuvitag");
+
                 options.AddBranch("publish", branchOptions => {
                     branchOptions.SetDescription("Observes RuuviTag BLE broadcasts and writes them to a destination.");
 
