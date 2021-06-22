@@ -14,7 +14,7 @@ const string DefaultSolutionName = "./NRuuviTag.sln";
 // --target=<TARGET>
 //   Specifies the Cake target to run. 
 //     Default: Test
-//     Possible Values: Clean, Restore, Build, Test, Pack
+//     Possible Values: Clean, Restore, Build, Test, Pack, Publish
 //
 // --configuration=<CONFIGURATION>
 //   Specifies the MSBuild configuration to use. 
