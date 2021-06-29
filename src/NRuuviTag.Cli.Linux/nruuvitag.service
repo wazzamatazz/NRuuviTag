@@ -25,7 +25,7 @@ User=<user>
 Restart=always
 
 # Amount of time to wait before restarting the service.                        
-RestartSec=5   
+RestartSec=30   
 
 
 [Install]
