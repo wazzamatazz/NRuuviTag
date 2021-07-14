@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// Use build.ps1 to run the build script. Command line arguments are documented below.
+// Use build.ps1 or build.sh to run the build script. Command line arguments are documented below.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 const string DefaultSolutionName = "./NRuuviTag.sln";
@@ -49,7 +49,7 @@ const string DefaultSolutionName = "./NRuuviTag.sln";
 //   Specifies an additional property to pass to MSBuild during Build and Pack targets. The value
 //   must be specified using a '<NAME>=<VALUE>' format e.g. --property="NoWarn=CS1591". This 
 //   argument can be specified multiple times.
-//   
+// 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #addin nuget:?package=Cake.Git&version=1.0.0
@@ -60,7 +60,7 @@ const string DefaultSolutionName = "./NRuuviTag.sln";
 #load "build/build-utilities.cake"
 
 // Get the target that was specified.
-var target = Argument("target", "Test");
+var target = Argument("target", HasArgument("no-tests") ? "Build" : "Test");
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -93,10 +93,27 @@ Setup<BuildState>(context => {
         var patchVersion = versionJson.Value<int>("Patch");
         var versionSuffix = versionJson.Value<string>("PreRelease");
 
-        // Compute build number.
+        // Compute build and version numbers.
 
         var buildCounter = Argument("build-counter", 0);
+        var buildMetadata = Argument("build-metadata", "");
         var branch = GitBranchCurrent(DirectoryPath.FromString(".")).FriendlyName;
+
+        state.AssemblyVersion = $"{majorVersion}.{minorVersion}.0.0";
+
+        state.AssemblyFileVersion = $"{majorVersion}.{minorVersion}.{patchVersion}.{buildCounter}";
+
+        state.InformationalVersion = string.IsNullOrWhiteSpace(versionSuffix)
+            ? $"{majorVersion}.{minorVersion}.{patchVersion}.{buildCounter}+{branch}"
+            : $"{majorVersion}.{minorVersion}.{patchVersion}-{versionSuffix}.{buildCounter}+{branch}";
+
+        if (!string.IsNullOrWhiteSpace(buildMetadata)) {
+            state.InformationalVersion = string.Concat(state.InformationalVersion, "#", buildMetadata);
+        }
+
+        state.PackageVersion = string.IsNullOrWhiteSpace(versionSuffix)
+            ? $"{majorVersion}.{minorVersion}.{patchVersion}"
+            : $"{majorVersion}.{minorVersion}.{patchVersion}-{versionSuffix}.{buildCounter}";
 
         state.BuildNumber = string.IsNullOrWhiteSpace(versionSuffix)
             ? $"{majorVersion}.{minorVersion}.{patchVersion}.{buildCounter}+{branch}"

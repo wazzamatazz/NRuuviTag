@@ -6,15 +6,6 @@
   </PropertyGroup>
   <Import Project="$(ParentProject)" Condition=" '$(ParentProject)' != '' " />
 
-  <ItemGroup>
-    <!-- MSBuild Extensions (for setting copyright notice and version numbers) -->
-    <PackageReference Remove="Jaahas.MSBuild.Extensions" />
-    <PackageReference Include="Jaahas.MSBuild.Extensions" Version="$(JaahasMSBuildExtensionsVersion)">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
-  
   <!-- Opt in to .NET analyzer and SourceLink package references by default. Projects in the 
        samples and test folders are pre-configured to opt out. -->
   <PropertyGroup>

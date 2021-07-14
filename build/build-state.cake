@@ -31,6 +31,18 @@ public class BuildState {
     // Specifies if output signing is allowed.
     public bool CanSignOutput => SignOutput && ContinuousIntegrationBuild;
 
+    // MSBuild AssemblyVersion property value.
+    public string AssemblyVersion { get; set; }
+
+    // MSBuild AssemblyFileVersion property value.
+    public string AssemblyFileVersion { get; set; }
+
+    // MSBuild InformationalVersion property value.
+    public string InformationalVersion { get; set; }
+
+    // MSBuild Version property value.
+    public string PackageVersion { get; set; }
+
     // Specifies if verbose logging should be used.
     public bool Verbose { get; set; }
 

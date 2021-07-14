@@ -6,6 +6,10 @@ public static class BuildUtilities {
         // Tell TeamCity the build number if required.
         if (buildSystem.IsRunningOnTeamCity) {
             buildSystem.TeamCity.SetBuildNumber(buildState.BuildNumber);
+            buildSystem.TeamCity.SetParameter("system.AssemblyVersion", buildState.AssemblyVersion);
+            buildSystem.TeamCity.SetParameter("system.AssemblyFileVersion", buildState.AssemblyFileVersion);
+            buildSystem.TeamCity.SetParameter("system.InformationalVersion", buildState.InformationalVersion);
+            buildSystem.TeamCity.SetParameter("system.PackageVersion", buildState.PackageVersion);
         }
     }
 
@@ -53,6 +57,30 @@ public static class BuildUtilities {
     }
 
 
+    // Adds MSBuild properties from properties specified via the "property" command line argument.
+    public static void ApplyMSBuildPropertiesFromArguments(DotNetCoreMSBuildSettings settings, ICollection<string> props) {
+        if (props?.Count == 0) {
+            return;
+        }
+
+        // We expect each property to be in "NAME=VALUE" format.
+        var regex = new System.Text.RegularExpressions.Regex(@"^(?<name>.+)=(?<value>.+)$");
+
+        foreach (var prop in props) {
+            if (string.IsNullOrWhiteSpace(prop)) {
+                continue;
+            }
+
+            var m = regex.Match(prop.Trim());
+            if (!m.Success) {
+                continue;
+            }
+
+            settings.Properties[m.Groups["name"].Value] = new List<string> { m.Groups["value"].Value };
+        }
+    }
+
+
     // Adds MSBuild properties from the build state.
     public static void ApplyMSBuildProperties(DotNetCoreMSBuildSettings settings, BuildState state) {
         if (state.MSBuildProperties?.Count > 0) {
@@ -82,6 +110,12 @@ public static class BuildUtilities {
         if (state.CanSignOutput) {
             settings.Properties["SignOutput"] = new List<string> { "True" };
         }
+
+        // Set version numbers.
+        settings.Properties["AssemblyVersion"] = new List<string> { state.AssemblyVersion };
+        settings.Properties["FileVersion"] = new List<string> { state.AssemblyFileVersion };
+        settings.Properties["Version"] = new List<string> { state.PackageVersion };
+        settings.Properties["InformationalVersion"] = new List<string> { state.InformationalVersion };
     }
 
 

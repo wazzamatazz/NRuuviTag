@@ -19,7 +19,31 @@
     <VersionPropertiesInputFile Condition="Exists('$(MSBuildThisFileDirectory)build\version.json')">$(MSBuildThisFileDirectory)build\version.json</VersionPropertiesInputFile>
     <LangVersion>9.0</LangVersion>
     <Nullable>enable</Nullable>
+    <CopyrightStartYear>2021</CopyrightStartYear>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- 
+    IMPORTANT: 
+    This version will always be overridden by the version specified in build\version.json when 
+    building via build.ps1 or build.sh. It is defined here to allow Visual Studio to build with 
+    the solution with the correct version number.
+    -->
+    <Version>0.7.0</Version>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition=" $([System.DateTime]::UtcNow.Year) > $(CopyrightStartYear) ">
+      <PropertyGroup>
+        <Copyright>Copyright © $(CopyrightStartYear)-$([System.DateTime]::UtcNow.Year) $(Authors)</Copyright>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <Copyright>Copyright © $(CopyrightStartYear) $(Authors)</Copyright>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
 
   <!-- Extension point to allow Continuous Integration systems to inject their own configuration. -->
   <Import Project="CI.props" Condition="Exists('CI.props')" />
