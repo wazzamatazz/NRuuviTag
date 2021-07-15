@@ -1,9 +1,11 @@
 ﻿[Unit]
+
 # Service description.
 Description=NRuuviTag IoT data collector
 
 
 [Service]
+
 # The service will notify systemd when it is ready.
 Type=notify
 
@@ -29,4 +31,5 @@ RestartSec=30
 
 
 [Install]
+
 WantedBy=multi-user.target
