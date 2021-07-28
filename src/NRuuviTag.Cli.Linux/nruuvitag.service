@@ -18,7 +18,7 @@ EnvironmentFile=/etc/nruuvitag.d/nruuvitag.conf
 ExecStart=/usr/local/bin/nruuvitag $NRUUVITAG_OPTIONS
 
 # Identifier for the service in the system logs.
-SysLogIdentifier=nruuvitag
+SyslogIdentifier=nruuvitag
 
 # User to run the service as.
 User=<user>
