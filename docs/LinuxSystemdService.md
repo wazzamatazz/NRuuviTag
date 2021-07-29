@@ -67,6 +67,7 @@ Install the service definition:
 sudo mv nruuvitag.service /usr/lib/systemd/user
 sudo ln -s /usr/lib/systemd/user/nruuvitag.service /etc/systemd/system/nruuvitag.service
 sudo systemctl daemon-reload
+sudo systemctl enable nruuvitag
 sudo systemctl start nruuvitag
 ```
 
