@@ -56,6 +56,27 @@ const string VersionFile = "./build/version.json";
 // Bootstrap build context and tasks.
 Bootstrap(DefaultSolutionFile, VersionFile);
 
+// Add Publish target
+Task("Publish")
+    .IsDependentOn("Test")
+    .Does<BuildState>(state => {
+        foreach (var projectFile in GetFiles("./**/*.*proj")) {
+            var projectDir = projectFile.GetDirectory();
+            foreach (var publishProfileFile in GetFiles(projectDir.FullPath + "/**/*.pubxml")) {
+                WriteLogMessage(BuildSystem, $"Publishing project {projectFile.GetFilename()} using profile {publishProfileFile.GetFilename()}.");
+
+                var buildSettings = new DotNetPublishSettings {
+                    Configuration = state.Configuration,
+                    MSBuildSettings = new DotNetMSBuildSettings()
+                };
+
+                ApplyMSBuildProperties(buildSettings.MSBuildSettings, state);
+                buildSettings.MSBuildSettings.Properties["PublishProfile"] = new List<string> { publishProfileFile.FullPath };
+                DotNetPublish(projectFile.FullPath, buildSettings);
+            }
+        }
+    });
+
 // Get the target that was specified.
 var target = GetTarget();
 
