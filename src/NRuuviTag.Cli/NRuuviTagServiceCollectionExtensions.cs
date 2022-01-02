@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection {
     public static class NRuuviTagServiceCollectionExtensions {
 
         /// <summary>
-        /// Registers services required for a <see cref="CommandApp"/> that will run an <see cref="NRuuviTag.Mqtt.MqttAgent"/>.
+        /// Registers services required for a <see cref="CommandApp"/> that will run a <see cref="NRuuviTag.RuuviTagPublisher"/>.
         /// </summary>
         /// <typeparam name="TListener">
         ///   The <see cref="IRuuviTagListener"/> that the agent will use to listen for RuuviTag 
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.DependencyInjection {
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="configuration"/> is <see langword="null"/>.
         /// </exception>
-        public static IServiceCollection AddRuuviTagMqttAgent<TListener>(this IServiceCollection services, IConfiguration configuration) where TListener : class, IRuuviTagListener { 
+        public static IServiceCollection AddRuuviTagPublisherCommandApp<TListener>(this IServiceCollection services, IConfiguration configuration) where TListener : class, IRuuviTagListener { 
             if (services == null) {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -85,7 +85,7 @@ namespace Microsoft.Extensions.DependencyInjection {
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="factory"/> is <see langword="null"/>.
         /// </exception>
-        public static IServiceCollection AddRuuviTagMqttAgent<TListener>(this IServiceCollection services, IConfiguration configuration, Func<IServiceProvider, TListener> factory) where TListener : class, IRuuviTagListener {
+        public static IServiceCollection AddRuuviTagPublisherCommandApp<TListener>(this IServiceCollection services, IConfiguration configuration, Func<IServiceProvider, TListener> factory) where TListener : class, IRuuviTagListener {
             if (services == null) {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.DependencyInjection {
 
             services.AddSingleton(typeResolver);
             services.AddTransient<IMqttFactory, MqttFactory>();
-            services.AddTransient<IRuuviTagListener, TListener>();
+            services.AddTransient<IRuuviTagListener, TListener>(factory);
             services.AddSingleton(CommandUtilities.BuildCommandApp(typeResolver));
 
             return services;

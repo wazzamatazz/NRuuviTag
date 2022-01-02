@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Configuration {
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="builder"/> is <see langword="null"/>.
         /// </exception>
-        public static IConfigurationBuilder AddRuuviTagMqttDeviceConfiguration(this IConfigurationBuilder builder) {
+        public static IConfigurationBuilder AddRuuviTagDeviceConfiguration(this IConfigurationBuilder builder) {
             if (builder == null) {
                 throw new ArgumentNullException(nameof(builder));
             }

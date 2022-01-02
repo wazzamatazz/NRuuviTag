@@ -16,7 +16,7 @@ namespace NRuuviTag.Cli.Windows {
 
         public static async Task<int> Main(string[] args) {
             return await CreateHostBuilder(args)
-                .BuildAndRunRuuviTagMqttAgent(args)
+                .BuildAndRunRuuviTagPublisher(args)
                 .ConfigureAwait(false);
         }
 
@@ -24,10 +24,10 @@ namespace NRuuviTag.Cli.Windows {
             Host.CreateDefaultBuilder(args)
                 .UseContentRoot(AppContext.BaseDirectory)
                 .ConfigureAppConfiguration(config => {
-                    config.AddRuuviTagMqttDeviceConfiguration();
+                    config.AddRuuviTagDeviceConfiguration();
                 })
                 .ConfigureServices((hostContext, services) => {
-                    services.AddRuuviTagMqttAgent<WindowsSdkListener>(hostContext.Configuration);
+                    services.AddRuuviTagPublisherCommandApp<WindowsSdkListener>(hostContext.Configuration);
                 });
 
     }

@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Hosting {
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="args"/> is <see langword="null"/>.
         /// </exception>
-        public static async Task<int> BuildAndRunRuuviTagMqttAgent(this IHostBuilder builder, IEnumerable<string> args) {
+        public static async Task<int> BuildAndRunRuuviTagPublisher(this IHostBuilder builder, IEnumerable<string> args) {
             if (builder == null) {
                 throw new ArgumentNullException(nameof(builder));
             }

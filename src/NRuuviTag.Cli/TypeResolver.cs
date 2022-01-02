@@ -9,7 +9,7 @@ namespace NRuuviTag.Cli {
 
     /// <summary>
     /// Implements both <see cref="ITypeRegistrar"/> and <see cref="ITypeResolver"/> for use in the 
-    /// MQTT publisher <see cref="CommandApp"/>.
+    /// RuuviTag publisher <see cref="CommandApp"/>.
     /// </summary>
     public class TypeResolver : ITypeRegistrar, ITypeResolver {
 
