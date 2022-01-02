@@ -2,38 +2,40 @@
 // Use build.ps1 or build.sh to run the build script. Command line arguments are documented below.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-const string DefaultSolutionName = "./NRuuviTag.sln";
+const string DefaultSolutionFile = "./NRuuviTag.sln";
+const string VersionFile = "./build/version.json";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // COMMAND LINE ARGUMENTS:
 //
 // --project=<PROJECT OR SOLUTION>
 //   The MSBuild project or solution to build. 
-//     Default: see DefaultSolutionName constant above.
+//     Default: see DefaultSolutionFile constant above.
 //
 // --target=<TARGET>
-//   Specifies the Cake target to run. 
+//   The Cake target to run. 
 //     Default: Test
-//     Possible Values: Clean, Restore, Build, Test, Pack, Publish
+//     Possible Values: Clean, Restore, Build, Test, Pack
 //
 // --configuration=<CONFIGURATION>
-//   Specifies the MSBuild configuration to use. 
+//   The MSBuild configuration to use. 
 //     Default: Debug
 //
 // --clean
-//   Specifies if this is a rebuild rather than an incremental build. All artifact, bin, and test 
+//   Specifies that this is a rebuild rather than an incremental build. All artifact, bin, and test 
 //   output folders will be cleaned prior to running the specified target.
 //
 // --no-tests
-//   Specifies that tests should be skipped.
+//   Specifies that unit tests should be skipped, even if a target that depends on the Test target 
+//   is specified.
 //
 // --ci
 //   Forces continuous integration build mode. Not required if the build is being run by a 
 //   supported continuous integration build system.
 //
 // --sign-output
-//   Tells MSBuild that signing is required by setting the 'SignOutput' property to 'True'. The 
-//   signing implementation must be supplied by MSBuild.
+//   Tells MSBuild that signing is required by setting the 'SignOutput' build property to 'True'. 
+//   The signing implementation must be supplied by MSBuild.
 //
 // --build-counter=<COUNTER>
 //   The build counter. This is used when generating version numbers for the build.
@@ -42,9 +44,6 @@ const string DefaultSolutionName = "./NRuuviTag.sln";
 //   Additional build metadata that will be included in the information version number generated 
 //   for compiled assemblies.
 //
-// --verbose
-//   Enables verbose messages.
-//
 // --property=<PROPERTY>
 //   Specifies an additional property to pass to MSBuild during Build and Pack targets. The value
 //   must be specified using a '<NAME>=<VALUE>' format e.g. --property="NoWarn=CS1591". This 
@@ -52,211 +51,13 @@ const string DefaultSolutionName = "./NRuuviTag.sln";
 // 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#addin nuget:?package=Cake.Git&version=1.0.0
-#addin nuget:?package=Cake.Json&version=6.0.0
-#addin nuget:?package=Newtonsoft.Json&version=12.0.3
+#load nuget:?package=Jaahas.Cake.Extensions&version=1.0.0
 
-#load "build/build-state.cake"
-#load "build/build-utilities.cake"
+// Bootstrap build context and tasks.
+Bootstrap(DefaultSolutionFile, VersionFile);
 
 // Get the target that was specified.
-var target = Argument("target", HasArgument("no-tests") ? "Build" : "Test");
+var target = GetTarget();
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// SETUP / TEARDOWN
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-// Constructs the build state object.
-Setup<BuildState>(context => {
-    try {
-        BuildUtilities.WriteTaskStartMessage(BuildSystem, "Setup");
-        var state = new BuildState() {
-            SolutionName = Argument("project", DefaultSolutionName),
-            Target = target,
-            Configuration = Argument("configuration", "Debug"),
-            ContinuousIntegrationBuild = HasArgument("ci") || !BuildSystem.IsLocalBuild,
-            Clean = HasArgument("clean"),
-            SkipTests = HasArgument("no-tests"),
-            SignOutput = HasArgument("sign-output"),
-            Verbose = HasArgument("verbose"),
-            MSBuildProperties = HasArgument("property") ? Arguments<string>("property") : new List<string>()
-        };
-
-        // Get raw version numbers from JSON.
-
-        var versionJson = ParseJsonFromFile("./build/version.json");
-
-        var majorVersion = versionJson.Value<int>("Major");
-        var minorVersion = versionJson.Value<int>("Minor");
-        var patchVersion = versionJson.Value<int>("Patch");
-        var versionSuffix = versionJson.Value<string>("PreRelease");
-
-        // Compute build and version numbers.
-
-        var buildCounter = Argument("build-counter", 0);
-        var buildMetadata = Argument("build-metadata", "");
-        var branch = GitBranchCurrent(DirectoryPath.FromString(".")).FriendlyName;
-
-        state.AssemblyVersion = $"{majorVersion}.{minorVersion}.0.0";
-
-        state.AssemblyFileVersion = $"{majorVersion}.{minorVersion}.{patchVersion}.{buildCounter}";
-
-        state.InformationalVersion = string.IsNullOrWhiteSpace(versionSuffix)
-            ? $"{majorVersion}.{minorVersion}.{patchVersion}.{buildCounter}+{branch}"
-            : $"{majorVersion}.{minorVersion}.{patchVersion}-{versionSuffix}.{buildCounter}+{branch}";
-
-        if (!string.IsNullOrWhiteSpace(buildMetadata)) {
-            state.InformationalVersion = string.Concat(state.InformationalVersion, "#", buildMetadata);
-        }
-
-        state.PackageVersion = string.IsNullOrWhiteSpace(versionSuffix)
-            ? $"{majorVersion}.{minorVersion}.{patchVersion}"
-            : $"{majorVersion}.{minorVersion}.{patchVersion}-{versionSuffix}.{buildCounter}";
-
-        state.BuildNumber = string.IsNullOrWhiteSpace(versionSuffix)
-            ? $"{majorVersion}.{minorVersion}.{patchVersion}.{buildCounter}+{branch}"
-            : $"{majorVersion}.{minorVersion}.{patchVersion}-{versionSuffix}.{buildCounter}+{branch}";
-
-        if (!string.Equals(state.Target, "Clean", StringComparison.OrdinalIgnoreCase)) {
-            BuildUtilities.SetBuildSystemBuildNumber(BuildSystem, state);
-            BuildUtilities.WriteBuildStateToLog(BuildSystem, state);
-        }
-
-        return state;
-    }
-    finally {
-        BuildUtilities.WriteTaskEndMessage(BuildSystem, "Setup");
-    }
-});
-
-
-// Pre-task action.
-TaskSetup(context => {
-    BuildUtilities.WriteTaskStartMessage(BuildSystem, context.Task.Name);
-    BuildUtilities.WriteLogMessage(BuildSystem, $"Running {context.Task.Name} task");
-});
-
-
-// Post task action.
-TaskTeardown(context => {
-    BuildUtilities.WriteLogMessage(BuildSystem, $"Completed {context.Task.Name} task");
-    BuildUtilities.WriteTaskEndMessage(BuildSystem, context.Task.Name);
-});
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// TASKS
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-// Cleans up artifact and bin folders.
-Task("Clean")
-    .WithCriteria<BuildState>((c, state) => state.RunCleanTarget)
-    .Does<BuildState>(state => {
-        foreach (var pattern in new [] { $"./src/**/bin/{state.Configuration}", "./artifacts/**", "./**/TestResults/**" }) {
-            BuildUtilities.WriteLogMessage(BuildSystem, $"Cleaning directories: {pattern}");
-            CleanDirectories(pattern);
-        }
-    });
-
-
-// Restores NuGet packages.
-Task("Restore")
-    .Does<BuildState>(state => {
-        DotNetCoreRestore(state.SolutionName);
-    });
-
-
-// Builds the solution.
-Task("Build")
-    .IsDependentOn("Clean")
-    .IsDependentOn("Restore")
-    .Does<BuildState>(state => {
-        var buildSettings = new DotNetCoreBuildSettings {
-            Configuration = state.Configuration,
-            NoRestore = true,
-            MSBuildSettings = new DotNetCoreMSBuildSettings()
-        };
-
-        buildSettings.MSBuildSettings.Targets.Add(state.Clean ? "Rebuild" : "Build");
-        BuildUtilities.ApplyMSBuildProperties(buildSettings.MSBuildSettings, state);
-        DotNetCoreBuild(state.SolutionName, buildSettings);
-    });
-
-
-// Runs unit tests.
-Task("Test")
-    .IsDependentOn("Build")
-    .WithCriteria<BuildState>((c, state) => !state.SkipTests)
-    .Does<BuildState>(state => {
-        var testSettings = new DotNetCoreTestSettings {
-            Configuration = state.Configuration,
-            NoBuild = true
-        };
-
-        var testResultsPrefix = state.ContinuousIntegrationBuild
-            ? Guid.NewGuid().ToString()
-            : null;
-
-        if (testResultsPrefix != null) {
-            // We're using a build system; write the test results to a file so that they can be 
-            // imported into the build system.
-            testSettings.Loggers = new List<string> {
-                $"trx;LogFilePrefix={testResultsPrefix}"
-            };
-        }
-
-        DotNetCoreTest(state.SolutionName, testSettings);
-
-        if (testResultsPrefix != null) {
-            foreach (var testResultsFile in GetFiles($"./**/TestResults/{testResultsPrefix}*.trx")) {
-                BuildUtilities.ImportTestResults(BuildSystem, "mstest", testResultsFile);
-            }
-        }
-    });
-
-
-// Builds NuGet packages.
-Task("Pack")
-    .IsDependentOn("Test")
-    .Does<BuildState>(state => {
-        var buildSettings = new DotNetCorePackSettings {
-            Configuration = state.Configuration,
-            NoRestore = true,
-            NoBuild = true,
-            MSBuildSettings = new DotNetCoreMSBuildSettings()
-        };
-
-        BuildUtilities.ApplyMSBuildProperties(buildSettings.MSBuildSettings, state);
-        DotNetCorePack(state.SolutionName, buildSettings);
-    });
-
-
-Task("Publish")
-    .IsDependentOn("Test")
-    .Does<BuildState>(state => {
-        foreach (var projectFile in GetFiles("./**/*.*proj")) {
-            var projectDir = projectFile.GetDirectory();
-            foreach (var publishProfileFile in GetFiles(projectDir.FullPath + "/**/*.pubxml")) {
-                BuildUtilities.WriteLogMessage(BuildSystem, $"Publishing project {projectFile.GetFilename()} using profile {publishProfileFile.GetFilename()}.");
-
-                var buildSettings = new DotNetCorePublishSettings {
-                    MSBuildSettings = new DotNetCoreMSBuildSettings()
-                };
-
-                BuildUtilities.ApplyMSBuildProperties(buildSettings.MSBuildSettings, state);
-                buildSettings.MSBuildSettings.Properties["PublishProfile"] = new List<string> { publishProfileFile.FullPath };
-                DotNetCorePublish(projectFile.FullPath, buildSettings);
-            }
-        }
-    });
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// EXECUTION
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-
+// Run the target.
 RunTarget(target);

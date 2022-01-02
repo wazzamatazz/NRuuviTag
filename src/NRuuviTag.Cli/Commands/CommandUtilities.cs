@@ -118,7 +118,7 @@ namespace NRuuviTag.Cli.Commands {
                 }
             }
 
-            AnsiConsole.Render(table);
+            AnsiConsole.Write(table);
         }
 
 
@@ -133,7 +133,7 @@ namespace NRuuviTag.Cli.Commands {
             table.AddColumns(Resources.TableColumn_MacAddress, Resources.TableColumn_DisplayName, Resources.TableColumn_DeviceID);
             table.AddRow(device.MacAddress ?? string.Empty, device.DisplayName ?? string.Empty, device.DeviceId ?? string.Empty);
 
-            AnsiConsole.Render(table);
+            AnsiConsole.Write(table);
         }
 
 
@@ -151,7 +151,7 @@ namespace NRuuviTag.Cli.Commands {
             table.AddColumns(Resources.TableColumn_MacAddress, Resources.TableColumn_DisplayName, Resources.TableColumn_DeviceID);
             table.AddRow(deviceFromConfig.MacAddress ?? string.Empty, deviceFromConfig.DisplayName ?? string.Empty, id);
 
-            AnsiConsole.Render(table);
+            AnsiConsole.Write(table);
         }
 
     }

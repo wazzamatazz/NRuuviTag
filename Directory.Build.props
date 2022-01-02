@@ -17,7 +17,7 @@
     <NeutralLanguage>en</NeutralLanguage>
     <CopyrightStartYear>2021</CopyrightStartYear>
     <VersionPropertiesInputFile Condition="Exists('$(MSBuildThisFileDirectory)build\version.json')">$(MSBuildThisFileDirectory)build\version.json</VersionPropertiesInputFile>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <CopyrightStartYear>2021</CopyrightStartYear>
   </PropertyGroup>
@@ -29,7 +29,7 @@
     building via build.ps1 or build.sh. It is defined here to allow Visual Studio to build with 
     the solution with the correct version number.
     -->
-    <Version>0.7.0</Version>
+    <Version>0.9.0</Version>
   </PropertyGroup>
 
   <Choose>

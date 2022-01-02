@@ -21,13 +21,6 @@
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(IncludeDevelopmentPackages)' == 'true' ">    
-    <!-- .NET Analyzers NuGet Package -->
-    <PackageReference Remove="Microsoft.CodeAnalysis.NetAnalyzers" />
-    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-
     <!-- SourceLink NuGet Package -->
     <PackageReference Remove="Microsoft.SourceLink.GitHub" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)">
