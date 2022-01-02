@@ -15,7 +15,7 @@ const string VersionFile = "./build/version.json";
 // --target=<TARGET>
 //   The Cake target to run. 
 //     Default: Test
-//     Possible Values: Clean, Restore, Build, Test, Pack
+//     Possible Values: Clean, Restore, Build, Test, Pack, Publish
 //
 // --configuration=<CONFIGURATION>
 //   The MSBuild configuration to use. 
