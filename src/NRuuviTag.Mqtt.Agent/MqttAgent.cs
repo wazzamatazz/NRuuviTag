@@ -433,10 +433,15 @@ namespace NRuuviTag.Mqtt {
         ///   A new <see cref="MqttApplicationMessage"/> object.
         /// </returns>
         private MqttApplicationMessage BuildMqttMessage<T>(string topic, T payload) {
-            return new MqttApplicationMessageBuilder()
+            var builder = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
-                .WithPayload(JsonSerializer.SerializeToUtf8Bytes(payload, _jsonOptions))
-                .Build();
+                .WithPayload(JsonSerializer.SerializeToUtf8Bytes(payload, _jsonOptions));
+
+            if (_mqttClient.Options.ClientOptions.ProtocolVersion >= MQTTnet.Formatter.MqttProtocolVersion.V500) {
+                builder = builder.WithContentType("application/json");
+            }
+
+            return builder.Build();
         }
 
 

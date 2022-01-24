@@ -153,7 +153,9 @@ namespace NRuuviTag.AzureEventHubs {
                         var device = _getDeviceInfo?.Invoke(item.MacAddress!);
                         var sample = RuuviTagSampleExtended.Create(item, device?.DeviceId, device?.DisplayName);
                         _prepareForPublish?.Invoke(sample);
-                        batch.TryAdd(new EventData(JsonSerializer.SerializeToUtf8Bytes(sample, _jsonOptions)));
+                        var eventData = new EventData(JsonSerializer.SerializeToUtf8Bytes(sample, _jsonOptions));
+                        eventData.Properties["Content-Type"] = "application/json";
+                        batch.TryAdd(eventData);
 
                         if (batch.Count == 0) {
                             continue;
