@@ -134,17 +134,17 @@ namespace NRuuviTag.Cli.Commands {
         public string? EventHubName { get; set; }
 
         [CommandOption("--sample-rate <INTERVAL>")]
-        [Description("The sample rate to use, in seconds. If not specified, samples will be published as soon as they are observed.")]
+        [Description("Limits the RuuviTag sample rate to the specified number of seconds. Only the most-recent reading for each RuuviTag device will be included in the next Event Hub batch publish. If not specified, all observed samples will be send to the Event Hub.")]
         public int SampleRate { get; set; }
 
         [CommandOption("--batch-size-limit <LIMIT>")]
         [DefaultValue(50)]
-        [Description("Sets the maximum number of samples that can be added to an event data batch before the batch will be published to the Event Hub.")]
+        [Description("Sets the maximum number of samples that can be added to an Event Hub data batch before the batch will be published to the hub.")]
         public int MaximumBatchSize { get; set; }
 
         [CommandOption("--batch-age-limit <LIMIT>")]
         [DefaultValue(60)]
-        [Description("Sets the maximum age of an event data batch (in seconds) before the batch will be published to the Event Hub.")]
+        [Description("Sets the maximum age of an Event Hub data batch (in seconds) before the batch will be published to the hub. The age is measured from the time that the first sample is added to the batch.")]
         public int MaximumBatchAge { get; set; }
 
         [CommandOption("--known-devices")]

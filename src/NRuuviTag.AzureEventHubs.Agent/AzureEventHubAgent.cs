@@ -133,13 +133,13 @@ namespace NRuuviTag.AzureEventHubs {
             Logger.LogInformation(Resources.LogMessage_EventHubClientStarting);
 
             await using (var client = new EventHubProducerClient(_connectionString, _eventHubName)) {
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var batch = await client.CreateBatchAsync(cancellationToken).ConfigureAwait(false);
-                var lastSend = DateTime.UtcNow;
+                TimeSpan currentBatchStartedAt = TimeSpan.Zero;
 
                 async Task PublishBatch() {
                     try {
                         await client!.SendAsync(batch).ConfigureAwait(false);
-                        lastSend = DateTime.UtcNow;
                         Logger.LogInformation(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_EventHubBatchPublished, batch.Count));
                         batch = await client.CreateBatchAsync().ConfigureAwait(false);
                     }
@@ -155,13 +155,17 @@ namespace NRuuviTag.AzureEventHubs {
                         _prepareForPublish?.Invoke(sample);
                         var eventData = new EventData(JsonSerializer.SerializeToUtf8Bytes(sample, _jsonOptions));
                         eventData.Properties["Content-Type"] = "application/json";
-                        batch.TryAdd(eventData);
+
+                        if (batch.TryAdd(eventData) && batch.Count == 1) {
+                            // Start of new batch
+                            currentBatchStartedAt = stopwatch.Elapsed;
+                        }
 
                         if (batch.Count == 0) {
                             continue;
                         }
 
-                        if (batch.Count < _maximumBatchSize && (DateTime.UtcNow - lastSend).TotalSeconds < _maximumBatchAge) {
+                        if (batch.Count < _maximumBatchSize && (stopwatch.Elapsed - currentBatchStartedAt).TotalSeconds < _maximumBatchAge) {
                             continue;
                         }
 
