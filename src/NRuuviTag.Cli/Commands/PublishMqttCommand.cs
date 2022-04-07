@@ -188,7 +188,7 @@ namespace NRuuviTag.Cli.Commands {
         public string? ProtocolVersion { get; set; }
 
         [CommandOption("--sample-rate <INTERVAL>")]
-        [Description("The sample rate to use, in seconds. If not specified, samples will be published as soon as they are observed.")]
+        [Description("The sample rate to use, in seconds. If not specified, samples will be published to the MQTT server as soon as they are observed.")]
         public int SampleRate { get; set; }
 
         [CommandOption("--publish-type <PUBLISH_TYPE>")]
