@@ -49,7 +49,7 @@ sudo ln -s /usr/local/services/nruuvitag/nruuvitag /usr/local/bin/nruuvitag
 Create file `/etc/nruuvitag.d/nruuvitag.conf` and set the `NRUUVITAG_OPTIONS` environment variable to specify the arguments to pass to `nruuvitag` when the service starts, customising them to fit your requirements:
 
 ```sh
-echo "NRUUVITAG_OPTIONS=publish az <MY_AZURE_EVENT_HUB_CONNECTION_STRING> <MY_EVENT_HUB_NAME> --sample-interval 15" > nruuvitag.conf
+echo "NRUUVITAG_OPTIONS=publish az <MY_AZURE_EVENT_HUB_CONNECTION_STRING> <MY_EVENT_HUB_NAME>" > nruuvitag.conf
 sudo mkdir /etc/nruuvitag.d
 sudo mv nruuvitag.conf /etc/nruuvitag.d
 ```
