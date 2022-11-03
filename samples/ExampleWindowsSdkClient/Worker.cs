@@ -19,12 +19,14 @@ namespace ExampleWindowsSdkClient {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
             try {
                 var client = new WindowsSdkListener();
+                var jsonOptions = new JsonSerializerOptions() {
+                    WriteIndented = true
+                };
+
                 _logger.LogInformation("Starting RuuviTag listener.");
                 await foreach (var sample in client.ListenAsync(stoppingToken)) {
                     Console.WriteLine();
-                    Console.WriteLine(JsonSerializer.Serialize(sample, new JsonSerializerOptions() { 
-                        WriteIndented = true 
-                    }));
+                    Console.WriteLine(JsonSerializer.Serialize(sample, jsonOptions));
                 }
             }
             catch (OperationCanceledException) { }
