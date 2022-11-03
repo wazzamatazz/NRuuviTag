@@ -6,12 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="HashtagChris.DotNetBlueZ" />
     <PackageReference Include="System.Text.Json" />
     <PackageReference Include="System.Threading.Channels" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DotNet-BlueZ\src\DotNetBlueZ.csproj" />
     <ProjectReference Include="..\NRuuviTag.Core\NRuuviTag.Core.csproj" />
   </ItemGroup>
 
