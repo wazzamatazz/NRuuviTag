@@ -1,11 +1,9 @@
 <Project>
-
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <EnablePackageVersionOverride>true</EnablePackageVersionOverride>
     <NoWarn>NU1507;$(NoWarn)</NoWarn>
   </PropertyGroup>
-  
   <ItemGroup>
     <PackageVersion Include="Azure.Messaging.EventHubs" Version="5.7.3" />
     <PackageVersion Include="coverlet.collector" Version="3.2.0" />
@@ -28,5 +26,4 @@
     <PackageVersion Include="System.Text.Json" Version="6.0.6" />
     <PackageVersion Include="System.Threading.Channels" Version="6.0.0" />
   </ItemGroup>
-  
 </Project>

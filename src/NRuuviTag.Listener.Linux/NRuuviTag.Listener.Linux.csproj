@@ -11,10 +11,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DotNet-BlueZ\src\DotNetBlueZ.csproj" />
+    <ProjectReference Include="..\DotNet-BlueZ\src\DotNetBlueZ.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\NRuuviTag.Core\NRuuviTag.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\DotNet-BlueZ\src\bin\$(Configuration)\netstandard2.0\DotNetBlueZ.dll">
+      <Pack>true</Pack>
+      <PackagePath>lib\$(TargetFramework)</PackagePath>
+    </None>
+  </ItemGroup>
+  
   <ItemGroup>
     <Compile Update="Resources.Designer.cs">
       <DesignTime>True</DesignTime>
