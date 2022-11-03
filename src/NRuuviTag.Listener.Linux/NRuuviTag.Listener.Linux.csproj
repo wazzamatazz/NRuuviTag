@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="System.Text.Json" />
     <PackageReference Include="System.Threading.Channels" />
+    <PackageReference Include="Tmds.DBus" />
   </ItemGroup>
 
   <ItemGroup>
@@ -16,10 +17,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\DotNet-BlueZ\src\bin\$(Configuration)\netstandard2.0\DotNetBlueZ.dll">
+    <Content Include="..\DotNet-BlueZ\src\bin\$(Configuration)\netstandard2.0\DotNetBlueZ.dll">
       <Pack>true</Pack>
       <PackagePath>lib\$(TargetFramework)</PackagePath>
-    </None>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   
   <ItemGroup>

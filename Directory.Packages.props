@@ -25,5 +25,6 @@
     <PackageVersion Include="System.Net.WebSockets.Client" Version="4.3.2" />
     <PackageVersion Include="System.Text.Json" Version="6.0.6" />
     <PackageVersion Include="System.Threading.Channels" Version="6.0.0" />
+    <PackageVersion Include="Tmds.DBus" Version="0.11.0" />
   </ItemGroup>
 </Project>
