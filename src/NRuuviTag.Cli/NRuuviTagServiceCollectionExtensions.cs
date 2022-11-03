@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection {
             var typeResolver = new TypeResolver();
 
             services.AddSingleton(typeResolver);
-            services.AddTransient<IMqttFactory, MqttFactory>();
+            services.AddTransient<MqttFactory>();
             services.AddTransient<IRuuviTagListener, TListener>();
             services.AddSingleton(CommandUtilities.BuildCommandApp(typeResolver));
 
@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.DependencyInjection {
             var typeResolver = new TypeResolver();
 
             services.AddSingleton(typeResolver);
-            services.AddTransient<IMqttFactory, MqttFactory>();
+            services.AddTransient<MqttFactory>();
             services.AddTransient<IRuuviTagListener, TListener>(factory);
             services.AddSingleton(CommandUtilities.BuildCommandApp(typeResolver));
 

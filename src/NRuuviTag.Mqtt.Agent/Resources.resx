@@ -118,13 +118,13 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Error_MqttBridgeIsAlreadyRunning" xml:space="preserve">
-    <value>MQTT bridge is already running.</value>
+    <value>MQTT agent is already running.</value>
   </data>
   <data name="LogMessage_ErrorInBackgroundPublishTask" xml:space="preserve">
     <value>An error occurred in the background publish task.</value>
   </data>
   <data name="LogMessage_MqttBridgeStopped" xml:space="preserve">
-    <value>Stopped MQTT bridge.</value>
+    <value>Stopped MQTT agent.</value>
   </data>
   <data name="LogMessage_MqttClientConnected" xml:space="preserve">
     <value>Connected to MQTT broker.</value>
@@ -140,6 +140,6 @@
     <comment>{0} - MAC address</comment>
   </data>
   <data name="LogMessage_StartingMqttBridge" xml:space="preserve">
-    <value>Starting MQTT bridge.</value>
+    <value>Starting MQTT agent.</value>
   </data>
 </root>

@@ -13,9 +13,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 using MQTTnet;
-using MQTTnet.Client.Connecting;
-using MQTTnet.Client.Disconnecting;
-using MQTTnet.Client.Options;
+using MQTTnet.Client;
 using MQTTnet.Extensions.ManagedClient;
 
 namespace NRuuviTag.Mqtt {
@@ -49,7 +47,7 @@ namespace NRuuviTag.Mqtt {
         /// <summary>
         /// MQTT client options.
         /// </summary>
-        private readonly IManagedMqttClientOptions _mqttClientOptions;
+        private readonly ManagedMqttClientOptions _mqttClientOptions;
 
         /// <summary>
         /// MQTT bridge options.
@@ -94,7 +92,7 @@ namespace NRuuviTag.Mqtt {
         /// <exception cref="ValidationException">
         ///   <paramref name="options"/> fails validation.
         /// </exception>
-        public MqttAgent(IRuuviTagListener listener, MqttAgentOptions options, IMqttFactory factory, ILogger<MqttAgent>? logger = null)
+        public MqttAgent(IRuuviTagListener listener, MqttAgentOptions options, MqttFactory factory, ILogger<MqttAgent>? logger = null)
             : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), logger) {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             Validator.ValidateObject(options, new ValidationContext(options), true);
@@ -185,8 +183,8 @@ namespace NRuuviTag.Mqtt {
 
             // Build MQTT client.
             _mqttClient = factory.CreateManagedMqttClient();
-            _mqttClient.UseConnectedHandler(OnConnected);
-            _mqttClient.UseDisconnectedHandler(OnDisconnected);
+            _mqttClient.ConnectedAsync += OnConnectedAsync;
+            _mqttClient.DisconnectedAsync += OnDisconnectedAsync;
         }
 
 
@@ -288,8 +286,9 @@ namespace NRuuviTag.Mqtt {
         /// <param name="args">
         ///   The event arguments.
         /// </param>
-        private void OnConnected(MqttClientConnectedEventArgs args) {
+        private Task OnConnectedAsync(MqttClientConnectedEventArgs args) {
             Logger.LogInformation(Resources.LogMessage_MqttClientConnected);
+            return Task.CompletedTask;
         }
 
 
@@ -299,8 +298,9 @@ namespace NRuuviTag.Mqtt {
         /// <param name="args">
         ///   The event arguments.
         /// </param>
-        private void OnDisconnected(MqttClientDisconnectedEventArgs args) {
-            Logger.LogWarning(Resources.LogMessage_MqttClientDisconnected);
+        private Task OnDisconnectedAsync(MqttClientDisconnectedEventArgs args) {
+            Logger.LogWarning(args.Exception, Resources.LogMessage_MqttClientDisconnected);
+            return Task.CompletedTask;
         }
 
 
@@ -562,7 +562,7 @@ namespace NRuuviTag.Mqtt {
 
             await _mqttClient.StartAsync(_mqttClientOptions).ConfigureAwait(false);
             try {
-                await foreach (var item in samples.ConfigureAwait(false)) {
+                await foreach (var item in samples.WithCancellation(cancellationToken).ConfigureAwait(false)) {
                     var deviceInfo = GetDeviceInfo(item);
                     if (_options.KnownDevicesOnly && string.Equals(deviceInfo.DeviceId, UnknownDeviceId, StringComparison.OrdinalIgnoreCase)) {
                         // Unknown device.
@@ -576,10 +576,10 @@ namespace NRuuviTag.Mqtt {
                         Logger.LogDebug($"{(string.IsNullOrWhiteSpace(deviceInfo.DisplayName) ? deviceInfo.DeviceId : deviceInfo.DisplayName)}: {JsonSerializer.Serialize(item)}");
                     }
 
-                    var messages = BuildMqttMessages(item, deviceInfo).ToArray();
-
                     try {
-                        await _mqttClient.PublishAsync(messages).ConfigureAwait(false);
+                        foreach (var message in BuildMqttMessages(item, deviceInfo)) {
+                            await _mqttClient.EnqueueAsync(message).ConfigureAwait(false);
+                        }
                     }
                     catch (Exception e) {
                         Logger.LogError(e, Resources.LogMessage_MqttPublishError);

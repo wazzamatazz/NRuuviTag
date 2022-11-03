@@ -4,9 +4,11 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using MQTTnet;
+using MQTTnet.Diagnostics;
 using MQTTnet.Server;
 
 namespace NRuuviTag.Mqtt.Tests {
@@ -25,22 +27,33 @@ namespace NRuuviTag.Mqtt.Tests {
             0x00, 0xCD, 0xCB, 0xB8, 0x33, 0x4C, 0x88, 0x4F
         };
 
-        private static IMqttServer s_mqttServer = default!;
+        private static MqttServer s_mqttServer = default!;
 
-        private static event Action<MqttApplicationMessageReceivedEventArgs>? MessageReceived;
+        private static ILoggerFactory s_loggerFactory = default!;
+
+        private static event Action<MqttApplicationMessage>? MessageReceived;
 
         public TestContext TestContext { get; set; } = default!;
 
 
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext context) {
-            s_mqttServer = new MqttFactory().CreateMqttServer();
-            s_mqttServer.UseApplicationMessageReceivedHandler(args => MessageReceived?.Invoke(args));
+            s_loggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Trace).AddConsole());
 
-            var optionsBuilder = new MqttServerOptionsBuilder()
-                .WithDefaultEndpointPort(Port);
+            s_mqttServer = new MqttFactory().CreateMqttServer(
+                new MqttServerOptionsBuilder()
+                    .WithDefaultEndpointPort(Port)
+                    .WithDefaultEndpoint()
+                    .Build(), 
+                new TestLogger(s_loggerFactory.CreateLogger<MqttServer>())
+            );
 
-            await s_mqttServer.StartAsync(optionsBuilder.Build()).ConfigureAwait(false);
+            s_mqttServer.InterceptingPublishAsync += args => {
+                MessageReceived?.Invoke(args.ApplicationMessage);
+                return Task.CompletedTask;
+            };
+
+            await s_mqttServer.StartAsync().ConfigureAwait(false);
         }
 
 
@@ -67,7 +80,7 @@ namespace NRuuviTag.Mqtt.Tests {
                 TlsOptions = new MqttAgentTlsOptions() {
                     UseTls = false
                 }
-            }, new MqttFactory());
+            }, new MqttFactory(), s_loggerFactory.CreateLogger<MqttAgent>());
 
             var now = DateTimeOffset.Now;
             var signalStrength = -79;
@@ -77,9 +90,9 @@ namespace NRuuviTag.Mqtt.Tests {
 
             var tcs = new TaskCompletionSource<MqttApplicationMessage?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            void OnMessageReceived(MqttApplicationMessageReceivedEventArgs args) {
-                if (string.Equals(args.ApplicationMessage.Topic, expectedTopicName)) {
-                    tcs.TrySetResult(args.ApplicationMessage);
+            void OnMessageReceived(MqttApplicationMessage msg) {
+                if (string.Equals(msg.Topic, expectedTopicName)) {
+                    tcs.TrySetResult(msg);
                 }
             }
 
@@ -146,7 +159,7 @@ namespace NRuuviTag.Mqtt.Tests {
                 PrepareForPublish = s => {
                     s.AccelerationX = null;
                 }
-            }, new MqttFactory());
+            }, new MqttFactory(), s_loggerFactory.CreateLogger<MqttAgent>());
 
             var now = DateTimeOffset.Now;
             var signalStrength = -79;
@@ -156,9 +169,9 @@ namespace NRuuviTag.Mqtt.Tests {
 
             var tcs = new TaskCompletionSource<MqttApplicationMessage?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            void OnMessageReceived(MqttApplicationMessageReceivedEventArgs args) {
-                if (string.Equals(args.ApplicationMessage.Topic, expectedTopicName)) {
-                    tcs.TrySetResult(args.ApplicationMessage);
+            void OnMessageReceived(MqttApplicationMessage msg) {
+                if (string.Equals(msg.Topic, expectedTopicName)) {
+                    tcs.TrySetResult(msg);
                 }
             }
 
@@ -222,7 +235,7 @@ namespace NRuuviTag.Mqtt.Tests {
                 TlsOptions = new MqttAgentTlsOptions() {
                     UseTls = false
                 }
-            }, new MqttFactory());
+            }, new MqttFactory(), s_loggerFactory.CreateLogger<MqttAgent>());
 
             var now = DateTimeOffset.Now;
             var signalStrength = -79;
@@ -234,10 +247,10 @@ namespace NRuuviTag.Mqtt.Tests {
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var receivedMessages = new List<MqttApplicationMessage>();
 
-            void OnMessageReceived(MqttApplicationMessageReceivedEventArgs args) {
-                if (args.ApplicationMessage.Topic.StartsWith(expectedTopicPrefix!)) {
+            void OnMessageReceived(MqttApplicationMessage msg) {
+                if (msg.Topic.StartsWith(expectedTopicPrefix!)) {
                     lock (receivedMessages) {
-                        receivedMessages.Add(args.ApplicationMessage);
+                        receivedMessages.Add(msg);
                         if (receivedMessages.Count >= expectedMessageCount) {
                             tcs.TrySetResult(true);
                         }
@@ -356,7 +369,7 @@ namespace NRuuviTag.Mqtt.Tests {
                     s.AccelerationX = null;
                     s.MacAddress = null;
                 }
-            }, new MqttFactory());
+            }, new MqttFactory(), s_loggerFactory.CreateLogger<MqttAgent>());
 
             var now = DateTimeOffset.Now;
             var signalStrength = -79;
@@ -368,10 +381,10 @@ namespace NRuuviTag.Mqtt.Tests {
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var receivedMessages = new List<MqttApplicationMessage>();
 
-            void OnMessageReceived(MqttApplicationMessageReceivedEventArgs args) {
-                if (args.ApplicationMessage.Topic.StartsWith(expectedTopicPrefix!)) {
+            void OnMessageReceived(MqttApplicationMessage msg) {
+                if (msg.Topic.StartsWith(expectedTopicPrefix!)) {
                     lock (receivedMessages) {
-                        receivedMessages.Add(args.ApplicationMessage);
+                        receivedMessages.Add(msg);
                         if (receivedMessages.Count >= expectedMessageCount) {
                             tcs.TrySetResult(true);
                         }
@@ -467,6 +480,31 @@ namespace NRuuviTag.Mqtt.Tests {
             }
             finally {
                 MessageReceived -= OnMessageReceived;
+            }
+        }
+
+
+        private class TestLogger : IMqttNetLogger {
+
+            private readonly ILogger _logger;
+
+            public bool IsEnabled { get; set; } = true;
+
+
+            public TestLogger(ILogger logger) {
+                _logger = logger;
+            }
+
+
+            public void Publish(MqttNetLogLevel logLevel, string source, string message, object[] parameters, Exception exception) {
+                var msLogLevel = logLevel switch {
+                    MqttNetLogLevel.Error => LogLevel.Error,
+                    MqttNetLogLevel.Warning => LogLevel.Warning,
+                    MqttNetLogLevel.Info => LogLevel.Information,
+                    _ => LogLevel.Debug
+                };
+
+                _logger.Log(msLogLevel, exception, message, parameters);
             }
         }
 

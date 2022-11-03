@@ -19,7 +19,7 @@ namespace NRuuviTag.Mqtt {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -61,7 +61,7 @@ namespace NRuuviTag.Mqtt {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to MQTT bridge is already running..
+        ///   Looks up a localized string similar to MQTT agent is already running..
         /// </summary>
         internal static string Error_MqttBridgeIsAlreadyRunning {
             get {
@@ -79,7 +79,7 @@ namespace NRuuviTag.Mqtt {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Stopped MQTT bridge..
+        ///   Looks up a localized string similar to Stopped MQTT agent..
         /// </summary>
         internal static string LogMessage_MqttBridgeStopped {
             get {
@@ -124,7 +124,7 @@ namespace NRuuviTag.Mqtt {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Starting MQTT bridge..
+        ///   Looks up a localized string similar to Starting MQTT agent..
         /// </summary>
         internal static string LogMessage_StartingMqttBridge {
             get {

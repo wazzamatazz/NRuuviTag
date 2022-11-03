@@ -34,9 +34,9 @@ namespace NRuuviTag.Cli.Commands {
         private readonly IRuuviTagListener _listener;
 
         /// <summary>
-        /// The <see cref="IMqttFactory"/> that is used to create an MQTT client.
+        /// The <see cref="MqttFactory"/> that is used to create an MQTT client.
         /// </summary>
-        private readonly IMqttFactory _mqttFactory;
+        private readonly MqttFactory _mqttFactory;
 
         /// <summary>
         /// The known RuuviTag devices.
@@ -74,7 +74,7 @@ namespace NRuuviTag.Cli.Commands {
         /// </param>
         public PublishMqttCommand(
             IRuuviTagListener listener, 
-            IMqttFactory mqttFactory, 
+            MqttFactory mqttFactory, 
             IOptionsMonitor<DeviceCollection> devices, 
             IHostApplicationLifetime appLifetime, 
             ILoggerFactory loggerFactory
