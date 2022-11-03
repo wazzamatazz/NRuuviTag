@@ -9,6 +9,7 @@
     <PackageReference Include="HashtagChris.DotNetBlueZ" />
     <PackageReference Include="System.Text.Json" />
     <PackageReference Include="System.Threading.Channels" />
+    <PackageReference Include="Tmds.DBus" />
   </ItemGroup>
 
   <ItemGroup>
