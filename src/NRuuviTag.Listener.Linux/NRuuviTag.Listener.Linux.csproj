@@ -6,9 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="HashtagChris.DotNetBlueZ" Version="$(HashtagChrisDotNetBlueZVersion)" />
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
-    <PackageReference Include="System.Threading.Channels" Version="$(SystemThreadingChannelsVersion)" />
+    <PackageReference Include="HashtagChris.DotNetBlueZ" />
+    <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="System.Threading.Channels" />
   </ItemGroup>
 
   <ItemGroup>

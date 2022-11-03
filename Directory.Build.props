@@ -6,9 +6,6 @@
   </PropertyGroup>
   <Import Project="$(ParentProject)" Condition=" '$(ParentProject)' != '' " /> 
   
-  <!-- Import common NuGet package versions -->
-  <Import Project=".\build\Dependencies.props" Condition="Exists('.\build\Dependencies.props')" />
-
   <PropertyGroup>
     <Authors>Graham Watts</Authors>
     <PackageProjectUrl>https://github.com/wazzamatazz/NRuuviTag</PackageProjectUrl>
@@ -29,7 +26,7 @@
     building via build.ps1 or build.sh. It is defined here to allow Visual Studio to build with 
     the solution with the correct version number.
     -->
-    <Version>0.9.0</Version>
+    <Version>0.11.0</Version>
   </PropertyGroup>
 
   <Choose>

@@ -22,8 +22,7 @@
 
   <ItemGroup Condition=" '$(IncludeDevelopmentPackages)' == 'true' ">    
     <!-- SourceLink NuGet Package -->
-    <PackageReference Remove="Microsoft.SourceLink.GitHub" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)">
+    <PackageReference Include="Microsoft.SourceLink.GitHub">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
@@ -31,7 +30,13 @@
 
   <!-- .NET Framework targeting support (required to allow compilation against .NET Framework in 
        non-Windows environments). -->
-  <Import Project=".\build\NetFX.targets" />
+  <!-- .NET Framework targeting (required to allow compilation against .NET Framework in non-Windows environments) -->
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net48' ">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 
   <!-- Extension point to allow Continuous Integration systems to inject their own configuration. -->
   <Import Project="CI.targets" Condition="Exists('CI.targets')" />

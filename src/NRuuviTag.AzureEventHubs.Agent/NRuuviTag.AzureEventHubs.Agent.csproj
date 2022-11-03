@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Messaging.EventHubs" Version="$(AzureMessagingEventHubsVersion)" />
-    <PackageReference Include="System.ComponentModel.Annotations" Version="$(SystemComponentModelAnnotationsVersion)" />
-    <PackageReference Include="System.Net.WebSockets.Client" Version="$(SystemNetWebSocketsClientVersion)" />
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
+    <PackageReference Include="Azure.Messaging.EventHubs" />
+    <PackageReference Include="System.ComponentModel.Annotations" />
+    <PackageReference Include="System.Net.WebSockets.Client" />
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>
