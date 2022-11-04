@@ -12,12 +12,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DotNet-BlueZ\src\DotNetBlueZ.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\submodules\DotNet-BlueZ\src\DotNetBlueZ.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\NRuuviTag.Core\NRuuviTag.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\DotNet-BlueZ\src\bin\$(Configuration)\netstandard2.0\DotNetBlueZ.dll">
+    <Content Include="..\submodules\DotNet-BlueZ\src\bin\$(Configuration)\netstandard2.0\DotNetBlueZ.dll">
       <Pack>true</Pack>
       <PackagePath>lib\$(TargetFramework)</PackagePath>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
