@@ -80,13 +80,13 @@ namespace NRuuviTag.Cli.Commands {
                 }
 
                 lock (this) {
-                    return devices?.Any(x => string.Equals(macAddress, x.MacAddress, StringComparison.OrdinalIgnoreCase)) ?? false;
+                    return devices?.Any(x => MacAddressComparer.Instance.Equals(macAddress, x.MacAddress)) ?? false;
                 }
             }
 
             Device? GetDeviceInfo(string macAddress) {
                 lock (this) {
-                    return devices.FirstOrDefault(x => string.Equals(macAddress, x.MacAddress, StringComparison.OrdinalIgnoreCase));
+                    return devices.FirstOrDefault(x => MacAddressComparer.Instance.Equals(macAddress, x.MacAddress));
                 }
             }
 

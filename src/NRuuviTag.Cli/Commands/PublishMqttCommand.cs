@@ -140,7 +140,7 @@ namespace NRuuviTag.Cli.Commands {
                 },
                 GetDeviceInfo = addr => {
                     lock (this) {
-                        return devices.FirstOrDefault(x => string.Equals(addr, x.MacAddress, StringComparison.OrdinalIgnoreCase));
+                        return devices.FirstOrDefault(x => MacAddressComparer.Instance.Equals(addr, x.MacAddress));
                     }
                 }
             };

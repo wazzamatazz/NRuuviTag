@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace NRuuviTag {
 
     /// <summary>
     /// Utility methods.
     /// </summary>
-    public static class RuuviTagUtilities {
+    public static partial class RuuviTagUtilities {
 
         /// <summary>
         /// Gets raw bytes for an instrument reading from the specified payload data.
@@ -198,6 +200,107 @@ namespace NRuuviTag {
                     throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, Resources.Error_UnknownDataFormat, payload[0]), nameof(payload));
             }
         }
+
+
+        /// <summary>
+        /// Converts a <see cref="ulong"/> MAC address to its <see cref="string"/> equivalent.
+        /// </summary>
+        /// <param name="address">
+        ///   The <see cref="ulong"/> MAC address.
+        /// </param>
+        /// <returns>
+        ///   The string representation of the MAC address.
+        /// </returns>
+        public static string ConvertMacAddressToString(ulong address) {
+            var bytes = BitConverter.GetBytes(address);
+
+            return ToMacAddressString(BitConverter.IsLittleEndian
+                ? bytes.Reverse()
+                : bytes);
+
+            string ToMacAddressString(IEnumerable<byte> bytes) {
+                return string.Join(":", bytes.Select(x => x.ToString("X2")));
+            }
+        }
+
+
+        /// <summary>
+        /// Converts a <see cref="string"/> MAC address to its <see cref="ulong"/> equivalent.
+        /// </summary>
+        /// <param name="address">
+        ///   The <see cref="string"/> MAC address.
+        /// </param>
+        /// <returns>
+        ///   The <see cref="ulong"/> representation of the MAC address.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="address"/> is not a valid MAC address.
+        /// </exception>
+        /// <remarks>
+        ///   The <paramref name="address"/> must be specified in the format <c>XX:XX:XX:XX:XX:XX:XX:XX</c> 
+        ///   or <c>XX-XX-XX-XX-XX-XX-XX-XX</c>. Leading zero-bytes can be omitted e.g. 
+        ///   <c>00:00:12:34:56:78:9A:BC</c> can be specified as <c>12:34:56:78:9A:BC</c>.
+        /// </remarks>
+        public static ulong ConvertMacAddressToUInt64(string address) {
+            if (!TryConvertMacAddressToUInt64(address, out var numericAddress)) {
+                throw new ArgumentOutOfRangeException(nameof(address));
+            }
+
+            return numericAddress;
+        }
+
+
+        /// <summary>
+        /// Converts a <see cref="string"/> MAC address to its <see cref="ulong"/> equivalent.
+        /// </summary>
+        /// <param name="address">
+        ///   The <see cref="string"/> MAC address.
+        /// </param>
+        /// <returns>
+        ///   The <see cref="ulong"/> representation of the MAC address.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="address"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="address"/> is not a valid MAC address.
+        /// </exception>
+        /// <remarks>
+        ///   The <paramref name="address"/> must be specified in the format <c>XX:XX:XX:XX:XX:XX:XX:XX</c> 
+        ///   or <c>XX-XX-XX-XX-XX-XX-XX-XX</c>. Leading zero-bytes can be omitted e.g. 
+        ///   <c>00:00:12:34:56:78:9A:BC</c> can be specified as <c>12:34:56:78:9A:BC</c>.
+        /// </remarks>
+        public static bool TryConvertMacAddressToUInt64(string address, out ulong numericAddress) {
+            if (address == null) {
+                numericAddress = 0;
+                return false;
+            }
+
+            var m = s_macAddressMatcher.Match(address);
+            if (!m.Success) {
+                numericAddress = 0;
+                return false;
+            }
+
+            var parsedBytes = m.Groups["byte"].Captures.Select(x => byte.Parse(x.Value, NumberStyles.HexNumber)).ToArray();
+            var bytes = parsedBytes.Length == 8
+                ? parsedBytes
+                : Enumerable.Repeat<byte>(0, 8 - parsedBytes.Length).Concat(parsedBytes).ToArray();
+
+            // Bytes are currently in network byte order (i.e. big-endian).
+            if (BitConverter.IsLittleEndian) {
+                bytes = bytes.Reverse().ToArray();
+            }
+
+            numericAddress = BitConverter.ToUInt64(bytes.ToArray());
+            return true;
+        }
+
+
+        /// <summary>
+        /// Matches a MAC address string.
+        /// </summary>
+        private static readonly Regex s_macAddressMatcher = new Regex(@"^(?<byte>[0-9a-f]{2})(?:(?::|-)(?<byte>[0-9a-f]{2})){0,7}$", RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
     }
 }

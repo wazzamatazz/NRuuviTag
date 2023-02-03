@@ -17,7 +17,7 @@ namespace NRuuviTag.Cli {
         ///   An <see cref="IEnumerable{Device}"/> describing the devices.
         /// </returns>
         public IEnumerable<Device> GetDevices() {
-            return this.Select(x => new Device() { 
+            return this.Select(x => new Device() {
                 DeviceId = x.Key,
                 DisplayName = x.Value.DisplayName,
                 MacAddress = x.Value.MacAddress

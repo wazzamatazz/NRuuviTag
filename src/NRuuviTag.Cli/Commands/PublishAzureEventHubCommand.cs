@@ -99,7 +99,7 @@ namespace NRuuviTag.Cli.Commands {
                 KnownDevicesOnly = settings.KnownDevicesOnly,
                 GetDeviceInfo = addr => {
                     lock (this) {
-                        return devices.FirstOrDefault(x => string.Equals(addr, x.MacAddress, StringComparison.OrdinalIgnoreCase));
+                        return devices.FirstOrDefault(x => MacAddressComparer.Instance.Equals(addr, x.MacAddress));
                     }
                 }
             };
