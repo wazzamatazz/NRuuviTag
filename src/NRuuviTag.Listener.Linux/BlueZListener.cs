@@ -110,20 +110,25 @@ namespace NRuuviTag.Listener.Linux {
 
                 // Adds a watcher for the specified device so that we can emit new samples when the
                 // device properties change.
-                async Task AddDeviceWatcher(HashtagChris.DotNetBlueZ.Device device, Device1Properties properties) {
+                async Task<bool> AddDeviceWatcher(HashtagChris.DotNetBlueZ.Device device, Device1Properties properties) {
                     if (!running || cancellationToken.IsCancellationRequested) {
-                        return;
+                        return false;
                     }
 
                     await @lock.WaitAsync(cancellationToken).ConfigureAwait(false);
                     try {
                         if (watchers.ContainsKey(properties.Address)) {
-                            return;
+                            return false;
                         }
+
+                        // Emit initial scan result.
+                        EmitDeviceProperties(properties);
 
                         watchers[properties.Address] = await device.WatchPropertiesAsync(changes => {
                             UpdateDeviceProperties(properties, changes);
                         }).ConfigureAwait(false);
+
+                        return true;
                     }
                     finally {
                         @lock.Release();
@@ -132,29 +137,42 @@ namespace NRuuviTag.Listener.Linux {
 
                 // Handler for when BlueZ detects a new device.
                 adapter.DeviceFound += async (sender, args) => {
-                    if (!running || cancellationToken.IsCancellationRequested) {
-                        return;
-                    }
+                    var disposeDevice = false;
 
-                    var props = await args.Device.GetAllAsync().ConfigureAwait(false);
-                    if (cancellationToken.IsCancellationRequested) {
-                        return;
-                    }
+                    try {
+                        if (!running || cancellationToken.IsCancellationRequested) {
+                            disposeDevice = true;
+                            return;
+                        }
 
-                    if (props.ManufacturerData == null || !props.ManufacturerData.ContainsKey(Constants.ManufacturerId)) {
-                        // This is not a RuuviTag.
-                        return;
-                    }
+                        var props = await args.Device.GetAllAsync().ConfigureAwait(false);
+                        if (cancellationToken.IsCancellationRequested) {
+                            disposeDevice = true;
+                            return;
+                        }
 
-                    if (filter != null && !filter.Invoke(props.Address)) {
-                        // We are not interested in this RuuviTag.
-                        return;
-                    }
+                        if (props.ManufacturerData == null || !props.ManufacturerData.ContainsKey(Constants.ManufacturerId)) {
+                            // This is not a RuuviTag.
+                            disposeDevice = true;
+                            return;
+                        }
 
-                    // Emit initial scan result.
-                    EmitDeviceProperties(props);
-                    // Watch for changes to this device.
-                    await AddDeviceWatcher(args.Device, props).ConfigureAwait(false);
+                        if (filter != null && !filter.Invoke(props.Address)) {
+                            // We are not interested in this RuuviTag.
+                            disposeDevice = true;
+                            return;
+                        }
+
+                        // Watch for changes to this device.
+                        if (!await AddDeviceWatcher(args.Device, props).ConfigureAwait(false)) {
+                            disposeDevice = true;
+                        }
+                    }
+                    finally {
+                        if (disposeDevice) {
+                            args.Device.Dispose();
+                        }
+                    }
                 };
 
                 try {
