@@ -20,7 +20,7 @@
     <Content Include="..\submodules\DotNet-BlueZ\src\bin\$(Configuration)\$(TargetFramework)\DotNetBlueZ.dll">
       <Pack>true</Pack>
       <PackagePath>lib\$(TargetFramework)</PackagePath>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   
