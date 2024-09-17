@@ -18,7 +18,7 @@ namespace NRuuviTag.Mqtt {
         /// <summary>
         /// The client certificates to use. Ignored if <see cref="UseTls"/> is <see langword="false"/>.
         /// </summary>
-        public IEnumerable<X509Certificate>? ClientCertificates { get; set; }
+        public IEnumerable<X509Certificate2>? ClientCertificates { get; set; }
 
         /// <summary>
         /// Specifies if untrusted server certificates will be allowed when validating server 
