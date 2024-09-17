@@ -46,10 +46,7 @@ namespace Microsoft.Extensions.Hosting {
                 await host.StartAsync().ConfigureAwait(false);
 
                 using (var scope = host.Services.CreateScope()) {
-                    var typeRegistrar = scope.ServiceProvider.GetRequiredService<TypeResolver>();
-                    typeRegistrar.ServiceProvider = scope.ServiceProvider;
-
-                    var app = host.Services.GetRequiredService<CommandApp>();
+                    var app = scope.ServiceProvider.GetRequiredService<CommandApp>();
                     return await app.RunAsync(args).ConfigureAwait(false);
                 }
             }
