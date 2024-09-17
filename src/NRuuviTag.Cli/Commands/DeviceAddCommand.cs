@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 using NRuuviTag.Mqtt;
 
@@ -19,6 +20,23 @@ namespace NRuuviTag.Cli.Commands {
     /// </summary>
     public class DeviceAddCommand : AsyncCommand<DeviceAddCommandSettings> {
 
+        /// <summary>
+        /// The known devices.
+        /// </summary>
+        private readonly DeviceCollection _devices;
+
+
+        /// <summary>
+        /// Creates a new <see cref="DeviceAddCommand"/> instance.
+        /// </summary>
+        /// <param name="devices">
+        ///   The known devices.
+        /// </param>
+        public DeviceAddCommand(IOptions<DeviceCollection> devices) {
+            _devices = devices.Value;
+        }
+
+
         /// <inheritdoc/>
         public override async Task<int> ExecuteAsync(CommandContext context, DeviceAddCommandSettings settings) {
             var device = new Device() { 
@@ -29,53 +47,27 @@ namespace NRuuviTag.Cli.Commands {
                     : settings.DeviceId!
             };
 
-            var devicesJsonFile = CommandUtilities.GetDevicesJsonFile();
-
-            DeviceCollection? devices = null;
-
-            if (devicesJsonFile.Exists) {
-                // File already exists; we need to load the devices in, add the new device to the
-                // collection, and write back to disk.
-                string? json;
-                using (var reader = devicesJsonFile.OpenText()) {
-                    json = await reader.ReadToEndAsync().ConfigureAwait(false);
-                }
-
-                if (!string.IsNullOrWhiteSpace(json)) {
-                    var config = JsonSerializer.Deserialize<JsonElement>(json);
-                    if (config.ValueKind != JsonValueKind.Object) {
-                        throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, Resources.Error_InvalidDevicesJson, config.ValueKind));
-                    }
-
-                    if (config.TryGetProperty("Devices", out var devicesElement)) {
-                        devices = JsonSerializer.Deserialize<DeviceCollection>(devicesElement.GetRawText());
-                    }
-                }
-            }
-
-            if (devices == null) {
-                devices = new DeviceCollection();
-            }
-
             // We need to ensure that we have not previously added another device with the same
             // MAC address but a different device ID.
-            var existingWithSameMacAddress = devices.FirstOrDefault(x => string.Equals(x.Value.MacAddress, device.MacAddress, StringComparison.OrdinalIgnoreCase));
+            var existingWithSameMacAddress = _devices.FirstOrDefault(x => string.Equals(x.Value.MacAddress, device.MacAddress, StringComparison.OrdinalIgnoreCase));
             if (existingWithSameMacAddress.Key != null && !string.Equals(existingWithSameMacAddress.Key, device.DeviceId, StringComparison.Ordinal)) {
                 throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, Resources.Error_DeviceWithSameMacAlreadyRegistered, device.MacAddress));
             }
 
             // Update devices collection and save JSON file.
 
-            devices[device.DeviceId] = new DeviceCollectionEntry() { 
+            _devices[device.DeviceId] = new DeviceCollectionEntry() { 
                 DisplayName = device.DisplayName,
                 MacAddress = device.MacAddress
             };
 
             var updatedDeviceConfig = new {
-                Devices = devices
+                Devices = _devices
             };
 
-            // Esnure directory exists.
+            var devicesJsonFile = CommandUtilities.GetDevicesJsonFile();
+
+            // Ensure directory exists.
             devicesJsonFile.Directory.Create();
 
             using (var stream = devicesJsonFile.Open(FileMode.Create, FileAccess.Write)) {

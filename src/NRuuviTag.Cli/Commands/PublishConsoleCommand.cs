@@ -8,8 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-using NRuuviTag.Mqtt;
-
 using Spectre.Console.Cli;
 
 namespace NRuuviTag.Cli.Commands {

@@ -259,7 +259,7 @@ namespace NRuuviTag.Cli.Commands {
         }
 
 
-        internal IEnumerable<X509Certificate>? GetClientCertificates() {
+        internal IEnumerable<X509Certificate2>? GetClientCertificates() {
             var clientCertFile = GetClientCertificateFile(this);
             if (clientCertFile == null || !clientCertFile.Exists) {
                 return null;
@@ -267,7 +267,7 @@ namespace NRuuviTag.Cli.Commands {
 
             var result = new X509Certificate2Collection();
             result.Import(clientCertFile.FullName, ClientCertificatePassword, X509KeyStorageFlags.DefaultKeySet);
-            return result.Cast<X509Certificate>();
+            return result.Cast<X509Certificate2>();
         }
 
     }

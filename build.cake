@@ -15,7 +15,7 @@ const string VersionFile = "./build/version.json";
 // --target=<TARGET>
 //   The Cake target to run. 
 //     Default: Test
-//     Possible Values: Clean, Restore, Build, Test, Pack, Publish, BillOfMaterials
+//     Possible Values: Clean, Restore, Build, Test, Pack, Publish, PublishContainer, BillOfMaterials
 //
 // --configuration=<CONFIGURATION>
 //   The MSBuild configuration to use. 
@@ -58,10 +58,22 @@ const string VersionFile = "./build/version.json";
 //   Specifies the GitHub personal access token to use when making authenticated API calls to 
 //   GitHub while running the BillOfMaterials target. You must specify the --github-username 
 //   argument as well when specifying this argument.
+//
+// --container-registry=<REGISTRY>
+//   The container registry to use.
+//     Default: Local Docker or Podman daemon
+//
+// --container-os=<OS>
+//   The container operating system to use.
+//     Default: linux
+//
+// --container-arch=<ARCHITECTURE>
+//   The container operating system to use.
+//     Default: x64
 // 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#load nuget:?package=Jaahas.Cake.Extensions&version=1.5.0
+#load nuget:?package=Jaahas.Cake.Extensions&version=2.0.2
 
 // Bootstrap build context and tasks.
 Bootstrap(DefaultSolutionFile, VersionFile);
@@ -72,6 +84,7 @@ Task("Publish")
     .Does<BuildState>(state => {
         foreach (var projectFile in GetFiles("./**/*.*proj")) {
             var projectDir = projectFile.GetDirectory();
+
             foreach (var publishProfileFile in GetFiles(projectDir.FullPath + "/**/*.pubxml")) {
                 WriteLogMessage(BuildSystem, $"Publishing project {projectFile.GetFilename()} using profile {publishProfileFile.GetFilename()}.");
 
@@ -87,8 +100,44 @@ Task("Publish")
         }
     });
 
-// Get the target that was specified.
-var target = GetTarget();
+// Add PublishContainer target
+Task("PublishContainer")
+    .IsDependentOn("Test")
+    .Does<BuildState>(state => {
+        var containerImageProjects = new string [] {
+            "NRuuviTag.Cli.Linux"
+        };
 
-// Run the target.
-RunTarget(target);
+        var registry = Argument("container-registry", "");
+        var os = Argument("container-os", "linux");
+        var arch = Argument("container-arch", "x64");
+
+        foreach (var projectFile in GetFiles("./**/*.*proj")) {
+            var projectDir = projectFile.GetDirectory();
+
+            // Publish container images.
+            if (!containerImageProjects.Contains(projectFile.GetFilenameWithoutExtension().ToString())) {
+                continue;
+            }
+            
+            WriteLogMessage(BuildSystem, $"Publishing {os}-{arch} container image for project {projectFile.GetFilename()} to {(string.IsNullOrWhiteSpace(registry) ? "default registry" : registry)}");
+
+            var buildSettings = new DotNetPublishSettings() { Configuration = state.Configuration }
+                .WithArgumentCustomization(args => args.Append($"--os {os}").Append($"--arch {arch}"));
+
+            buildSettings.MSBuildSettings = new DotNetMSBuildSettings();
+
+            if (!string.IsNullOrWhiteSpace(registry)) {
+                buildSettings.MSBuildSettings.WithProperty("ContainerRegistry", registry);
+            }
+
+            ApplyMSBuildProperties(buildSettings.MSBuildSettings, state);
+
+            buildSettings.MSBuildSettings.WithTarget("PublishContainer");
+            
+            DotNetPublish(projectFile.FullPath, buildSettings);
+        }
+    });
+
+// Run the requested target.
+Run();

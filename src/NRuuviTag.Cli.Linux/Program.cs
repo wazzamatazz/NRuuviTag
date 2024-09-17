@@ -15,7 +15,7 @@ namespace NRuuviTag.Cli.Windows {
     public class Program {
 
         public static async Task<int> Main(string[] args) {
-           return await CreateHostBuilder(args)
+            return await CreateHostBuilder(args)
                 .BuildAndRunRuuviTagPublisher(args)
                 .ConfigureAwait(false);
         }

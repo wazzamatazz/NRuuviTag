@@ -1,8 +1,6 @@
 ﻿using System;
 using System.IO;
 
-using Microsoft.Extensions.Hosting;
-
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -43,6 +41,7 @@ namespace NRuuviTag.Cli.Commands {
 #endif
 
                 options.SetApplicationName("nruuvitag");
+                options.UseAssemblyInformationalVersion();
 
                 options.AddBranch("publish", branchOptions => {
                     branchOptions.SetDescription("Observes RuuviTag BLE broadcasts and writes them to a destination.");
@@ -93,12 +92,30 @@ namespace NRuuviTag.Cli.Commands {
         /// <returns>
         ///   A new <see cref="FileInfo"/> object.
         /// </returns>
-        internal static FileInfo GetDevicesJsonFile() {
-            return new FileInfo(Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                LocalDataFolderName,
-                DevicesJsonFileName
-            ));
+        internal static FileInfo GetDevicesJsonFile() => GetDevicesJsonFile(null);
+
+
+        /// <summary>
+        /// Gets a <see cref="FileInfo"/> object for the <c>devices.json</c> file containing known 
+        /// device configurations.
+        /// </summary>
+        /// <param name="path">
+        ///   The path to the directory containing the <c>devices.json</c> file. Specify <see langword="null"/> 
+        ///   to use the <c>.nruuvitag</c> folder under the <see cref="Environment.SpecialFolder.UserProfile"/> 
+        ///   folder.
+        /// </param>
+        /// <returns>
+        ///   A new <see cref="FileInfo"/> object.
+        /// </returns>
+        internal static FileInfo GetDevicesJsonFile(string? path) {
+            if (string.IsNullOrEmpty(path)) {
+                path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), LocalDataFolderName);
+            }
+            if (!Path.IsPathRooted(path)) {
+                path = Path.GetFullPath(path, Environment.CurrentDirectory);
+            } 
+
+            return new FileInfo(Path.Combine(path, DevicesJsonFileName));
         }
 
 

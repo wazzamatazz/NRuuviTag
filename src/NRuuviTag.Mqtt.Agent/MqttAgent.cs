@@ -131,7 +131,9 @@ namespace NRuuviTag.Mqtt {
 
             if (isWebsocketConnection) {
                 // Configure websocket MQTT connection.
-                clientOptionsBuilder = clientOptionsBuilder.WithWebSocketServer(hostname);
+                clientOptionsBuilder = clientOptionsBuilder.WithWebSocketServer(builder => {
+                    builder.WithUri(hostname);
+                });
             }
             else {
                 // Configure TCP MQTT connection.
@@ -155,18 +157,23 @@ namespace NRuuviTag.Mqtt {
 
             // Configure TLS if required.
             if (useTls) {
-                clientOptionsBuilder = clientOptionsBuilder.WithTls(tlsOptions => {
-                    tlsOptions.UseTls = true;
+                clientOptionsBuilder = clientOptionsBuilder.WithTlsOptions(builder => {
+                    builder.UseTls();
 
                     if (_options.TlsOptions?.ClientCertificates != null) {
-                        tlsOptions.Certificates = _options.TlsOptions.ClientCertificates;
+                        builder.WithClientCertificates(_options.TlsOptions.ClientCertificates);
                     }
 
-                    tlsOptions.AllowUntrustedCertificates = _options.TlsOptions?.AllowUntrustedCertificates ?? false;
-                    tlsOptions.IgnoreCertificateChainErrors = _options.TlsOptions?.IgnoreCertificateChainErrors ?? false;
+                    if (_options.TlsOptions?.AllowUntrustedCertificates ?? false) {
+                        builder.WithAllowUntrustedCertificates();
+                    }
+
+                    if (_options.TlsOptions?.IgnoreCertificateChainErrors ?? false) {
+                        builder.WithIgnoreCertificateChainErrors();
+                    }
 
                     if (_options.TlsOptions?.ValidateServerCertificate != null) {
-                        tlsOptions.CertificateValidationHandler = context => _options.TlsOptions.ValidateServerCertificate.Invoke(context.Certificate, context.Chain, context.SslPolicyErrors);
+                        builder.WithCertificateValidationHandler(context => _options.TlsOptions.ValidateServerCertificate.Invoke(context.Certificate, context.Chain, context.SslPolicyErrors));
                     }
                 });
             }

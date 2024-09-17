@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 using Spectre.Console.Cli;
 
@@ -17,46 +17,32 @@ namespace NRuuviTag.Cli.Commands {
     /// </summary>
     public class DeviceRemoveCommand : AsyncCommand<DeviceRemoveCommandSettings> {
 
+        /// <summary>
+        /// The known devices.
+        /// </summary>
+        private readonly DeviceCollection _devices;
+
+
+        /// <summary>
+        /// Creates a new <see cref="DeviceAddCommand"/> instance.
+        /// </summary>
+        /// <param name="devices">
+        ///   The known devices.
+        /// </param>
+        public DeviceRemoveCommand(IOptions<DeviceCollection> devices) {
+            _devices = devices.Value;
+        }
+
+
         /// <inheritdoc/>
         public override async Task<int> ExecuteAsync(CommandContext context, DeviceRemoveCommandSettings settings) {
-            var devicesJsonFile = CommandUtilities.GetDevicesJsonFile();
-
-            if (!devicesJsonFile.Exists) {
+            if (_devices == null || _devices.Count == 0) {
+                // No devices defined
                 Console.WriteLine(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_DeviceNotFound, settings.Device));
                 return 1;
             }
 
-            DeviceCollection? devices = null;
-
-            // File already exists; we need to load the devices in, remove the device from the
-            // collection, and write back to disk.
-            string? json;
-            using (var reader = devicesJsonFile.OpenText()) {
-                json = await reader.ReadToEndAsync().ConfigureAwait(false);
-            }
-
-            if (string.IsNullOrWhiteSpace(json)) {
-                // Invalid JSON
-                Console.WriteLine(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_DeviceNotFound, settings.Device));
-                return 1;
-            }
-
-            var config = JsonSerializer.Deserialize<JsonElement>(json);
-            if (config.ValueKind != JsonValueKind.Object) {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, Resources.Error_InvalidDevicesJson, config.ValueKind));
-            }
-
-            if (config.TryGetProperty("Devices", out var devicesElement)) {
-                devices = JsonSerializer.Deserialize<DeviceCollection>(devicesElement.GetRawText());
-            }
-
-            if (devices == null) {
-                // No Devices section
-                Console.WriteLine(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_DeviceNotFound, settings.Device));
-                return 1;
-            }
-
-            var deviceToRemove = devices.FirstOrDefault(x => { 
+            var deviceToRemove = _devices.FirstOrDefault(x => { 
                 if (string.Equals(x.Key, settings.Device, StringComparison.OrdinalIgnoreCase)) {
                     return true;
                 }
@@ -78,11 +64,16 @@ namespace NRuuviTag.Cli.Commands {
                 return 1;
             }
 
-            devices.Remove(deviceToRemove.Key);
+            _devices.Remove(deviceToRemove.Key);
 
             var updatedDeviceConfig = new {
-                Devices = devices
+                Devices = _devices
             };
+
+            var devicesJsonFile = CommandUtilities.GetDevicesJsonFile();
+
+            // Ensure directory exists.
+            devicesJsonFile.Directory.Create();
 
             using (var stream = devicesJsonFile.Open(FileMode.Create, FileAccess.Write)) {
                 await JsonSerializer.SerializeAsync(stream, updatedDeviceConfig, new JsonSerializerOptions() { WriteIndented = true }).ConfigureAwait(false);

@@ -1,10 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RuntimeIdentifiers>linux-arm;linux-arm64;linux-x64</RuntimeIdentifiers>
     <AssemblyName>nruuvitag</AssemblyName>
     <Description>Command-line tool that can receive broadcasts from RuuviTag IoT sensors and publish readings to a destination.</Description>
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+    <!-- Use root so that the container can access the Bluetooth adapter -->
+    <ContainerUser>root</ContainerUser>
   </PropertyGroup>
 
   <ItemGroup>

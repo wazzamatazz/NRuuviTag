@@ -44,14 +44,8 @@ namespace Microsoft.Extensions.DependencyInjection {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            services.Configure<DeviceCollection>(configuration.GetSection("Devices"));
-
-            var typeResolver = new TypeResolver();
-
-            services.AddSingleton(typeResolver);
-            services.AddTransient<MqttFactory>();
+            services.AddCoreRuuviTagServices(configuration);
             services.AddTransient<IRuuviTagListener, TListener>();
-            services.AddSingleton(CommandUtilities.BuildCommandApp(typeResolver));
 
             return services;
         }
@@ -96,14 +90,34 @@ namespace Microsoft.Extensions.DependencyInjection {
                 throw new ArgumentNullException(nameof(factory));
             }
 
+            services.AddCoreRuuviTagServices(configuration);
+            services.AddTransient<IRuuviTagListener, TListener>(factory);
+
+            return services;
+        }
+
+
+        /// <summary>
+        /// Registers services required for the <see cref="CommandApp"/>.
+        /// </summary>
+        /// <param name="services">
+        ///   The <see cref="IServiceCollection"/>.
+        /// </param>
+        /// <param name="configuration">
+        ///   The <see cref="Configuration.IConfiguration"/> for the application.
+        /// </param>
+        /// <returns>
+        ///   The <see cref="IServiceCollection"/>.
+        /// </returns>
+        private static IServiceCollection AddCoreRuuviTagServices(this IServiceCollection services, IConfiguration configuration) {
             services.Configure<DeviceCollection>(configuration.GetSection("Devices"));
 
-            var typeResolver = new TypeResolver();
-
-            services.AddSingleton(typeResolver);
             services.AddTransient<MqttFactory>();
-            services.AddTransient<IRuuviTagListener, TListener>(factory);
-            services.AddSingleton(CommandUtilities.BuildCommandApp(typeResolver));
+
+            services.AddScoped<TypeResolver>();
+            services.AddScoped<ITypeRegistrar>(provider => provider.GetRequiredService<TypeResolver>());
+            services.AddScoped<ITypeResolver>(provider => provider.GetRequiredService<TypeResolver>());
+            services.AddScoped(provider => CommandUtilities.BuildCommandApp(provider.GetRequiredService<ITypeRegistrar>()));
 
             return services;
         }
