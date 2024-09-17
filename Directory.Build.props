@@ -26,7 +26,11 @@
     building via build.ps1 or build.sh. It is defined here to allow Visual Studio to build with 
     the solution with the correct version number.
     -->
-    <Version>0.13.0</Version>
+    <Version>0.14.0</Version>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ContainerImageTags>latest</ContainerImageTags>
   </PropertyGroup>
 
   <Choose>
