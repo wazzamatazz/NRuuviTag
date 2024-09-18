@@ -2,18 +2,18 @@
 
 ## Building the Container Image
 
-To build a Linux container image for the NRuuviTag CLI application, run the 'PublishContainers' target using the build script:
+To build a Linux container image for the NRuuviTag CLI application, run the 'PublishContainer' target using the build script:
 
 **PowerShell**
 
 ```pwsh
-.\build.ps1 --target PublishContainers --configuration Release
+.\build.ps1 --target PublishContainer --configuration Release
 ``` 
 
 **Bash**
 
 ```sh
-./build.sh --target PublishContainers --configuration Release
+./build.sh --target PublishContainer --configuration Release
 ``` 
 
 The default settings publish an x64 Linux image to the local Docker or Podman registry. To publish an image for a different architecture (e.g. `arm64`) specify the `--container-arch` parameter when running the build script. You can also publish the image to an alternative container registry by specifying the `--container-registry` parameter. For example:
@@ -22,7 +22,7 @@ The default settings publish an x64 Linux image to the local Docker or Podman re
 
 ```pwsh
 .\build.ps1 `
-    --target Publish `
+    --target PublishContainer `
     --configuration Release `
     --container-arch arm64 `
     --container-registry myregistry.mymachine.local:5000
@@ -32,7 +32,7 @@ The default settings publish an x64 Linux image to the local Docker or Podman re
 
 ```sh
 ./build.sh \
-    --target Publish \
+    --target PublishContainer \
     --configuration Release \
     --container-arch arm64 \
     --container-registry myregistry.mymachine.local:5000
