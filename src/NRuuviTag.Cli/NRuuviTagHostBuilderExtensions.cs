@@ -20,8 +20,8 @@ namespace Microsoft.Extensions.Hosting {
     public static class NRuuviTagHostBuilderExtensions {
 
         /// <summary>
-        /// Builds an <see cref="IHost"/> and runs a <see cref="CommandApp"/> for an MQTT agent using 
-        /// the specified command-line arguments.
+        /// Builds an <see cref="IHost"/> and runs a <see cref="CommandApp"/> using the specified 
+        /// command-line arguments.
         /// </summary>
         /// <param name="builder">
         ///   The <see cref="IHostBuilder"/>.
@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Hosting {
         ///   The command-line arguments.
         /// </param>
         /// <returns>
-        ///   A <see cref="Task{Int32}"/> that will return the result of the underlying <see cref="CommandApp"/>.
+        ///   A <see cref="Task{TResult}"/> that will return the result of the underlying <see cref="CommandApp"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="builder"/> is <see langword="null"/>.
