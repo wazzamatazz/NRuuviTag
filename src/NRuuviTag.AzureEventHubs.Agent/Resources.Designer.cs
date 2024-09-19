@@ -19,7 +19,7 @@ namespace NRuuviTag.AzureEventHubs {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -57,42 +57,6 @@ namespace NRuuviTag.AzureEventHubs {
             }
             set {
                 resourceCulture = value;
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Batch with {0} items published to event hub..
-        /// </summary>
-        internal static string LogMessage_EventHubBatchPublished {
-            get {
-                return ResourceManager.GetString("LogMessage_EventHubBatchPublished", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Starting event hub client..
-        /// </summary>
-        internal static string LogMessage_EventHubClientStarting {
-            get {
-                return ResourceManager.GetString("LogMessage_EventHubClientStarting", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Event hub client stopped..
-        /// </summary>
-        internal static string LogMessage_EventHubClientStopped {
-            get {
-                return ResourceManager.GetString("LogMessage_EventHubClientStopped", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Event hub publish error..
-        /// </summary>
-        internal static string LogMessage_EventHubPublishError {
-            get {
-                return ResourceManager.GetString("LogMessage_EventHubPublishError", resourceCulture);
             }
         }
     }

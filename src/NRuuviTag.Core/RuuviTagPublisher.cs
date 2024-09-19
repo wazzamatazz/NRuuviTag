@@ -13,7 +13,7 @@ namespace NRuuviTag {
     /// Base class for an agent that can observe RuuviTag broadcasts and publish them to a 
     /// destination.
     /// </summary>
-    public abstract class RuuviTagPublisher : IAsyncDisposable {
+    public abstract partial class RuuviTagPublisher : IAsyncDisposable {
 
         /// <summary>
         /// Flags if the publisher has been disposed.
@@ -23,7 +23,7 @@ namespace NRuuviTag {
         /// <summary>
         /// Logging.
         /// </summary>
-        protected ILogger Logger { get; }
+        private readonly ILogger<RuuviTagPublisher> _logger;
 
         /// <summary>
         /// The <see cref="IRuuviTagListener"/> to observe.
@@ -71,12 +71,12 @@ namespace NRuuviTag {
             IRuuviTagListener listener, 
             int publishInterval, 
             Func<string, bool>? filter = null, 
-            ILogger? logger = null
+            ILogger<RuuviTagPublisher>? logger = null
         ) {
             _listener = listener ?? throw new ArgumentNullException(nameof(listener));
             _publishInterval = publishInterval;
             _filter = filter;
-            Logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+            _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RuuviTagPublisher>.Instance;
         }
 
 
@@ -139,7 +139,7 @@ namespace NRuuviTag {
                 catch (OperationCanceledException) { }
                 catch (ChannelClosedException) { }
                 catch (Exception e) {
-                    Logger.LogError(e, Resources.Error_PublishError);
+                    LogPublishError(e);
                 }
             }, cancellationToken);
 
@@ -191,7 +191,7 @@ namespace NRuuviTag {
                     }
                     else {
                         // Publish immediately.
-                        await PublishAsync(publishChannel, new[] { item! }, cancellationToken).ConfigureAwait(false);
+                        await PublishAsync(publishChannel, item!, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
@@ -229,6 +229,9 @@ namespace NRuuviTag {
         /// <summary>
         /// Publishes the specified samples.
         /// </summary>
+        /// <param name="channel">
+        ///   The channel to publish to.
+        /// </param>
         /// <param name="samples">
         ///   The samples.
         /// </param>
@@ -238,10 +241,30 @@ namespace NRuuviTag {
         /// <returns>
         ///   A <see cref="Task"/> that will perform the publish operation.
         /// </returns>
-        private async Task PublishAsync(ChannelWriter<RuuviTagSample> channel, IEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
+        private async ValueTask PublishAsync(ChannelWriter<RuuviTagSample> channel, IEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
             foreach (var sample in samples) {
                 await channel.WriteAsync(sample, cancellationToken).ConfigureAwait(false);
             }
+        }
+
+
+        /// <summary>
+        /// Publishes the specified sample.
+        /// </summary>
+        /// <param name="channel">
+        ///   The channel to publish to.
+        /// </param>
+        /// <param name="samples">
+        ///   The samples.
+        /// </param>
+        /// <param name="cancellationToken">
+        ///   The cancellation token for the operation.
+        /// </param>
+        /// <returns>
+        ///   A <see cref="Task"/> that will perform the publish operation.
+        /// </returns>
+        private async ValueTask PublishAsync(ChannelWriter<RuuviTagSample> channel, RuuviTagSample sample, CancellationToken cancellationToken) {
+            await channel.WriteAsync(sample, cancellationToken).ConfigureAwait(false);
         }
 
 
@@ -263,8 +286,12 @@ namespace NRuuviTag {
         ///   A <see cref="ValueTask"/> that will perform any required clean-up.
         /// </returns>
         protected virtual ValueTask DisposeAsyncCore() {
-            return new ValueTask();
+            return default;
         }
+
+
+        [LoggerMessage(1, LogLevel.Error, "Error during publish.")]
+        partial void LogPublishError(Exception error);
 
     }
 }

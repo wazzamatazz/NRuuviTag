@@ -80,7 +80,7 @@ namespace NRuuviTag.Mqtt.Tests {
                 TlsOptions = new MqttAgentTlsOptions() {
                     UseTls = false
                 }
-            }, new MqttFactory(), s_loggerFactory.CreateLogger<MqttAgent>());
+            }, new MqttFactory(), s_loggerFactory);
 
             var now = DateTimeOffset.Now;
             var signalStrength = -79;
@@ -159,7 +159,7 @@ namespace NRuuviTag.Mqtt.Tests {
                 PrepareForPublish = s => {
                     s.AccelerationX = null;
                 }
-            }, new MqttFactory(), s_loggerFactory.CreateLogger<MqttAgent>());
+            }, new MqttFactory(), s_loggerFactory);
 
             var now = DateTimeOffset.Now;
             var signalStrength = -79;
@@ -235,7 +235,7 @@ namespace NRuuviTag.Mqtt.Tests {
                 TlsOptions = new MqttAgentTlsOptions() {
                     UseTls = false
                 }
-            }, new MqttFactory(), s_loggerFactory.CreateLogger<MqttAgent>());
+            }, new MqttFactory(), s_loggerFactory);
 
             var now = DateTimeOffset.Now;
             var signalStrength = -79;
@@ -369,7 +369,7 @@ namespace NRuuviTag.Mqtt.Tests {
                     s.AccelerationX = null;
                     s.MacAddress = null;
                 }
-            }, new MqttFactory(), s_loggerFactory.CreateLogger<MqttAgent>());
+            }, new MqttFactory(), s_loggerFactory);
 
             var now = DateTimeOffset.Now;
             var signalStrength = -79;

@@ -22,7 +22,7 @@ namespace NRuuviTag.Mqtt {
     /// Observes measurements emitted by an <see cref="IRuuviTagListener"/> and publishes them to 
     /// an MQTT broker.
     /// </summary>
-    public class MqttAgent : RuuviTagPublisher {
+    public partial class MqttAgent : RuuviTagPublisher {
 
         /// <summary>
         /// For creating device IDs if no callback for performing this task is specified.
@@ -38,6 +38,11 @@ namespace NRuuviTag.Mqtt {
         /// Device ID for all devices where the device ID cannot be determined.
         /// </summary>
         private const string UnknownDeviceId = "unknown";
+
+        /// <summary>
+        /// Logging.
+        /// </summary>
+        private readonly ILogger<MqttAgent> _logger;
 
         /// <summary>
         /// MQTT client.
@@ -80,8 +85,8 @@ namespace NRuuviTag.Mqtt {
         /// <param name="factory">
         ///   The factory to use when creating MQTT clients.
         /// </param>
-        /// <param name="logger">
-        ///   The logger for the agent.
+        /// <param name="loggerFactory">
+        ///   The logger factory to use.
         /// </param>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="listener"/> is <see langword="null"/>.
@@ -92,10 +97,12 @@ namespace NRuuviTag.Mqtt {
         /// <exception cref="ValidationException">
         ///   <paramref name="options"/> fails validation.
         /// </exception>
-        public MqttAgent(IRuuviTagListener listener, MqttAgentOptions options, MqttFactory factory, ILogger<MqttAgent>? logger = null)
-            : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), logger) {
+        public MqttAgent(IRuuviTagListener listener, MqttAgentOptions options, MqttFactory factory, ILoggerFactory? loggerFactory = null)
+            : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             Validator.ValidateObject(options, new ValidationContext(options), true);
+
+            _logger = loggerFactory?.CreateLogger<MqttAgent>() ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttAgent>.Instance;
 
             // If no client ID was specified, we'll generate one.
             var clientId = string.IsNullOrWhiteSpace(_options.ClientId) 
@@ -294,7 +301,7 @@ namespace NRuuviTag.Mqtt {
         ///   The event arguments.
         /// </param>
         private Task OnConnectedAsync(MqttClientConnectedEventArgs args) {
-            Logger.LogInformation(Resources.LogMessage_MqttClientConnected);
+            LogMqttClientConnected();
             return Task.CompletedTask;
         }
 
@@ -306,7 +313,7 @@ namespace NRuuviTag.Mqtt {
         ///   The event arguments.
         /// </param>
         private Task OnDisconnectedAsync(MqttClientDisconnectedEventArgs args) {
-            Logger.LogWarning(args.Exception, Resources.LogMessage_MqttClientDisconnected);
+            LogMqttClientDisconnected(args.Exception);
             return Task.CompletedTask;
         }
 
@@ -565,7 +572,7 @@ namespace NRuuviTag.Mqtt {
 
         /// <inheritdoc/>
         protected override async Task RunAsync(IAsyncEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
-            Logger.LogInformation(Resources.LogMessage_StartingMqttBridge);
+            LogStartingMqttAgent();
 
             await _mqttClient.StartAsync(_mqttClientOptions).ConfigureAwait(false);
             try {
@@ -573,14 +580,12 @@ namespace NRuuviTag.Mqtt {
                     var deviceInfo = GetDeviceInfo(item);
                     if (_options.KnownDevicesOnly && string.Equals(deviceInfo.DeviceId, UnknownDeviceId, StringComparison.OrdinalIgnoreCase)) {
                         // Unknown device.
-                        if (Logger.IsEnabled(LogLevel.Trace)) {
-                            Logger.LogTrace(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_SkippingSampleFromUnknownDevice, item.MacAddress));
-                        }
+                        LogSkippingUnknownDeviceSample(item.MacAddress!);
                         continue;
                     }
 
-                    if (Logger.IsEnabled(LogLevel.Debug)) {
-                        Logger.LogDebug($"{(string.IsNullOrWhiteSpace(deviceInfo.DisplayName) ? deviceInfo.DeviceId : deviceInfo.DisplayName)}: {JsonSerializer.Serialize(item)}");
+                    if (_logger.IsEnabled(LogLevel.Trace)) {
+                        LogDeviceSample(deviceInfo.DeviceId!, deviceInfo.DisplayName, JsonSerializer.Serialize(item));
                     }
 
                     try {
@@ -589,15 +594,37 @@ namespace NRuuviTag.Mqtt {
                         }
                     }
                     catch (Exception e) {
-                        Logger.LogError(e, Resources.LogMessage_MqttPublishError);
+                        LogMqttPublishError(e);
                     }
                 }
             }
             finally {
                 await _mqttClient.StopAsync().ConfigureAwait(false);
-                Logger.LogInformation(Resources.LogMessage_MqttBridgeStopped);
+                LogMqttAgentStopped();
             }
         }
+
+
+        [LoggerMessage(1, LogLevel.Information, "Starting MQTT agent.")]
+        partial void LogStartingMqttAgent();
+
+        [LoggerMessage(2, LogLevel.Information, "Stopped MQTT agent.")]
+        partial void LogMqttAgentStopped();
+
+        [LoggerMessage(3, LogLevel.Information, "Connected to MQTT broker.")]
+        partial void LogMqttClientConnected();
+
+        [LoggerMessage(4, LogLevel.Warning, "Disconnected from MQTT broker.")]
+        partial void LogMqttClientDisconnected(Exception error);
+
+        [LoggerMessage(5, LogLevel.Trace, "Skipping sample from device with unknown MAC address: {macAddress}")]
+        partial void LogSkippingUnknownDeviceSample(string macAddress);
+
+        [LoggerMessage(6, LogLevel.Trace, "Observed sample from device {deviceId} ('{displayName}'): {sampleJson}", SkipEnabledCheck = true)]
+        partial void LogDeviceSample(string deviceId, string? displayName, string sampleJson);
+
+        [LoggerMessage(7, LogLevel.Error, "Error publishing message to MQTT broker.")]
+        partial void LogMqttPublishError(Exception error);
 
     }
 }
