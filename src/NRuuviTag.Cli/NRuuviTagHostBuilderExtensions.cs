@@ -6,6 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 using NRuuviTag.Cli;
 
+using OpenTelemetry;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Resources;
+
 using Spectre.Console.Cli;
 
 namespace Microsoft.Extensions.Hosting {
@@ -41,6 +45,15 @@ namespace Microsoft.Extensions.Hosting {
             if (args == null) {
                 throw new ArgumentNullException(nameof(args));
             }
+
+            builder.ConfigureServices((context, services) => {
+                services.AddOpenTelemetry()
+                    .ConfigureResource(builder => builder.AddService<TypeResolver>())
+                    .AddOtlpExporter(context.Configuration)
+                    .WithLogging(null, options => {
+                        options.IncludeFormattedMessage = true;
+                    });
+            });
 
             using (var host = builder.Build()) {
                 await host.StartAsync().ConfigureAwait(false);
