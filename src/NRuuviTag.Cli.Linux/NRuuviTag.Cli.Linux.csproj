@@ -8,6 +8,7 @@
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     <!-- Use root so that the container can access the Bluetooth adapter -->
     <ContainerUser>root</ContainerUser>
+    <UserSecretsId>ef771434-9cd9-4037-b363-b7ca31975c30</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
