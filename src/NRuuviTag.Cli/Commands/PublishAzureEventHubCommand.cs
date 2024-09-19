@@ -104,7 +104,7 @@ namespace NRuuviTag.Cli.Commands {
                 }
             };
 
-            var agent = new AzureEventHubAgent(_listener, agentOptions, _loggerFactory.CreateLogger<AzureEventHubAgent>());
+            var agent = new AzureEventHubAgent(_listener, agentOptions, _loggerFactory);
 
             using (_devices.OnChange(newDevices => UpdateDevices(newDevices)))
             using (var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping)) {

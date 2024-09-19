@@ -145,7 +145,7 @@ namespace NRuuviTag.Cli.Commands {
                 }
             };
 
-            var agent = new MqttAgent(_listener, agentOptions, _mqttFactory, _loggerFactory.CreateLogger<MqttAgent>());
+            var agent = new MqttAgent(_listener, agentOptions, _mqttFactory, _loggerFactory);
 
             using (_devices.OnChange(newDevices => UpdateDevices(newDevices)))
             using (var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping)) {
@@ -166,7 +166,8 @@ namespace NRuuviTag.Cli.Commands {
     /// </summary>
     public class PublishMqttCommandSettings : CommandSettings {
 
-        [CommandArgument(0, "<HOSTNAME_OR_URL>")]
+        [CommandArgument(0, "[HOSTNAME_OR_URL]")]
+        [DefaultValue("localhost")]
         [Description("The hostname, IP address, or URL for the MQTT broker (e.g. 'my-broker.local:21883', 'ws://mybroker.local:8080/mqtt'). The port number is only required when connecting on a non-default port. When specifying a URL, the '--use-tls' flag is implied if the 'https' or 'wss' scheme is specified in the URL.")]
         public string? Hostname { get; set; }
 
@@ -183,8 +184,8 @@ namespace NRuuviTag.Cli.Commands {
         public string? Password { get; set; }
 
         [CommandOption("--version <VERSION>")]
-        [DefaultValue("3.1.1")]
-        [Description("MQTT protocol version to use e.g. 5, 3.1.1 (default)")]
+        [DefaultValue("5")]
+        [Description("MQTT protocol version to use.")]
         public string? ProtocolVersion { get; set; }
 
         [CommandOption("--sample-rate <INTERVAL>")]

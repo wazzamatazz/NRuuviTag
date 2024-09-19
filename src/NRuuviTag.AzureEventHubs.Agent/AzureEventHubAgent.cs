@@ -17,7 +17,12 @@ namespace NRuuviTag.AzureEventHubs {
     /// Observes measurements emitted by an <see cref="IRuuviTagListener"/> and publishes them to 
     /// an Azure Event Hub.
     /// </summary>
-    public class AzureEventHubAgent : RuuviTagPublisher {
+    public partial class AzureEventHubAgent : RuuviTagPublisher {
+
+        /// <summary>
+        /// Logging.
+        /// </summary>
+        private readonly ILogger<AzureEventHubAgent> _logger;
 
         /// <summary>
         /// A delegate that retrieves the device information for a sample based on the MAC address 
@@ -71,8 +76,8 @@ namespace NRuuviTag.AzureEventHubs {
         /// <param name="options">
         ///   Agent options.
         /// </param>
-        /// <param name="logger">
-        ///   The logger for the agent.
+        /// <param name="loggerFactory">
+        ///   The logger factory to use.
         /// </param>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="listener"/> is <see langword="null"/>.
@@ -83,14 +88,14 @@ namespace NRuuviTag.AzureEventHubs {
         /// <exception cref="ValidationException">
         ///   <paramref name="options"/> fails validation.
         /// </exception>
-        public AzureEventHubAgent(IRuuviTagListener listener, AzureEventHubAgentOptions options, ILogger<AzureEventHubAgent>? logger = null) 
-            : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), logger) { 
+        public AzureEventHubAgent(IRuuviTagListener listener, AzureEventHubAgentOptions options, ILoggerFactory? loggerFactory = null) 
+            : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), loggerFactory?.CreateLogger<RuuviTagPublisher>()) { 
             if (options == null) {
                 throw new ArgumentNullException(nameof(options));
             }
             Validator.ValidateObject(options, new ValidationContext(options), true);
 
-
+            _logger = loggerFactory?.CreateLogger<AzureEventHubAgent>() ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<AzureEventHubAgent>.Instance;
             _connectionString = options.ConnectionString; 
             _eventHubName = options.EventHubName;
             _maximumBatchSize = options.MaximumBatchSize;
@@ -130,8 +135,8 @@ namespace NRuuviTag.AzureEventHubs {
 
 
         protected override async Task RunAsync(IAsyncEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
-            Logger.LogInformation(Resources.LogMessage_EventHubClientStarting);
-
+            LogStartingEventHubClient();
+            
             await using (var client = new EventHubProducerClient(_connectionString, _eventHubName)) {
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var batch = await client.CreateBatchAsync(cancellationToken).ConfigureAwait(false);
@@ -140,11 +145,11 @@ namespace NRuuviTag.AzureEventHubs {
                 async Task PublishBatch() {
                     try {
                         await client!.SendAsync(batch).ConfigureAwait(false);
-                        Logger.LogInformation(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_EventHubBatchPublished, batch.Count));
+                        LogEventHubBatchPublished(batch.Count);
                         batch = await client.CreateBatchAsync().ConfigureAwait(false);
                     }
                     catch (Exception e) {
-                        Logger.LogError(e, Resources.LogMessage_EventHubPublishError);
+                        LogEventHubPublishError(batch.Count, e);
                     }
                 }
 
@@ -179,10 +184,23 @@ namespace NRuuviTag.AzureEventHubs {
                 }
                 finally {
                     batch?.Dispose();
-                    Logger.LogInformation(Resources.LogMessage_EventHubClientStopped);
+                    LogEventHubClientStopped();
                 }
             }
         }
+
+
+        [LoggerMessage(1, LogLevel.Information, "Starting event hub client.")]
+        partial void LogStartingEventHubClient();
+
+        [LoggerMessage(2, LogLevel.Information, "Event hub client stopped.")]
+        partial void LogEventHubClientStopped();
+
+        [LoggerMessage(3, LogLevel.Debug, "Published {count} items to the event hub.")]
+        partial void LogEventHubBatchPublished(int count);
+
+        [LoggerMessage(4, LogLevel.Error, "An error occurred while publishing {count} items to the event hub.")]
+        partial void LogEventHubPublishError(int count, Exception error);
 
     }
 }

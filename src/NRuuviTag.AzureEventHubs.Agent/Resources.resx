@@ -117,17 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="LogMessage_EventHubBatchPublished" xml:space="preserve">
-    <value>Batch with {0} items published to event hub.</value>
-    <comment>{0} - batch size</comment>
-  </data>
-  <data name="LogMessage_EventHubClientStarting" xml:space="preserve">
-    <value>Starting event hub client.</value>
-  </data>
-  <data name="LogMessage_EventHubClientStopped" xml:space="preserve">
-    <value>Event hub client stopped.</value>
-  </data>
-  <data name="LogMessage_EventHubPublishError" xml:space="preserve">
-    <value>Event hub publish error.</value>
-  </data>
 </root>
