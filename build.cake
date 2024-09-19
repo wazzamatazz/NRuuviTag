@@ -44,6 +44,18 @@ const string VersionFile = "./build/version.json";
 //   Additional build metadata that will be included in the informational version number generated 
 //   for compiled assemblies.
 //
+// --container-registry=<REGISTRY>
+//   The container registry to use when the PublishContainer target is specified.
+//     Default: Local Docker or Podman daemon
+//
+// --container-os=<OS>
+//   The container operating system to use when the PublishContainer target is specified.
+//     Default: linux
+//
+// --container-arch=<ARCHITECTURE>
+//   The container processor architecture to use when the PublishContainer target is specified.
+//     Default: x64
+//
 // --property=<PROPERTY>
 //   Specifies an additional property to pass to MSBuild during Build and Pack targets. The value
 //   must be specified using a '<NAME>=<VALUE>' format e.g. --property="NoWarn=CS1591". This 
@@ -58,85 +70,17 @@ const string VersionFile = "./build/version.json";
 //   Specifies the GitHub personal access token to use when making authenticated API calls to 
 //   GitHub while running the BillOfMaterials target. You must specify the --github-username 
 //   argument as well when specifying this argument.
-//
-// --container-registry=<REGISTRY>
-//   The container registry to use.
-//     Default: Local Docker or Podman daemon
-//
-// --container-os=<OS>
-//   The container operating system to use.
-//     Default: linux
-//
-// --container-arch=<ARCHITECTURE>
-//   The container operating system to use.
-//     Default: x64
 // 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#load nuget:?package=Jaahas.Cake.Extensions&version=2.0.2
+#load nuget:?package=Jaahas.Cake.Extensions&version=2.1.0
 
 // Bootstrap build context and tasks.
-Bootstrap(DefaultSolutionFile, VersionFile);
-
-// Add Publish target
-Task("Publish")
-    .IsDependentOn("Test")
-    .Does<BuildState>(state => {
-        foreach (var projectFile in GetFiles("./**/*.*proj")) {
-            var projectDir = projectFile.GetDirectory();
-
-            foreach (var publishProfileFile in GetFiles(projectDir.FullPath + "/**/*.pubxml")) {
-                WriteLogMessage(BuildSystem, $"Publishing project {projectFile.GetFilename()} using profile {publishProfileFile.GetFilename()}.");
-
-                var buildSettings = new DotNetPublishSettings {
-                    Configuration = state.Configuration,
-                    MSBuildSettings = new DotNetMSBuildSettings()
-                };
-
-                ApplyMSBuildProperties(buildSettings.MSBuildSettings, state);
-                buildSettings.MSBuildSettings.Properties["PublishProfile"] = new List<string> { publishProfileFile.FullPath };
-                DotNetPublish(projectFile.FullPath, buildSettings);
-            }
-        }
-    });
-
-// Add PublishContainer target
-Task("PublishContainer")
-    .IsDependentOn("Test")
-    .Does<BuildState>(state => {
-        var containerImageProjects = new string [] {
-            "NRuuviTag.Cli.Linux"
-        };
-
-        var registry = Argument("container-registry", "");
-        var os = Argument("container-os", "linux");
-        var arch = Argument("container-arch", "x64");
-
-        foreach (var projectFile in GetFiles("./**/*.*proj")) {
-            var projectDir = projectFile.GetDirectory();
-
-            // Publish container images.
-            if (!containerImageProjects.Contains(projectFile.GetFilenameWithoutExtension().ToString())) {
-                continue;
-            }
-            
-            WriteLogMessage(BuildSystem, $"Publishing {os}-{arch} container image for project {projectFile.GetFilename()} to {(string.IsNullOrWhiteSpace(registry) ? "default registry" : registry)}");
-
-            var buildSettings = new DotNetPublishSettings() { Configuration = state.Configuration }
-                .WithArgumentCustomization(args => args.Append($"--os {os}").Append($"--arch {arch}"));
-
-            buildSettings.MSBuildSettings = new DotNetMSBuildSettings();
-
-            if (!string.IsNullOrWhiteSpace(registry)) {
-                buildSettings.MSBuildSettings.WithProperty("ContainerRegistry", registry);
-            }
-
-            ApplyMSBuildProperties(buildSettings.MSBuildSettings, state);
-
-            buildSettings.MSBuildSettings.WithTarget("PublishContainer");
-            
-            DotNetPublish(projectFile.FullPath, buildSettings);
-        }
+Bootstrap(
+    DefaultSolutionFile, 
+    VersionFile,
+    containerProjects: new [] {
+        "NRuuviTag.Cli.Linux"
     });
 
 // Run the requested target.
