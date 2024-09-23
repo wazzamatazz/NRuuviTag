@@ -46,7 +46,7 @@ namespace NRuuviTag.Listener.Linux {
 
 
         /// <inheritdoc/>
-        public override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
+        protected override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
             Func<string, bool>? filter, 
             [EnumeratorCancellation]
             CancellationToken cancellationToken

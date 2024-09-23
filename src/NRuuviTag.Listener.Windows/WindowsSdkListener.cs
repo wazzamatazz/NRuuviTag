@@ -17,40 +17,8 @@ namespace NRuuviTag.Listener.Windows {
     /// </summary>
     public class WindowsSdkListener : RuuviTagListener {
 
-        /// <summary>
-        /// Converts a <see cref="ulong"/> RuuviTag MAC address to its string representation.
-        /// </summary>
-        /// <param name="address">
-        ///   The <see cref="ulong"/> MAC address.
-        /// </param>
-        /// <returns>
-        ///   The string representation of the MAC address.
-        /// </returns>
-        private static string GetMacAddressAsString(ulong address) {
-            var bytes = BitConverter.GetBytes(address);
-            return ToMacAddressString(BitConverter.IsLittleEndian
-                ? bytes.Reverse()
-                : bytes
-            );
-        }
-
-
-        /// <summary>
-        /// Converts a <see cref="ulong"/> RuuviTag MAC address to its string representation.
-        /// </summary>
-        /// <param name="address">
-        ///   The bytes from the <see cref="ulong"/> MAC address.
-        /// </param>
-        /// <returns>
-        ///   The string representation of the MAC address.
-        /// </returns>
-        private static string ToMacAddressString(IEnumerable<byte> bytes) {
-            return string.Join(":", bytes.Select(x => x.ToString("X2")));
-        }
-
-
         /// <inheritdoc/>
-        public override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
+        protected override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
             Func<string, bool>? filter,
             [EnumeratorCancellation]
             CancellationToken cancellationToken
@@ -68,7 +36,7 @@ namespace NRuuviTag.Listener.Windows {
 
             watcher.AdvertisementFilter.Advertisement.ManufacturerData.Add(manufacturerDataFilter);
             watcher.Received += (sender, args) => { 
-                if (filter != null && !filter.Invoke(GetMacAddressAsString(args.BluetoothAddress))) {
+                if (filter != null && !filter.Invoke(RuuviTagUtilities.ConvertMacAddressToString(args.BluetoothAddress))) {
                     return;
                 }
 
@@ -78,9 +46,19 @@ namespace NRuuviTag.Listener.Windows {
             try {
                 watcher.Start();
 
+                // Payload of a RuuviTag advertisement is 24 bytes long. Note that this does not
+                // include standard advertisement header content such as the manufacturer ID.
+                var payloadBuffer = new byte[24];
+
                 await foreach (var args in channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)) {
                     foreach (var manufacturerData in args.Advertisement.ManufacturerData) {
-                        var data = new byte[manufacturerData.Data.Length];
+                        // If the payload is not 24 bytes long, we need to create a new buffer of
+                        // the correct size. This would only occur if e.g. a custom data format
+                        // was being used or if Ruuvi changed the payload format in the future.
+                        var data = manufacturerData.Data.Length == payloadBuffer.Length
+                            ? payloadBuffer
+                            : new byte[manufacturerData.Data.Length];
+
                         using (var reader = DataReader.FromBuffer(manufacturerData.Data)) {
                             reader.ReadBytes(data);
                         }
