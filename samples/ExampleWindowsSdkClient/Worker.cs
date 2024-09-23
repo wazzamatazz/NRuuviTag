@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
+using NRuuviTag;
 using NRuuviTag.Listener.Windows;
 
 namespace ExampleWindowsSdkClient {
@@ -18,7 +19,7 @@ namespace ExampleWindowsSdkClient {
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
             try {
-                var client = new WindowsSdkListener();
+                IRuuviTagListener client = new WindowsSdkListener();
                 var jsonOptions = new JsonSerializerOptions() {
                     WriteIndented = true
                 };

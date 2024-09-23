@@ -1,12 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
-    <!-- We'll pack this assembly with the OS-specific builds of this tool. -->
+    <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
+    <Description>Core library for the nruuvitag command-line application.</Description>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Jaahas.CertificateUtilities" />
     <PackageReference Include="Jaahas.OpenTelemetry.Extensions" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Spectre.Console.Cli" />

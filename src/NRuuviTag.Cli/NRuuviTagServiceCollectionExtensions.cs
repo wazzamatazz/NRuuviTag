@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.DependencyInjection {
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="configuration"/> is <see langword="null"/>.
         /// </exception>
-        public static IServiceCollection AddRuuviTagPublisherCommandApp<TListener>(this IServiceCollection services, IConfiguration configuration) where TListener : class, IRuuviTagListener { 
+        public static IServiceCollection AddRuuviTagCommandApp<TListener>(this IServiceCollection services, IConfiguration configuration) where TListener : class, IRuuviTagListener { 
             if (services == null) {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.DependencyInjection {
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="factory"/> is <see langword="null"/>.
         /// </exception>
-        public static IServiceCollection AddRuuviTagPublisherCommandApp<TListener>(this IServiceCollection services, IConfiguration configuration, Func<IServiceProvider, TListener> factory) where TListener : class, IRuuviTagListener {
+        public static IServiceCollection AddRuuviTagCommandApp<TListener>(this IServiceCollection services, IConfiguration configuration, Func<IServiceProvider, TListener> factory) where TListener : class, IRuuviTagListener {
             if (services == null) {
                 throw new ArgumentNullException(nameof(services));
             }

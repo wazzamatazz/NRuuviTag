@@ -8,6 +8,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Jaahas.CertificateUtilities;
+
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -218,12 +220,16 @@ namespace NRuuviTag.Cli.Commands {
         [Description("Specifies if certificate chain errors should be ignored. This setting is ignored if TLS is not being used.")]
         public bool IgnoreCertificateChainErrors { get; set; }
 
-        [CommandOption("--client-certificate <PFX_FILE>")]
-        [Description("The path to a PFX file containing a client certificate for the MQTT connection. This setting is ignored if TLS is not being used. When specified, the '--client-certificate-password' setting must also be specified.")]
+        [CommandOption("--client-certificate <PATH>")]
+        [Description(@"The path to the client certificate to use for the MQTT connection. This setting is ignored if TLS is not being used. The path can specify a PFX file, a DER- or PEM-encoded certificate file, or a location in a certificate store. When a PFX file is specified, the '--client-certificate-password' setting must also be specified. When a DER- or PEM-encoded certificate file is specified, the '--client-certificate-key' setting must also be specified. Certificate store paths are specified in the format 'cert:\{location}\{store}\{thumbprint_or_subject}' e.g. 'cert:\CurrentUser\My\localhost'.")]
         public string? ClientCertificateFile { get; set; }
 
+        [CommandOption("--client-certificate-key <PATH>")]
+        [Description("The path to a file containing the private key for the client certificate specified by the '--client-certificate' setting. This setting is ignored if '--client-certificate' specifies a PFX file or certificate store path.")]
+        public string? ClientCertificateKeyFile { get; set; }
+
         [CommandOption("--client-certificate-password <PASSWORD>")]
-        [Description("The password for the PFX file specified by the '--client-certificate' setting.")]
+        [Description("The password for the PFX file specified by the '--client-certificate' setting, or for the private key file specified by the '--client-certificate-key' setting.")]
         public string? ClientCertificatePassword { get; set; }
 
 
@@ -233,14 +239,16 @@ namespace NRuuviTag.Cli.Commands {
                 return baseResult;
             }
 
-            var clientCertFile = GetClientCertificateFile(this);
-            if (clientCertFile != null) {
-                if (!clientCertFile.Exists) {
-                    return ValidationResult.Error(string.Format(CultureInfo.CurrentCulture, Resources.Error_ClientCertificateFileDoesNotExist, clientCertFile.FullName));
+            var clientCertLocation = GetClientCertificateLocation(this);
+            if (clientCertLocation != null) {
+                try {
+                    var cert = GetCertificateLoader().LoadCertificate(clientCertLocation, CertificateLoader.ClientAuthenticationOid);
+                    if (cert == null) {
+                        return ValidationResult.Error("Client certificate was not found or was invalid.");
+                    }
                 }
-
-                if (string.IsNullOrWhiteSpace(ClientCertificatePassword)) {
-                    return ValidationResult.Error(Resources.Error_ClientCertificatePasswordIsRequired);
+                catch (Exception e) {
+                    return ValidationResult.Error(e.Message);
                 }
             }
 
@@ -248,27 +256,40 @@ namespace NRuuviTag.Cli.Commands {
         }
 
 
-        private static FileInfo? GetClientCertificateFile(PublishMqttCommandSettings settings) {
+        private static CertificateLoader GetCertificateLoader() => new CertificateLoader(new CertificateLoaderOptions() { 
+            CertificateRootPath = Environment.CurrentDirectory
+        });
+
+
+        private static CertificateLocation? GetClientCertificateLocation(PublishMqttCommandSettings settings) {
             if (string.IsNullOrWhiteSpace(settings?.ClientCertificateFile)) {
                 return null;
             }
 
-            return new FileInfo(Path.IsPathRooted(settings!.ClientCertificateFile)
-                ? settings!.ClientCertificateFile
-                : Path.Combine(Environment.CurrentDirectory, settings!.ClientCertificateFile)
-            );
+            var location = CertificateLocation.CreateFromPath(settings.ClientCertificateFile!);
+            
+            if (location.IsFileCertificate) {
+                location.KeyPath = settings.ClientCertificateKeyFile;
+                location.Password = settings.ClientCertificatePassword;
+            }
+
+            return location;
         }
 
 
         internal IEnumerable<X509Certificate2>? GetClientCertificates() {
-            var clientCertFile = GetClientCertificateFile(this);
-            if (clientCertFile == null || !clientCertFile.Exists) {
+            var clientCertLocation = GetClientCertificateLocation(this);
+            if (clientCertLocation == null) {
                 return null;
             }
 
-            var result = new X509Certificate2Collection();
-            result.Import(clientCertFile.FullName, ClientCertificatePassword, X509KeyStorageFlags.DefaultKeySet);
-            return result.Cast<X509Certificate2>();
+            var cert = GetCertificateLoader().LoadCertificate(clientCertLocation, CertificateLoader.ClientAuthenticationOid);
+
+            if (cert == null) {
+                return null;
+            }
+
+            return [cert];
         }
 
     }

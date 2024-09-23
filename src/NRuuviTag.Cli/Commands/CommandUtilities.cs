@@ -48,16 +48,16 @@ namespace NRuuviTag.Cli.Commands {
 
                     branchOptions.AddCommand<PublishConsoleCommand>("console")
                         .WithAlias("stdout")
-                        .WithDescription("Publishes RuuviTag samples to the console as JSON.")
-                        .WithExample(new[] { "publish", "console" });
+                        .WithDescription("Publishes RuuviTag samples to the console using the JSON Lines text format.")
+                        .WithExample(["publish", "console"]);
 
                     branchOptions.AddCommand<PublishMqttCommand>("mqtt")
                         .WithDescription("Publishes RuuviTag samples to an MQTT broker.")
-                        .WithExample(new[] { "publish", "mqtt", "test.mosquitto.org", "--client-id", "\"MY_CLIENT_ID\"", "--sample-rate", "5", "--known-devices" });
+                        .WithExample(["publish", "mqtt", "test.mosquitto.org", "--client-id", "\"MY_CLIENT_ID\"", "--sample-rate", "5", "--known-devices"]);
 
                     branchOptions.AddCommand<PublishAzureEventHubCommand>("az")
                         .WithDescription("Publishes RuuviTag samples to an Azure Event Hub.")
-                        .WithExample(new[] { "publish", "az", "\"MY_CONNECTION_STRING\"", "\"MY_HUB\"", "--batch-size-limit", "100" });
+                        .WithExample(["publish", "az", "\"MY_CONNECTION_STRING\"", "\"MY_HUB\"", "--batch-size-limit", "100"]);
                 });
 
                 options.AddBranch("devices", branchOptions => {
@@ -71,13 +71,13 @@ namespace NRuuviTag.Cli.Commands {
 
                     branchOptions.AddCommand<DeviceAddCommand>("add")
                         .WithDescription("Adds a RuuviTag to the known devices list.")
-                        .WithExample(new[] { "devices", "add", "\"AB:CD:EF:01:23:45\"", "--id", "\"bedroom-1\"", "--name", "\"Master Bedroom\"" });
+                        .WithExample(["devices", "add", "\"AB:CD:EF:01:23:45\"", "--id", "\"bedroom-1\"", "--name", "\"Master Bedroom\""]);
 
                     branchOptions.AddCommand<DeviceRemoveCommand>("remove")
                         .WithDescription("Removes a RuuviTag from the known devices list.")
-                        .WithExample(new[] { "devices", "remove", "\"AB:CD:EF:01:23:45\"" })
-                        .WithExample(new[] { "devices", "remove", "bedroom-1" })
-                        .WithExample(new[] { "devices", "remove", "\"Master Bedroom\"" });
+                        .WithExample(["devices", "remove", "\"AB:CD:EF:01:23:45\""])
+                        .WithExample(["devices", "remove", "bedroom-1"])
+                        .WithExample(["devices", "remove", "\"Master Bedroom\""]);
                 });
             });
 

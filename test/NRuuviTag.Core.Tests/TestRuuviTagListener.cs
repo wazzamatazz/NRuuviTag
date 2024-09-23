@@ -20,7 +20,7 @@ namespace NRuuviTag {
 
 
         /// <inheritdoc/>
-        public sealed override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
+        protected sealed override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
             Func<string, bool>? filter, 
             [EnumeratorCancellation]
             CancellationToken cancellationToken

@@ -1,11 +1,12 @@
 ﻿{
   "profiles": {
-    "NRuuviTag.Cli.Linux": {
+    "Project": {
       "commandName": "Project",
-      "dotnetRunMessages": "true",
+      "commandLineArgs": "publish console",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
-      }
+      },
+      "dotnetRunMessages": true
     }
   }
 }
