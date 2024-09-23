@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-
-using Microsoft.Extensions.Options;
 
 namespace NRuuviTag.Cli {
     internal class ConsoleJsonPublisher : RuuviTagPublisher {
@@ -34,7 +31,6 @@ namespace NRuuviTag.Cli {
                     ? JsonSerializer.Serialize(item, _jsonOptions)
                     : JsonSerializer.Serialize(RuuviTagSampleExtended.Create(item, knownDevice.DeviceId, knownDevice.DisplayName), _jsonOptions);
 
-                Console.WriteLine();
                 Console.WriteLine(json);
             }
         }
