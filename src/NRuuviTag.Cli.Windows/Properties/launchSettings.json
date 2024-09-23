@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "NRuuviTag.Mqtt.Agent.Cli.Windows": {
+    "Project": {
       "commandName": "Project",
       "commandLineArgs": "publish console",
       "environmentVariables": {
