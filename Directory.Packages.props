@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageVersion Include="Azure.Messaging.EventHubs" Version="5.11.5" />
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
-    <PackageVersion Include="Jaahas.CertificateUtilities" Version="1.0.0" />
+    <PackageVersion Include="Jaahas.CertificateUtilities" Version="1.1.0" />
     <PackageVersion Include="Jaahas.OpenTelemetry.Extensions" Version="2.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Systemd" Version="8.0.0" />
