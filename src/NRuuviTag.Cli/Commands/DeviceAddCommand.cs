@@ -68,7 +68,7 @@ namespace NRuuviTag.Cli.Commands {
             var devicesJsonFile = CommandUtilities.GetDevicesJsonFile();
 
             // Ensure directory exists.
-            devicesJsonFile.Directory.Create();
+            devicesJsonFile.Directory!.Create();
 
             using (var stream = devicesJsonFile.Open(FileMode.Create, FileAccess.Write)) {
                 await JsonSerializer.SerializeAsync(stream, updatedDeviceConfig, new JsonSerializerOptions() { WriteIndented = true }).ConfigureAwait(false);
