@@ -6,5 +6,5 @@ using NRuuviTag.Listener.Linux;
 
 return await NRuuviTagHostBuilder.CreateHostBuilder(args, sp => ActivatorUtilities.CreateInstance<BlueZListener>(sp, BlueZListener.DefaultBluetoothAdapter))
     .UseSystemd()
-    .BuildAndRunCommandApp(args)
+    .BuildAndRunCommandAppAsync(args)
     .ConfigureAwait(false);
