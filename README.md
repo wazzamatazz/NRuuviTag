@@ -19,7 +19,7 @@ The `nruuvitag` [command-line tool](#command-line-application) can be used to as
 Usage is very straightforward. For example, to listen via the Windows 10 SDK using the [NRuuviTag.Listener.Windows](https://www.nuget.org/packages/NRuuviTag.Listener.Windows) NuGet package ([source](/src/NRuuviTag.Listener.Windows)):
 
 ```csharp
-var client = new WindowsSdkListener();
+IRuuviTagListener client = new WindowsSdkListener();
 
 await foreach (var sample in client.ListenAsync(cancellationToken)) {
     // sample is a RuuviTagSample object.
@@ -29,7 +29,7 @@ await foreach (var sample in client.ListenAsync(cancellationToken)) {
 To listen via BlueZ on Linux using the [NRuuviTag.Listener.Linux](https://www.nuget.org/packages/NRuuviTag.Listener.Linux) NuGet package ([source](/src/NRuuviTag.Listener.Linux)):
 
 ```csharp
-var client = new BlueZListener("hci0");
+IRuuviTagListener client = new BlueZListener("hci0");
 
 await foreach (var sample in client.ListenAsync(cancellationToken)) {
     // sample is a RuuviTagSample object.
