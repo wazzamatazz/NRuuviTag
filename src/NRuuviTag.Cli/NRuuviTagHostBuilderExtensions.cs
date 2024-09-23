@@ -8,6 +8,7 @@ using NRuuviTag.Cli;
 
 using OpenTelemetry;
 using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 
 using Spectre.Console.Cli;
@@ -52,6 +53,9 @@ namespace Microsoft.Extensions.Hosting {
                     .AddOtlpExporter(context.Configuration)
                     .WithLogging(null, options => {
                         options.IncludeFormattedMessage = true;
+                    })
+                    .WithMetrics(builder => { 
+                        builder.AddNRuuviTagInstrumentation();
                     });
             });
 
