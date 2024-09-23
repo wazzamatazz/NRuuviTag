@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace NRuuviTag {
@@ -32,15 +32,14 @@ namespace NRuuviTag {
         /// <returns>
         ///   The requested bytes.
         /// </returns>
-        private static byte[] GetRawInstrumentBytes(byte[] data, int count, int offset, bool reverseIfLittleEndian = true) {
-            var result = new byte[count];
-            for (var i = 0; i < count; i++) {
-                result[i] = data[i + offset];
+        private static Span<byte> GetRawInstrumentBytes(Span<byte> data, int count, int offset, bool reverseIfLittleEndian = true) {
+            var slice = data.Slice(offset, count);
+
+            if (reverseIfLittleEndian && BitConverter.IsLittleEndian) {
+                slice.Reverse();
             }
 
-            return reverseIfLittleEndian && BitConverter.IsLittleEndian
-                ? result.Reverse().ToArray()
-                : result;
+            return slice;
         }
 
 
@@ -74,11 +73,11 @@ namespace NRuuviTag {
         ///   information about available data formats.
         /// </remarks>
         /// <seealso cref="Constants.DataFormatRawV2"/>
-        public static RuuviTagSample CreateSampleFromRawV2Payload(DateTimeOffset timestamp, double signalStrength, byte[] payload) {
+        public static RuuviTagSample CreateSampleFromRawV2Payload(DateTimeOffset timestamp, double signalStrength, Span<byte> payload) {
             if (payload == null) {
                 throw new ArgumentNullException(nameof(payload));
             }
-            if (payload.Length != 24) {
+            if (payload.Length < 24) {
                 throw new ArgumentException(Resources.Error_UnexpectedPayloadLength, nameof(payload));
             }
             if (payload[0] != Constants.DataFormatRawV2) {
@@ -91,37 +90,37 @@ namespace NRuuviTag {
                 DataFormat = Constants.DataFormatRawV2
             };
 
-            var tempRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 1), 0);
+            var tempRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 1));
             result.Temperature = tempRaw == short.MaxValue
                 ? null
                 : Math.Round(tempRaw * 0.005, 3);
 
-            var humidityRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 3), 0);
+            var humidityRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 3));
             result.Humidity = humidityRaw == ushort.MaxValue
                 ? null
                 : Math.Round(humidityRaw * 0.0025, 4);
 
-            var pressureRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 5), 0);
+            var pressureRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 5));
             result.Pressure = pressureRaw == ushort.MaxValue
                 ? null
                 : Math.Round(((double) pressureRaw + 50000) / 100, 2);
 
-            var accelXRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 7), 0);
+            var accelXRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 7));
             result.AccelerationX = accelXRaw == short.MaxValue
                 ? null
                 : Math.Round(accelXRaw * 0.001, 3);
 
-            var accelYRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 9), 0);
+            var accelYRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 9));
             result.AccelerationY = accelYRaw == short.MaxValue
                 ? null
                 : Math.Round(accelYRaw * 0.001, 3);
 
-            var accelZRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 11), 0);
+            var accelZRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 11));
             result.AccelerationZ = accelZRaw == short.MaxValue
                 ? null
                 : Math.Round(accelZRaw * 0.001, 3);
 
-            var powerInfoRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 13), 0);
+            var powerInfoRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 13));
             var voltageRaw = powerInfoRaw / 32; // 11 most-significant bits are voltage
             var txPowerRaw = powerInfoRaw % 32; // 5 least-significant bits are TX power
 
@@ -138,7 +137,7 @@ namespace NRuuviTag {
                 ? null
                 : movementCounterRaw;
 
-            var measurementSequenceRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 16), 0);
+            var measurementSequenceRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 16));
             result.MeasurementSequence = measurementSequenceRaw == ushort.MaxValue
                 ? null
                 : measurementSequenceRaw;
@@ -146,7 +145,7 @@ namespace NRuuviTag {
             // MAC address is always Big-endian, so no need to reverse the byte order if this is a
             // Little-endian system.
             var macAddressRaw = GetRawInstrumentBytes(payload, 6, 18, false);
-            result.MacAddress = string.Join(":", macAddressRaw.Select(x => x.ToString("X2")));
+            result.MacAddress = ConvertMacAddressBytesToString(macAddressRaw, 0);
 
             return result;
         }
@@ -185,11 +184,11 @@ namespace NRuuviTag {
         /// <seealso cref="Constants.DataFormatUrl"/>
         /// <seealso cref="Constants.DataFormatRawV2"/>
         /// <seealso cref="Constants.DataFormatEncryptedEnvironmental"/>
-        public static RuuviTagSample CreateSampleFromPayload(DateTimeOffset timestamp, double signalStrength, byte[] payload) {
+        public static RuuviTagSample CreateSampleFromPayload(DateTimeOffset timestamp, double signalStrength, Span<byte> payload) {
             if (payload == null) {
                 throw new ArgumentNullException(nameof(payload));
             }
-            if (payload.Length != 24) {
+            if (payload.Length < 24) {
                 throw new ArgumentException(Resources.Error_UnexpectedPayloadLength, nameof(payload));
             }
 
@@ -212,15 +211,70 @@ namespace NRuuviTag {
         ///   The string representation of the MAC address.
         /// </returns>
         public static string ConvertMacAddressToString(ulong address) {
-            var bytes = BitConverter.GetBytes(address);
+            // MAC address is 6 bytes long but a ulong is 8 bytes long so we need to rent 8 bytes.
+            var buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(8);
+            var span = buffer.AsSpan(0, 8);
 
-            return ToMacAddressString(BitConverter.IsLittleEndian
-                ? bytes.Reverse()
-                : bytes);
+            try {
+                if (!BitConverter.TryWriteBytes(span, address)) {
+                    return null!;
+                }
 
-            string ToMacAddressString(IEnumerable<byte> bytes) {
-                return string.Join(":", bytes.Select(x => x.ToString("X2")));
+                if (BitConverter.IsLittleEndian) {
+                    // Reverse the byte order on Little-endian systems; MAC addresses always use
+                    // Big-endian ordering.
+                    span.Reverse();
+                }
+
+                // The two most-significant bytes in the sequence are always use to pad the 6-byte
+                // MAC address into an 8-byte ulong.
+                return ConvertMacAddressBytesToString(span, 2);
             }
+            finally {
+                System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+
+        /// <summary>
+        /// Converts the specified MAC address bytes to their <see cref="string"/> equivalent.
+        /// </summary>
+        /// <param name="bytes">
+        ///   The MAC address bytes.
+        /// </param>
+        /// <param name="offset">
+        ///   The offset in the <paramref name="bytes"/> sequence where the MAC address starts.
+        /// </param>
+        /// <param name="reverse">
+        ///   When <see langword="true"/>, the MAC address bytes end at the specified <paramref name="offset"/> 
+        ///   instead of starting at that position.
+        /// </param>
+        /// <returns>
+        ///   The string representation of the MAC address.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   The byte sequence is less than 6 bytes long starting from the provided <paramref name="offset"/>.
+        /// </exception>
+        /// <remarks>
+        ///   The <paramref name="bytes"/> are assumed to already be in Big-endian order.
+        /// </remarks>
+        private static string ConvertMacAddressBytesToString(Span<byte> bytes, int offset) {
+            const int MacAddressLength = 6;
+
+            if (offset + MacAddressLength > bytes.Length) {
+                throw new ArgumentOutOfRangeException(nameof(bytes), $"Sequence must contain at least {MacAddressLength} bytes starting from the specified offset position.");
+            }
+
+            var sb = new StringBuilder();
+
+            for (var i = offset; i < offset + MacAddressLength; i++) {
+                sb.Append(bytes[i].ToString("X2"));
+                if (i < offset + MacAddressLength - 1) {
+                    sb.Append(":");
+                }
+            }
+
+            return sb.ToString();
         }
 
 
@@ -282,18 +336,35 @@ namespace NRuuviTag {
                 return false;
             }
 
-            var parsedBytes = m.Groups["byte"].Captures.Select(x => byte.Parse(x.Value, NumberStyles.HexNumber)).ToArray();
-            var bytes = parsedBytes.Length == 8
-                ? parsedBytes
-                : Enumerable.Repeat<byte>(0, 8 - parsedBytes.Length).Concat(parsedBytes).ToArray();
+            var buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(8);
+            try {
+                if (BitConverter.IsLittleEndian) { 
+                    var index = 0;
+                    foreach (var b in m.Groups["byte"].Captures.Select(x => byte.Parse(x.Value, NumberStyles.HexNumber))) {
+                        buffer[index++] = b;
+                    }
 
-            // Bytes are currently in network byte order (i.e. big-endian).
-            if (BitConverter.IsLittleEndian) {
-                bytes = bytes.Reverse().ToArray();
+                    while (index < 8) {
+                        buffer[index++] = 0;
+                    }
+                }
+                else {
+                    var index = 8;
+                    foreach (var b in m.Groups["byte"].Captures.Select(x => byte.Parse(x.Value, NumberStyles.HexNumber)).Reverse()) {
+                        buffer[--index] = b;
+                    }
+
+                    while (index > 0) {
+                        buffer[--index] = 0;
+                    }
+                }
+
+                numericAddress = BitConverter.ToUInt64(buffer);
+                return true;
             }
-
-            numericAddress = BitConverter.ToUInt64(bytes.ToArray());
-            return true;
+            finally {
+                System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
 
