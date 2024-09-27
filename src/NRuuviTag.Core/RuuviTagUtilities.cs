@@ -84,70 +84,92 @@ namespace NRuuviTag {
                 throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, Resources.Error_UnexpectedDataFormat, Constants.DataFormatRawV2, payload[0]), nameof(payload));
             }
 
-            var result = new RuuviTagSample() {
-                Timestamp = timestamp,
-                SignalStrength = signalStrength,
-                DataFormat = Constants.DataFormatRawV2
-            };
+            byte[]? buffer = null;
 
-            var tempRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 1));
-            result.Temperature = tempRaw == short.MaxValue
-                ? null
-                : Math.Round(tempRaw * 0.005, 3);
+            if (BitConverter.IsLittleEndian) {
+                // We will be modifying the byte order of various parts of the payload. We'll copy
+                // the payload to a buffer and work with that instead so that we don't modify the
+                // original span.
+                buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(24);
+                payload.Slice(0, 24).CopyTo(buffer);
+                payload = buffer;
+            }
 
-            var humidityRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 3));
-            result.Humidity = humidityRaw == ushort.MaxValue
-                ? null
-                : Math.Round(humidityRaw * 0.0025, 4);
+            if (payload.Length > 24) {
+                payload = payload.Slice(0, 24);
+            }
 
-            var pressureRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 5));
-            result.Pressure = pressureRaw == ushort.MaxValue
-                ? null
-                : Math.Round(((double) pressureRaw + 50000) / 100, 2);
+            try {
+                var result = new RuuviTagSample() {
+                    Timestamp = timestamp,
+                    SignalStrength = signalStrength,
+                    DataFormat = Constants.DataFormatRawV2
+                };
 
-            var accelXRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 7));
-            result.AccelerationX = accelXRaw == short.MaxValue
-                ? null
-                : Math.Round(accelXRaw * 0.001, 3);
+                var tempRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 1));
+                result.Temperature = tempRaw == short.MaxValue
+                    ? null
+                    : Math.Round(tempRaw * 0.005, 3);
 
-            var accelYRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 9));
-            result.AccelerationY = accelYRaw == short.MaxValue
-                ? null
-                : Math.Round(accelYRaw * 0.001, 3);
+                var humidityRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 3));
+                result.Humidity = humidityRaw == ushort.MaxValue
+                    ? null
+                    : Math.Round(humidityRaw * 0.0025, 4);
 
-            var accelZRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 11));
-            result.AccelerationZ = accelZRaw == short.MaxValue
-                ? null
-                : Math.Round(accelZRaw * 0.001, 3);
+                var pressureRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 5));
+                result.Pressure = pressureRaw == ushort.MaxValue
+                    ? null
+                    : Math.Round(((double) pressureRaw + 50000) / 100, 2);
 
-            var powerInfoRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 13));
-            var voltageRaw = powerInfoRaw / 32; // 11 most-significant bits are voltage
-            var txPowerRaw = powerInfoRaw % 32; // 5 least-significant bits are TX power
+                var accelXRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 7));
+                result.AccelerationX = accelXRaw == short.MaxValue
+                    ? null
+                    : Math.Round(accelXRaw * 0.001, 3);
 
-            result.BatteryVoltage = voltageRaw == 2047
-                ? null
-                : Math.Round((voltageRaw + 1600) * 0.001, 3);
+                var accelYRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 9));
+                result.AccelerationY = accelYRaw == short.MaxValue
+                    ? null
+                    : Math.Round(accelYRaw * 0.001, 3);
 
-            result.TxPower = txPowerRaw == 31
-                ? null
-                : -40 + (2 * txPowerRaw);
+                var accelZRaw = BitConverter.ToInt16(GetRawInstrumentBytes(payload, 2, 11));
+                result.AccelerationZ = accelZRaw == short.MaxValue
+                    ? null
+                    : Math.Round(accelZRaw * 0.001, 3);
 
-            var movementCounterRaw = payload[15];
-            result.MovementCounter = movementCounterRaw == byte.MaxValue
-                ? null
-                : movementCounterRaw;
+                var powerInfoRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 13));
+                var voltageRaw = powerInfoRaw / 32; // 11 most-significant bits are voltage
+                var txPowerRaw = powerInfoRaw % 32; // 5 least-significant bits are TX power
 
-            var measurementSequenceRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 16));
-            result.MeasurementSequence = measurementSequenceRaw == ushort.MaxValue
-                ? null
-                : measurementSequenceRaw;
+                result.BatteryVoltage = voltageRaw == 2047
+                    ? null
+                    : Math.Round((voltageRaw + 1600) * 0.001, 3);
 
-            // MAC address is always Big-endian, so no need to reverse the byte order if this is a
-            // Little-endian system.
-            var macAddressRaw = GetRawInstrumentBytes(payload, 6, 18, false);
-            result.MacAddress = ConvertMacAddressBytesToString(macAddressRaw, 0);
+                result.TxPower = txPowerRaw == 31
+                    ? null
+                    : -40 + (2 * txPowerRaw);
 
-            return result;
+                var movementCounterRaw = payload[15];
+                result.MovementCounter = movementCounterRaw == byte.MaxValue
+                    ? null
+                    : movementCounterRaw;
+
+                var measurementSequenceRaw = BitConverter.ToUInt16(GetRawInstrumentBytes(payload, 2, 16));
+                result.MeasurementSequence = measurementSequenceRaw == ushort.MaxValue
+                    ? null
+                    : measurementSequenceRaw;
+
+                // MAC address is always Big-endian, so no need to reverse the byte order if this is a
+                // Little-endian system.
+                var macAddressRaw = GetRawInstrumentBytes(payload, 6, 18, false);
+                result.MacAddress = ConvertMacAddressBytesToString(macAddressRaw, 0);
+
+                return result;
+            }
+            finally {
+                if (buffer != null) {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
         }
 
 
