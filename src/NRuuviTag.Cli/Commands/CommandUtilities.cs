@@ -127,11 +127,11 @@ namespace NRuuviTag.Cli.Commands {
         /// </param>
         internal static void PrintDevicesToConsole(DeviceCollection? devices) {
             var table = new Table();
-            table.AddColumns(Resources.TableColumn_MacAddress, Resources.TableColumn_DisplayName, Resources.TableColumn_DeviceID);
+            table.AddColumns(Resources.TableColumn_MacAddress, Resources.TableColumn_DeviceID, Resources.TableColumn_DisplayName);
 
             if (devices != null) {
                 foreach (var item in devices) {
-                    table.AddRow(item.Value.MacAddress, item.Value.DisplayName ?? string.Empty, item.Key);
+                    table.AddRow(item.Value.MacAddress, item.Key, item.Value.DisplayName ?? string.Empty);
                 }
             }
 
@@ -147,8 +147,8 @@ namespace NRuuviTag.Cli.Commands {
         /// </param>
         internal static void PrintDeviceToConsole(Device device) {
             var table = new Table();
-            table.AddColumns(Resources.TableColumn_MacAddress, Resources.TableColumn_DisplayName, Resources.TableColumn_DeviceID);
-            table.AddRow(device.MacAddress ?? string.Empty, device.DisplayName ?? string.Empty, device.DeviceId ?? string.Empty);
+            table.AddColumns(Resources.TableColumn_MacAddress, Resources.TableColumn_DeviceID, Resources.TableColumn_DisplayName);
+            table.AddRow(device.MacAddress ?? string.Empty, device.DeviceId ?? string.Empty, device.DisplayName ?? string.Empty);
 
             AnsiConsole.Write(table);
         }
@@ -165,8 +165,8 @@ namespace NRuuviTag.Cli.Commands {
         /// </param>
         internal static void PrintDeviceToConsole(string id, DeviceCollectionEntry deviceFromConfig) {
             var table = new Table();
-            table.AddColumns(Resources.TableColumn_MacAddress, Resources.TableColumn_DisplayName, Resources.TableColumn_DeviceID);
-            table.AddRow(deviceFromConfig.MacAddress ?? string.Empty, deviceFromConfig.DisplayName ?? string.Empty, id);
+            table.AddColumns(Resources.TableColumn_MacAddress, Resources.TableColumn_DeviceID, Resources.TableColumn_DisplayName);
+            table.AddRow(deviceFromConfig.MacAddress ?? string.Empty, id, deviceFromConfig.DisplayName ?? string.Empty);
 
             AnsiConsole.Write(table);
         }
