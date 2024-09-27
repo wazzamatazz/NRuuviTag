@@ -95,6 +95,10 @@ namespace NRuuviTag {
                 payload = buffer;
             }
 
+            if (payload.Length > 24) {
+                payload = payload.Slice(0, 24);
+            }
+
             try {
                 var result = new RuuviTagSample() {
                     Timestamp = timestamp,
