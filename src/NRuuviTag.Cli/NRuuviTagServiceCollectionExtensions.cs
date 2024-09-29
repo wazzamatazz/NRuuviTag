@@ -114,10 +114,7 @@ namespace Microsoft.Extensions.DependencyInjection {
 
             services.AddTransient<MqttFactory>();
 
-            services.AddScoped<TypeResolver>();
-            services.AddScoped<ITypeRegistrar>(provider => provider.GetRequiredService<TypeResolver>());
-            services.AddScoped<ITypeResolver>(provider => provider.GetRequiredService<TypeResolver>());
-            services.AddScoped(provider => CommandUtilities.BuildCommandApp(provider.GetRequiredService<ITypeRegistrar>()));
+            services.AddSpectreCommandApp(CommandUtilities.ConfigureCommandApp);
 
             return services;
         }

@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Jaahas.CertificateUtilities" />
     <PackageReference Include="Jaahas.OpenTelemetry.Extensions" />
+    <PackageReference Include="Jaahas.Spectre.Extensions" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Spectre.Console.Cli" />
   </ItemGroup>
