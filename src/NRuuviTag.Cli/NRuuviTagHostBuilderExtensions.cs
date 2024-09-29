@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Hosting {
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="args"/> is <see langword="null"/>.
         /// </exception>
-        public static async Task<int> BuildAndRunCommandAppAsync(this IHostBuilder builder, IEnumerable<string> args) {
+        public static async Task<int> BuildHostAndRunNRuuviTagAsync(this IHostBuilder builder, IEnumerable<string> args) {
             if (builder == null) {
                 throw new ArgumentNullException(nameof(builder));
             }
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Hosting {
 
             builder.ConfigureServices((context, services) => {
                 services.AddOpenTelemetry()
-                    .ConfigureResource(builder => builder.AddService<TypeResolver>())
+                    .ConfigureResource(builder => builder.AddService<DeviceCollection>())
                     .AddOtlpExporter(context.Configuration)
                     .WithLogging(null, options => {
                         options.IncludeFormattedMessage = true;
@@ -59,14 +59,7 @@ namespace Microsoft.Extensions.Hosting {
                     });
             });
 
-            using (var host = builder.Build()) {
-                await host.StartAsync().ConfigureAwait(false);
-
-                using (var scope = host.Services.CreateScope()) {
-                    var app = scope.ServiceProvider.GetRequiredService<CommandApp>();
-                    return await app.RunAsync(args).ConfigureAwait(false);
-                }
-            }
+            return await builder.BuildAndRunCommandAppAsync(args).ConfigureAwait(false);
         }
 
     }

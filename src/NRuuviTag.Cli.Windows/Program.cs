@@ -5,5 +5,5 @@ using NRuuviTag.Listener.Windows;
 
 return await NRuuviTagHostBuilder
     .CreateHostBuilder<WindowsSdkListener>(args)
-    .BuildAndRunCommandAppAsync(args)
+    .BuildHostAndRunNRuuviTagAsync(args)
     .ConfigureAwait(false);
