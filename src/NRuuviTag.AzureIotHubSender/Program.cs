@@ -1,23 +1,21 @@
-﻿// See https://aka.ms/new-console-template for more information
-using NRuuviTag;
-using NRuuviTag.Listener.Linux;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text.Json;
-using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-CancellationToken token = cancellationTokenSource.Token; 
+namespace LinuxSdkClient {
+    public class Program {
+        public static void Main(string[] args) {
+            CreateHostBuilder(args).Build().Run();
+        }
 
-IRuuviTagListener client = new BlueZListener("hci0");
-
-JsonSerializerOptions _jsonOptions = new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-
-
-await foreach (var sample in client.ListenAsync(token)) {
-    var json = JsonSerializer.Serialize(sample, _jsonOptions);
-
-    Console.WriteLine(json);
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureServices((hostContext, services) => {
+                    services.AddHostedService<Worker>();
+                });
+    }
 }
