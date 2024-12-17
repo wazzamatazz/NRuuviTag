@@ -73,6 +73,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NRuuviTag.Cli.Windows", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NRuuviTag.OpenTelemetry", "src\NRuuviTag.OpenTelemetry\NRuuviTag.OpenTelemetry.csproj", "{6E172EC8-D6C2-478F-BE9A-EF8A6986B2D2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NRuuviTag.AzureIotHubSender", "src\NRuuviTag.AzureIotHubSender\NRuuviTag.AzureIotHubSender.csproj", "{2346A9C5-7D8C-4C32-BFCD-A5EF13F63905}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -131,6 +133,10 @@ Global
 		{6E172EC8-D6C2-478F-BE9A-EF8A6986B2D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E172EC8-D6C2-478F-BE9A-EF8A6986B2D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E172EC8-D6C2-478F-BE9A-EF8A6986B2D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2346A9C5-7D8C-4C32-BFCD-A5EF13F63905}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2346A9C5-7D8C-4C32-BFCD-A5EF13F63905}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2346A9C5-7D8C-4C32-BFCD-A5EF13F63905}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2346A9C5-7D8C-4C32-BFCD-A5EF13F63905}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -150,6 +156,7 @@ Global
 		{8C1045D5-83DB-44DD-AC91-DFE1E999F512} = {10A2813D-C970-4F6F-9A59-94F7C972257F}
 		{CCCAC1BB-04C7-4025-800E-E6944F3AD83F} = {10A2813D-C970-4F6F-9A59-94F7C972257F}
 		{6E172EC8-D6C2-478F-BE9A-EF8A6986B2D2} = {10A2813D-C970-4F6F-9A59-94F7C972257F}
+		{2346A9C5-7D8C-4C32-BFCD-A5EF13F63905} = {10A2813D-C970-4F6F-9A59-94F7C972257F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {94DF2EE3-033D-46CD-9EC3-7BC808B13372}

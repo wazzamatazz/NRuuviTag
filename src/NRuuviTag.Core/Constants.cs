@@ -34,6 +34,8 @@
         /// </summary>
         public const byte DataFormatEncryptedEnvironmental = 8;
 
+        public const byte DataFormatFA = 0xFA;
+
     }
 
 }

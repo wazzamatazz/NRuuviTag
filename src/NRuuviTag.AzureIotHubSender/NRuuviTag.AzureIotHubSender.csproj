@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RuntimeIdentifiers>linux-arm;linux-arm64;linux-x64</RuntimeIdentifiers>
+    <AssemblyName>nruuvitag-sensor</AssemblyName>
+    <Description> RuuviTag IoT sensors to publish readings to a IotHub.</Description>
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+    <!-- Use root so that the container can access the Bluetooth adapter -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NRuuviTag.Listener.Linux\NRuuviTag.Listener.Linux.csproj" />
+  </ItemGroup>
+
+</Project>

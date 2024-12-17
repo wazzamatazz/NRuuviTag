@@ -80,7 +80,7 @@ Bootstrap(
     DefaultSolutionFile, 
     VersionFile,
     containerProjects: new [] {
-        "NRuuviTag.Cli.Linux"
+        "NRuuviTag.AzureIotHubSender"
     });
 
 // Run the requested target.
