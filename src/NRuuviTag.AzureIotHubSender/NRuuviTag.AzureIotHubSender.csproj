@@ -12,11 +12,14 @@
 
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Devices.Client" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsHostingVersion)" />
+    <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\NRuuviTag.Listener.Linux\NRuuviTag.Listener.Linux.csproj" />
+    <ProjectReference Include="..\NRuuviTag.Core\NRuuviTag.Core.csproj" />
   </ItemGroup>
 
 </Project>
