@@ -87,9 +87,15 @@ namespace LinuxSdkClient {
                     };
                     */
 
+                    DateTime now = DateTime.UtcNow.AddMinutes(-3);
+
+                    if (now > sample.Timestamp) {
+                        continue;
+                    }
+                            
                     await SendToAzure(deviceClient, sample);
 
-                    
+                    await Task.Delay(5*60*1000);
                 }
             }
             catch (OperationCanceledException) { }
