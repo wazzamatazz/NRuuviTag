@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ContainerImageTags>latest</ContainerImageTags>
+    <ContainerImageTags>latest;$(Version)</ContainerImageTags>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 

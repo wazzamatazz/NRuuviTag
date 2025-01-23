@@ -342,8 +342,6 @@ namespace NRuuviTag {
             if (payload.Length < 24) {
                 throw new ArgumentException(Resources.Error_UnexpectedPayloadLength, nameof(payload));
             }
-            Console.Write("Dataformaatti: ");
-            Console.WriteLine(payload[0]);
 
             switch (payload[0]) {
                 case Constants.DataFormatRawV2:
