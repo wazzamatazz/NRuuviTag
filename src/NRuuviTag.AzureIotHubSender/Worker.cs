@@ -87,9 +87,7 @@ namespace LinuxSdkClient {
                     };
                     */
 
-                    DateTime now = DateTime.UtcNow.AddMinutes(-3);
-
-                    if (now > sample.Timestamp) {
+                    if (DateTime.UtcNow.AddMinutes(-3) > sample.Timestamp) {
                         continue;
                     }
                             
