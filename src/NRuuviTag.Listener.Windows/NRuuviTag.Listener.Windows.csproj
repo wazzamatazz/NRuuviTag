@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
-    <Description>Windows 10 SDK-based listener for NRuuviTag - a library for reading RuuviTag IoT sensors.</Description>
+    <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
+    <Description>Windows SDK-based listener for NRuuviTag - a library for reading RuuviTag IoT sensors.</Description>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
     <RuntimeIdentifiers>win-arm64;win-x64</RuntimeIdentifiers>
     <AssemblyName>nruuvitag</AssemblyName>
     <Description>Command-line tool that can receive broadcasts from RuuviTag IoT sensors and publish readings to a destination.</Description>
     <UserSecretsId>526cb44c-5925-42f8-9949-a5ef2c2e4f53</UserSecretsId>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
   <ItemGroup>

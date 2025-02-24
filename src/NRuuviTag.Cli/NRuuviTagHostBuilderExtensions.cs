@@ -49,16 +49,16 @@ namespace Microsoft.Extensions.Hosting {
 
             builder.ConfigureServices((context, services) => {
                 services.AddOpenTelemetry()
-                    .ConfigureResource(builder => builder.AddService<DeviceCollection>())
+                    .ConfigureResource(resource => resource.AddService<DeviceCollection>())
                     .AddOtlpExporter(context.Configuration)
                     .WithLogging(null, options => {
                         options.IncludeFormattedMessage = true;
                     })
-                    .WithMetrics(builder => { 
-                        builder.AddNRuuviTagInstrumentation();
+                    .WithMetrics(metrics => { 
+                        metrics.AddNRuuviTagInstrumentation();
                     });
             });
-
+            
             return await builder.BuildAndRunCommandAppAsync(args).ConfigureAwait(false);
         }
 

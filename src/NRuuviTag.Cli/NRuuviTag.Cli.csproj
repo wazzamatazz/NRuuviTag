@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <Description>Core library for the nruuvitag command-line application.</Description>
   </PropertyGroup>
@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Jaahas.CertificateUtilities" />
     <PackageReference Include="Jaahas.OpenTelemetry.Extensions" />
-    <PackageReference Include="Jaahas.Spectre.Extensions" />
+    <PackageReference Include="Jaahas.Spectre.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Spectre.Console.Cli" />
   </ItemGroup>
