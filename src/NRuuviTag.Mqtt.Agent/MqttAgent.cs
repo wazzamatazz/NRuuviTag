@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -301,7 +300,13 @@ namespace NRuuviTag.Mqtt {
         ///   The event arguments.
         /// </param>
         private Task OnConnectedAsync(MqttClientConnectedEventArgs args) {
-            LogMqttClientConnected();
+            var hostname = _mqttClientOptions.ClientOptions.ChannelOptions switch {
+                MqttClientTcpOptions tcpOptions => tcpOptions.RemoteEndpoint.ToString(),
+                MqttClientWebSocketOptions wsOptions => wsOptions.Uri.ToString(),
+                _ => "<unknown>"
+            };
+            LogMqttClientConnected(hostname);
+            
             return Task.CompletedTask;
         }
 
@@ -611,8 +616,8 @@ namespace NRuuviTag.Mqtt {
         [LoggerMessage(2, LogLevel.Information, "Stopped MQTT agent.")]
         partial void LogMqttAgentStopped();
 
-        [LoggerMessage(3, LogLevel.Information, "Connected to MQTT broker.")]
-        partial void LogMqttClientConnected();
+        [LoggerMessage(3, LogLevel.Information, "Connected to MQTT broker: {hostname}")]
+        partial void LogMqttClientConnected(string hostname);
 
         [LoggerMessage(4, LogLevel.Warning, "Disconnected from MQTT broker.")]
         partial void LogMqttClientDisconnected(Exception error);
