@@ -301,7 +301,11 @@ namespace NRuuviTag.Mqtt {
         /// </param>
         private Task OnConnectedAsync(MqttClientConnectedEventArgs args) {
             var hostname = _mqttClientOptions.ClientOptions.ChannelOptions switch {
-                MqttClientTcpOptions tcpOptions => tcpOptions.RemoteEndpoint.ToString(),
+                MqttClientTcpOptions tcpOptions => tcpOptions.RemoteEndpoint switch {
+                    System.Net.DnsEndPoint dns => $"{dns.Host}:{dns.Port}",
+                    System.Net.IPEndPoint ip => $"{ip.Address}:{ip.Port}",
+                    _ => "<unknown>"
+                },
                 MqttClientWebSocketOptions wsOptions => wsOptions.Uri.ToString(),
                 _ => "<unknown>"
             };
