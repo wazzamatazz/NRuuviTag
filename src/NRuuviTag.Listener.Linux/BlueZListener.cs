@@ -78,8 +78,11 @@ namespace NRuuviTag.Listener.Linux {
                         throw new InvalidOperationException("Device properties did not contain manufacturer data.");
                     }
 
-                    var sample = RuuviTagUtilities.CreateSampleFromPayload(DateTimeOffset.Now, properties.RSSI, payload);
-                    channel!.Writer.TryWrite(sample);
+                    var timestamp = DateTimeOffset.Now;
+                    var sample = RuuviTagUtilities.CreateSampleFromPayload(timestamp, properties.RSSI, payload);
+                    if (channel!.Writer.TryWrite(sample)) {
+                        LogSampleEmitted(properties.Address, timestamp);
+                    }
                 }
                 catch (Exception error) {
                     LogInvalidManufacturerData(properties.Address, error);
@@ -238,6 +241,10 @@ namespace NRuuviTag.Listener.Linux {
 
         [LoggerMessage(4, LogLevel.Warning, "Invalid manufacturer data received for device {address}.")]
         partial void LogInvalidManufacturerData(string address, Exception error);
+
+
+        [LoggerMessage(5, LogLevel.Trace, "Emitted sample for device {address} @ {timestamp}.")]
+        partial void LogSampleEmitted(string address, DateTimeOffset timestamp);
 
     }
 }
