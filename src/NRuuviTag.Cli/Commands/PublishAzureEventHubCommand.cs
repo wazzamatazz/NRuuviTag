@@ -76,8 +76,8 @@ namespace NRuuviTag.Cli.Commands {
         /// <inheritdoc/>
         public override async Task<int> ExecuteAsync(CommandContext context, PublishAzureEventHubCommandSettings settings) {
             if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
-                try { await Task.Delay(-1, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
-                catch (OperationCanceledException) { }
+                try { await Task.Delay(Timeout.InfiniteTimeSpan, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
+                catch (OperationCanceledException) when (_appLifetime.ApplicationStarted.IsCancellationRequested) { }
             }
 
             IEnumerable<Device> devices = Array.Empty<Device>();
