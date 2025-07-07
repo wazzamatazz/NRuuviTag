@@ -3,9 +3,8 @@ name: CI/CD
 on:
   # Trigger on pushes to branch for deployment (excluding docs)
   push:
-    branches: [ main ]
     paths-ignore: 
-      # Documentation files (5 files)
+      # Documentation files
       - '**/*.md'         
       - 'docs/**'         
       
@@ -17,13 +16,13 @@ on:
       # Editor/IDE configuration 
       - '.editorconfig'   
 
-      # License files (2 files)  
+      # License files
       - 'LICENSE*'       
       - 'THIRD-PARTY-NOTICES.md'
 
   # Trigger on pull requests for validation (excluding docs)  
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
     paths-ignore: 
     - '**/*.md'         
     - 'docs/**'         
@@ -46,8 +45,10 @@ permissions:
 
 
 env:
-  TRIGGER_BRANCH: main
-  CAKE_VERSION: 1.1.0  # Version of Cake to use
+  TARGET_BRANCH: ${{ vars.TARGET_DEPLOYMENT_BRANCH || 'main' }}
+  CAKE_VERSION: ${{ vars.CAKE_VERSION || '1.1.0' }}
+  BUILD_CONFIGURATION: ${{ vars.BUILD_CONFIGURATION || 'Release' }}
+
   
 jobs:
   # Job 1: Build and Test (runs on ALL branches)
@@ -72,12 +73,12 @@ jobs:
     # Build .NET
     - name: Build .NET
       run: |
-        ./build.sh --target=Build --configuration=Release
+        ./build.sh --target=Build --configuration=${{ env.BUILD_CONFIGURATION }}
 
     # Run Tests
     - name: Run Tests
       run: |
-        ./build.sh --target=Test --configuration=Release
+        ./build.sh --target=Test --configuration=${{ env.BUILD_CONFIGURATION }}
 
   #Job 2: Version Bump (runs only on main branch)
   version-bump:
@@ -85,7 +86,8 @@ jobs:
     needs: build-and-test
 
    # Only run on push events to main branch (not PRs or other branches)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && 
+        github.ref == format('refs/heads/{0}', vars.TARGET_DEPLOYMENT_BRANCH || 'main')
   
     steps: 
     - uses: actions/checkout@v2
@@ -117,8 +119,8 @@ jobs:
         git commit -m "Bump version to $MAJOR.$MINOR.$PATCH [skip ci]"
         
         # Pull any remote changes before pushing to avoid conflicts
-        git pull --rebase origin ${{ env.TRIGGER_BRANCH }} --no-edit
-        git push origin ${{ env.TRIGGER_BRANCH }}
+        git pull --rebase origin ${{ env.TARGET_BRANCH }} --no-edit
+        git push origin ${{ env.TARGET_BRANCH }}
         
 
   # Job 3: Build and Push Container (ONLY on main branch pushes)
@@ -127,13 +129,14 @@ jobs:
     needs: version-bump
     
    # Only run on push events to main branch (not PRs or other branches)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && 
+        github.ref == format('refs/heads/{0}', vars.TARGET_DEPLOYMENT_BRANCH || 'main')
 
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: recursive
-        ref: ${{ env.TRIGGER_BRANCH }}  # Ensure we get the latest main branch with version bump
+        ref: ${{ env.TARGET_BRANCH }}  # Ensure we get the latest main branch with version bump
 
     # Setup Cake
     - name: Setup Cake
@@ -148,7 +151,7 @@ jobs:
     # Build .NET (required before container build)
     - name: Build .NET
       run: |
-        ./build.sh --target=Build --configuration=Release
+        ./build.sh --target=Build --configuration=${{ env.BUILD_CONFIGURATION }}
 
     # Login to Azure Container Registry
     - name: Log in to Azure Container Registry
@@ -161,7 +164,7 @@ jobs:
     # Build Container at local 
     - name: Build and Push Container at local daemon
       run: |
-        ./build.sh --target=PublishContainer --configuration=Release \
+        ./build.sh --target=PublishContainer --configuration=${{ env.BUILD_CONFIGURATION }} \
         --property="ContainerRepository=${{ secrets.IMAGE_NAME }}"
     
     - name: Extract version and tag Docker image
