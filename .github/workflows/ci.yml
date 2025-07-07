@@ -3,7 +3,7 @@ name: CI/CD
 on:
   # Trigger on pushes to branch for deployment (excluding docs)
   push:
-    branches: [ ci_development ]
+    branches: [ main ]
     paths-ignore: 
       # Documentation files (5 files)
       - '**/*.md'         
@@ -23,7 +23,7 @@ on:
 
   # Trigger on pull requests for validation (excluding docs)  
   pull_request:
-    branches: [ ci_development ]
+    branches: [ main ]
     paths-ignore: 
     - '**/*.md'         
     - 'docs/**'         
@@ -46,7 +46,7 @@ permissions:
 
 
 env:
-  TRIGGER_BRANCH: ci_development 
+  TRIGGER_BRANCH: main
   CAKE_VERSION: 1.1.0  # Version of Cake to use
   
 jobs:
@@ -174,8 +174,8 @@ jobs:
         echo "Tagging and pushing version: $VERSION"
         
         # Tag with version number
-        # docker tag ${{ secrets.IMAGE_NAME }}:$VERSION ${{ secrets.REGISTRY }}/${{ secrets.IMAGE_NAME }}:$VERSION
+        docker tag ${{ secrets.IMAGE_NAME }}:$VERSION ${{ secrets.REGISTRY }}/${{ secrets.IMAGE_NAME }}:$VERSION
         
         # Push tag
-        # docker push ${{ secrets.REGISTRY }}/${{ secrets.IMAGE_NAME }}:$VERSION
+        docker push ${{ secrets.REGISTRY }}/${{ secrets.IMAGE_NAME }}:$VERSION
 
