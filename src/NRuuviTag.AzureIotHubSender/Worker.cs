@@ -87,7 +87,7 @@ namespace LinuxSdkClient {
             // Get pre-set properties from desired if available
             // Do this before overriding the specific values
             if (dev != null) {
-                foreach (var prop in dev)
+                foreach (JProperty prop in dev)
                 {
                     // Skip system-reserved properties (e.g., $version)
                     if (!prop.Name.StartsWith("$")) {
