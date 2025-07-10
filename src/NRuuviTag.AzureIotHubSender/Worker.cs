@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,7 +25,7 @@ namespace LinuxSdkClient {
 
         private static async Task<DeviceClient> ConnectToAzure() {
             // Fetch the connection string from an environment variable
-            string DeviceConnectionString = Environment.GetEnvironmentVariable("ConnectionString");
+            string DeviceConnectionString = Environment.GetEnvironmentVariable("ConnectionString") ?? throw new ArgumentNullException("FATAL: Could not retrieve env-var: ConnectionString");
 
             // Create an instance of the device client using the connection string
             DeviceClient deviceClient = DeviceClient.CreateFromConnectionString(DeviceConnectionString, TransportType.Mqtt);
@@ -72,6 +73,10 @@ namespace LinuxSdkClient {
                     // TODO: update dynamically in bg (start callback func in bg?)
                     var twin = await deviceClient.GetTwinAsync(stoppingToken);
 
+                    // Get device whitelist from twin
+                    JToken? devsTok = twin.Properties.Desired["endDevices1"];
+                    JArray? whiteList = devsTok is JArray arr ? arr : null;
+
                     _logger.LogInformation("RuuviTag listener configured.");
 
                     // Keep track of received samples macs
@@ -79,8 +84,9 @@ namespace LinuxSdkClient {
                     await foreach (var sample in client.ListenAsync(stoppingToken)) {
                         // Verify sender mac is whitelisted first
                         // If configured in twin, and mac not found, skip sample
-                        if (twin.Properties.Desired["endDevices1"].FirstOrDefault(i => i.Contains("mac") && i["mac"] == sample.MacAddress) == null)
+                        if (whiteList?.FirstOrDefault(i => i["mac1"]?.ToString() == sample.MacAddress) == null)
                         {
+                            _logger.LogInformation($"Caught non-whitelisted sample: {sample}");
                             continue;
                         }
                         
@@ -113,17 +119,17 @@ namespace LinuxSdkClient {
                     _logger.LogError(e, "Error while running RuuviTag listener.");
                     excs.Add(DateTime.Now);
                     // If too many recent errors
-                    if (excs.Count() >= 5) {
+                    if (excs.Count >= 5) {
                         // All last 5 errors within one minute, sleep & restart the collector
                         if (excs.All(t => t > DateTime.Now.AddMinutes(-1))) {
-                            Task.Delay(60 * 1000);
+                            await Task.Delay(60 * 1000);
                             continue;
                         }
                         excs.Clear();
                     }
                     // Otherwise, a short delay
                     else {
-                        Task.Delay(10 * 1000);
+                        await Task.Delay(10 * 1000);
                     }
                 }
             }
