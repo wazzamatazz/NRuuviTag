@@ -90,8 +90,8 @@ namespace LinuxSdkClient {
                 foreach (var prop in dev)
                 {
                     // Skip system-reserved properties (e.g., $version)
-                    if (!prop.Key.StartsWith("$")) {
-                        devN[prop.Key] = prop.Value;
+                    if (!prop.Name.StartsWith("$")) {
+                        devN[prop.Name] = prop.Value;
                     }
                 }
             }
@@ -139,7 +139,8 @@ namespace LinuxSdkClient {
                     // Keep track of received samples macs
                     var macs = new List<string>();
                     // Only catch whitelisted mac reports
-                    await foreach (var sample in client.ListenAsync(i => whiteList?.Any(j => j["mac"]?.ToString() == i), stoppingToken)) {
+                    // If whitelist not defined, allow any device
+                    await foreach (var sample in client.ListenAsync(i => whiteList?.Any(j => j["mac"]?.ToString() == i) ?? true, stoppingToken)) {
                         // Verify sender mac is whitelisted first
                         // If configured in twin, and mac not found, skip sample
                         // if (whiteList?.Any(j => j["mac"]?.ToString() == sample.MacAddress))
