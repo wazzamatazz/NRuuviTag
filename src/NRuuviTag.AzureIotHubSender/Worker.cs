@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,7 +34,7 @@ namespace LinuxSdkClient {
             return deviceClient;
         }
 
-        private static async Task SendToAzureAsync(DeviceClient deviceClient, RuuviTagSample data) {
+        private async Task SendToAzureAsync(DeviceClient deviceClient, RuuviTagSample data) {
             var payload = JsonConvert.SerializeObject(data);
             Console.WriteLine(payload);
 
@@ -78,8 +79,7 @@ namespace LinuxSdkClient {
                     await foreach (var sample in client.ListenAsync(stoppingToken)) {
                         // Verify sender mac is whitelisted first
                         // If configured in twin, and mac not found, skip sample
-                        if (twin.Properties.Desired.TryGetValue("endDevices", out var whiteList) &&
-                            whiteList?.FirstOrDefault(i => i.Contains("mac") && i["mac"] == sample.MacAddress) == null)
+                        if (twin.Properties.Desired["endDevices1"].FirstOrDefault(i => i.Contains("mac") && i["mac"] == sample.MacAddress) == null)
                         {
                             continue;
                         }
@@ -113,7 +113,7 @@ namespace LinuxSdkClient {
                     _logger.LogError(e, "Error while running RuuviTag listener.");
                     excs.Add(DateTime.Now);
                     // If too many recent errors
-                    if (excs.Count >= 5) {
+                    if (excs.Count() >= 5) {
                         // All last 5 errors within one minute, sleep & restart the collector
                         if (excs.All(t => t > DateTime.Now.AddMinutes(-1))) {
                             Task.Delay(60 * 1000);
@@ -125,10 +125,6 @@ namespace LinuxSdkClient {
                     else {
                         Task.Delay(10 * 1000);
                     }
-                }
-                finally {
-                    _logger.LogInformation("Stopped RuuviTag listener.");
-                    break;
                 }
             }
         }
