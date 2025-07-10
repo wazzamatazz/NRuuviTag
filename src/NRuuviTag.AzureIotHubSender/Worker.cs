@@ -33,10 +33,6 @@ namespace LinuxSdkClient {
             return deviceClient;
         }
 
-        private static async Task<TwinCollection> FetchTwinAsync(DeviceClient client, CancellationToken cancel) {
-            return await 
-        }
-
         private static async Task SendToAzureAsync(DeviceClient deviceClient, RuuviTagSample data) {
             var payload = JsonConvert.SerializeObject(data);
             Console.WriteLine(payload);
@@ -59,6 +55,7 @@ namespace LinuxSdkClient {
             try {
                 await twinTask;
                 await sendTask;
+            }
             catch (Exception e) {
                 _logger.LogError(e, "Failed to process Azure communication.");
             }
