@@ -51,11 +51,11 @@ namespace LinuxSdkClient {
             var sendTask = deviceClient.SendEventAsync(message);
 
             // Set the data string as the latestData property in the reported properties
-            var twinPatch = new TwinCollection();
+            var patch = new TwinCollection();
             var latest = new TwinCollection();
             latest[data.MacAddress] = data;
-            twinPatch["latestData"] = latest;
-            var twinTask = deviceClient.UpdateReportedPropertiesAsync(twinPatch);
+            patch["latestData"] = latest;
+            var twinTask = deviceClient.UpdateReportedPropertiesAsync(patch);
 
             try {
                 await twinTask;
@@ -64,6 +64,60 @@ namespace LinuxSdkClient {
             catch (Exception e) {
                 _logger.LogError(e, "Failed to process Azure communication.");
             }
+        }
+
+        private async Task UpdateEndDeviceAsync(DeviceClient deviceClient, RuuviTagSample sample, CancellationToken ct) {
+            var twin = await deviceClient.GetTwinAsync(ct);
+            
+            // Get the current endDevices array
+            var devsToken = twin.Properties.Desired["endDevices"];
+            var devsTokenR = twin.Properties.Reported["endDevices"];
+
+            var endDevices = devsToken as JArray; // Cant modify so dont set => Jarray or null
+            var endDevicesR = devsTokenR is JArray og ? new JArray(og) : new JArray();
+
+            var dev = endDevices?.FirstOrDefault(i => i["mac"]?.ToString() == sample.MacAddress);
+            var devR = endDevicesR.FirstOrDefault(i => i["mac"]?.ToString() == sample.MacAddress);
+
+            // if dev null => all values null
+            // if devR null => copy from dev
+
+            var devN = devR ?? new JObject();
+            
+            // Get pre-set properties from desired if available
+            // Do this before overriding the specific values
+            if (dev != null) {
+                foreach (var prop in dev)
+                {
+                    // Skip system-reserved properties (e.g., $version)
+                    if (!prop.Key.StartsWith("$")) {
+                        devN[prop.Key] = prop.Value;
+                    }
+                }
+            }
+ 
+            // Update/Override other necessary properties here
+            // Volatile values reported by the ruuvitag devices
+            // TODO internal var for keeping track of tags in memory
+            // Update values from the var
+            devN["firmwareVersion"] = "TODO";
+            devN["displayName"] = "TODO";
+            devN["deviceId"] = "TODO";
+
+            // If dev was missing, add it
+            if (devR == null) {
+                endDevicesR.Add(devN);
+            }
+
+            var patch = new TwinCollection();
+            patch["endDevices"] = endDevicesR;
+
+            try {
+                await deviceClient.UpdateReportedPropertiesAsync(patch);
+            }
+            catch (Exception e) {
+                _logger.LogError(e, "Failed to update Device Twin Reported Props.");
+            }            
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
@@ -77,21 +131,22 @@ namespace LinuxSdkClient {
                     var twin = await deviceClient.GetTwinAsync(stoppingToken);
 
                     // Get device whitelist from twin
-                    JToken? devsTok = twin.Properties.Desired["endDevices1"];
+                    JToken? devsTok = twin.Properties.Desired["endDevices"];
                     JArray? whiteList = devsTok is JArray arr ? arr : null;
 
                     _logger.LogInformation("RuuviTag listener configured.");
 
                     // Keep track of received samples macs
                     var macs = new List<string>();
-                    await foreach (var sample in client.ListenAsync(stoppingToken)) {
+                    // Only catch whitelisted mac reports
+                    await foreach (var sample in client.ListenAsync(i => whiteList?.Any(j => j["mac"]?.ToString() == i), stoppingToken)) {
                         // Verify sender mac is whitelisted first
                         // If configured in twin, and mac not found, skip sample
-                        if (whiteList?.FirstOrDefault(i => i["mac1"]?.ToString() == sample.MacAddress) == null)
-                        {
-                            _logger.LogInformation($"Caught non-whitelisted sample: {sample}");
-                            continue;
-                        }
+                        // if (whiteList?.Any(j => j["mac"]?.ToString() == sample.MacAddress))
+                        // {
+                        //     _logger.LogInformation($"Caught non-whitelisted sample: {sample}");
+                        //     continue;
+                        // }
                         
                         // Skip any samples older than 3 min
                         if (sample.Timestamp < DateTime.UtcNow.AddMinutes(-3)) {
@@ -104,6 +159,7 @@ namespace LinuxSdkClient {
                         // TODO: change limiter behaviour, collect asynclist in the bg, another sync loop fetching all collected values every 5min delay and process 
                         if (sample.MacAddress != null && !macs.Contains(sample.MacAddress)) {
                             _ = SendToAzureAsync(deviceClient, sample);
+                            _ = UpdateEndDeviceAsync(deviceClient, sample, stoppingToken);
                             macs.Add(sample.MacAddress);
                             continue;
                         }
