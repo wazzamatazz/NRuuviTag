@@ -26,11 +26,13 @@
     building via build.ps1 or build.sh. It is defined here to allow Visual Studio to build with 
     the solution with the correct version number.
     -->
-    <Version>0.14.0</Version>
+    <MajorVersion Condition=" '$(MajorVersion)' == '' ">0</MajorVersion>
+    <MinorVersion Condition=" '$(MinorVersion)' == '' ">0</MinorVersion>
+    <Version>0.0.0</Version>
   </PropertyGroup>
 
   <PropertyGroup>
-    <ContainerImageTags>latest;$(Version)</ContainerImageTags>
+    <ContainerImageTags>latest;$(MajorVersion);$(MajorVersion).$(MinorVersion);$(Version)</ContainerImageTags>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
