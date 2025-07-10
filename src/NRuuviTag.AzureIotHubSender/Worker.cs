@@ -1,5 +1,4 @@
 using System;
-//using System.Text.Json;
 using System.Text;
 using Newtonsoft.Json;
 using System.Threading;
@@ -22,12 +21,6 @@ namespace LinuxSdkClient {
             _logger = logger;
         }
 
-        class JsonMessage
-        {
-                public string temp { get; set; }
-                public int humidity { get; set; }
-        }
-
         private static async Task<DeviceClient> ConnectToAzure() {
             // Fetch the connection string from an environment variable
             string DeviceConnectionString = Environment.GetEnvironmentVariable("ConnectionString");
@@ -40,68 +33,106 @@ namespace LinuxSdkClient {
             return deviceClient;
         }
 
-        private static async Task SendToAzure(DeviceClient deviceClient, RuuviTagSample data) {
-            JsonMessage newMsg = new JsonMessage()
-            {
-                temp = "4.05",
-                humidity = 750,
-            };
+        private static async Task<TwinCollection> FetchTwinAsync(DeviceClient client, CancellationToken cancel) {
+            return await 
+        }
 
-            string ruuvipayload = JsonConvert.SerializeObject(data);
-            string payload = JsonConvert.SerializeObject(newMsg);
-
-            Console.WriteLine(ruuvipayload);
-
+        private static async Task SendToAzureAsync(DeviceClient deviceClient, RuuviTagSample data) {
+            var payload = JsonConvert.SerializeObject(data);
+            Console.WriteLine(payload);
 
             // Send the data string as telemetry to Azure IoT Hub
-            Message message = new Message(Encoding.UTF8.GetBytes(ruuvipayload))
+            Message message = new Message(Encoding.UTF8.GetBytes(payload))
             {
                 ContentEncoding = Encoding.UTF8.ToString(),
                 ContentType = "application/json"
             };
-            await deviceClient.SendEventAsync(message);
+            var sendTask = deviceClient.SendEventAsync(message);
 
             // Set the data string as the latestData property in the reported properties
-            var reportedProperties = new TwinCollection();
-            reportedProperties["latestData"] = data;
+            var twinPatch = new TwinCollection();
+            var latest = new TwinCollection();
+            latest[data.MacAddress] = data;
+            twinPatch["latestData"] = latest;
+            var twinTask = deviceClient.UpdateReportedPropertiesAsync(twinPatch);
 
-            await deviceClient.UpdateReportedPropertiesAsync(reportedProperties);
+            try {
+                await twinTask;
+                await sendTask;
+            catch (Exception e) {
+                _logger.LogError(e, "Failed to process Azure communication.");
+            }
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-            try {
-                DeviceClient deviceClient = await ConnectToAzure();
-                IRuuviTagListener client = new BlueZListener("hci0");
-                //JsonSerializerOptions jsonOptions = new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var excs = new List<DateTime>();
+            while (true) {
+                try {
+                    DeviceClient deviceClient = await ConnectToAzure();
+                    IRuuviTagListener client = new BlueZListener("hci0");
 
-                _logger.LogInformation("Starting RuuviTag listener.");
+                    // TODO: update dynamically in bg (start callback func in bg?)
+                    var twin = await deviceClient.GetTwinAsync(stoppingToken);
 
-                await foreach (var sample in client.ListenAsync(stoppingToken)) {
-                    //var json = JsonSerializer.Serialize(sample, jsonOptions);
+                    _logger.LogInformation("RuuviTag listener configured.");
 
-                    /*
-                    var data = new TelemetryData{ 
-                        Temperature = sample.Temperature,
-                        Humidity = sample.Humidity,
-                        MacAddress = sample.MacAddress,
-                    };
-                    */
-
-                    if (DateTime.UtcNow.AddMinutes(-3) > sample.Timestamp) {
-                        continue;
+                    // Keep track of received samples macs
+                    var macs = new List<string>();
+                    await foreach (var sample in client.ListenAsync(stoppingToken)) {
+                        // Verify sender mac is whitelisted first
+                        // If configured in twin, and mac not found, skip sample
+                        if (twin.Properties.Desired.TryGetValue("endDevices", out var whiteList) &&
+                            whiteList?.FirstOrDefault(i => i.Contains("mac") && i["mac"] == sample.MacAddress) == null)
+                        {
+                            continue;
+                        }
+                        
+                        // Skip any samples older than 3 min
+                        if (sample.Timestamp < DateTime.UtcNow.AddMinutes(-3)) {
+                            continue;
+                        }
+    
+                        // If measurement from this mac during this round not yet sent
+                        // Send to Azure in the background
+                        // POTENTIAL BUG: IF 2+ SAMPLES IN MAC ORDER, SAMPLES ARE SKIPPED
+                        // TODO: change limiter behaviour, collect asynclist in the bg, another sync loop fetching all collected values every 5min delay and process 
+                        if (sample.MacAddress != null && !macs.Contains(sample.MacAddress)) {
+                            _ = SendToAzureAsync(deviceClient, sample);
+                            macs.Add(sample.MacAddress);
+                            continue;
+                        }
+    
+                        // Start over after sleep
+                        macs.Clear();
+                        // Sleep 5m (* 60s * 1000ms)
+                        await Task.Delay(5*60*1000);
                     }
-                            
-                    await SendToAzure(deviceClient, sample);
-
-                    await Task.Delay(5*60*1000);
                 }
-            }
-            catch (OperationCanceledException) { }
-            catch (Exception e) {
-                _logger.LogError(e, "Error while running RuuviTag listener.");
-            }
-            finally {
-                _logger.LogInformation("Stopped RuuviTag listener.");
+                catch (OperationCanceledException ec) {
+                    _logger.LogError(ec, "Execution Canceled.");
+                    break;
+                }
+                catch (Exception e) {
+                    _logger.LogError(e, "Error while running RuuviTag listener.");
+                    excs.Add(DateTime.Now);
+                    // If too many recent errors
+                    if (excs.Count >= 5) {
+                        // All last 5 errors within one minute, sleep & restart the collector
+                        if (excs.All(t => t > DateTime.Now.AddMinutes(-1))) {
+                            Task.Delay(60 * 1000);
+                            continue;
+                        }
+                        excs.Clear();
+                    }
+                    // Otherwise, a short delay
+                    else {
+                        Task.Delay(10 * 1000);
+                    }
+                }
+                finally {
+                    _logger.LogInformation("Stopped RuuviTag listener.");
+                    break;
+                }
             }
         }
     }
