@@ -1,0 +1,47 @@
+<Solution>
+  <Folder Name="/build/">
+    <File Path="build/version.json" />
+  </Folder>
+  <Folder Name="/common/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="build.cake" />
+    <File Path="build.ps1" />
+    <File Path="build.sh" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="Directory.Packages.props" />
+    <File Path="README.md" />
+    <File Path="THIRD-PARTY-NOTICES.md" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/Docker.md" />
+    <File Path="docs/LinuxSystemdService.md" />
+  </Folder>
+  <Folder Name="/samples/">
+    <File Path="samples/Directory.Build.props" />
+    <Project Path="samples/ExampleWindowsSdkClient/ExampleWindowsSdkClient.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/NRuuviTag.AzureEventHubs.Agent/NRuuviTag.AzureEventHubs.Agent.csproj" />
+    <Project Path="src/NRuuviTag.Cli.Linux/NRuuviTag.Cli.Linux.csproj" />
+    <Project Path="src/NRuuviTag.Cli.Windows/NRuuviTag.Cli.Windows.csproj" />
+    <Project Path="src/NRuuviTag.Cli/NRuuviTag.Cli.csproj" />
+    <Project Path="src/NRuuviTag.Core/NRuuviTag.Core.csproj" />
+    <Project Path="src/NRuuviTag.Listener.Linux/NRuuviTag.Listener.Linux.csproj" />
+    <Project Path="src/NRuuviTag.Listener.Windows/NRuuviTag.Listener.Windows.csproj" />
+    <Project Path="src/NRuuviTag.Mqtt.Agent/NRuuviTag.Mqtt.Agent.csproj" />
+    <Project Path="src/NRuuviTag.OpenTelemetry/NRuuviTag.OpenTelemetry.csproj" />
+  </Folder>
+  <Folder Name="/src/submodules/">
+    <File Path="src/submodules/Directory.Build.props" />
+    <File Path="src/submodules/Directory.Packages.props" />
+    <Project Path="src/submodules/DotNet-BlueZ/src/DotNetBlueZ.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <File Path="test/Directory.Build.props" />
+    <Project Path="test/NRuuviTag.Core.Tests/NRuuviTag.Core.Tests.csproj" />
+    <Project Path="test/NRuuviTag.Mqtt.Tests/NRuuviTag.Mqtt.Tests.csproj" />
+  </Folder>
+</Solution>
