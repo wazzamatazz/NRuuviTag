@@ -34,11 +34,6 @@
     <Project Path="src/NRuuviTag.Mqtt.Agent/NRuuviTag.Mqtt.Agent.csproj" />
     <Project Path="src/NRuuviTag.OpenTelemetry/NRuuviTag.OpenTelemetry.csproj" />
   </Folder>
-  <Folder Name="/src/submodules/">
-    <File Path="src/submodules/Directory.Build.props" />
-    <File Path="src/submodules/Directory.Packages.props" />
-    <Project Path="src/submodules/DotNet-BlueZ/src/DotNetBlueZ.csproj" />
-  </Folder>
   <Folder Name="/test/">
     <File Path="test/Directory.Build.props" />
     <Project Path="test/NRuuviTag.Core.Tests/NRuuviTag.Core.Tests.csproj" />

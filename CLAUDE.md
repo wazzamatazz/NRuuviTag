@@ -39,6 +39,11 @@ The project uses Cake build automation with cross-platform support:
 ./build.sh --target=PublishContainer
 ```
 
+## Package Management
+
+The project uses NuGet Central Package Management to manage dependencies. The `Directory.Packages.props` file defines common package versions used across the solution.
+
+
 ## Architecture
 
 ### Core Components

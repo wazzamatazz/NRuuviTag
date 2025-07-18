@@ -6,21 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Linux.Bluetooth" />
     <PackageReference Include="System.Text.Json" />
     <PackageReference Include="Tmds.DBus" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\submodules\DotNet-BlueZ\src\DotNetBlueZ.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\NRuuviTag.Core\NRuuviTag.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="..\submodules\DotNet-BlueZ\src\bin\$(Configuration)\$(TargetFramework)\DotNetBlueZ.dll">
-      <Pack>true</Pack>
-      <PackagePath>lib\$(TargetFramework)</PackagePath>
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   
   <ItemGroup>
