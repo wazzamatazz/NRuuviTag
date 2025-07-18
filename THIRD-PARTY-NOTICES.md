@@ -6,10 +6,3 @@ bring it to our attention by [creating an issue](https://github.com/wazzamatazz/
 
 The attached notices are provided for information only.
 
-
-### Licence notice for DotNet-BlueZ
-
-This repository uses a modified version of [DotNet-BlueZ](https://github.com/hashtagchris/DotNet-BlueZ), licensed under the [Apache License 2.0](https://github.com/hashtagchris/DotNet-BlueZ/blob/main/LICENSE).
-
-DotNet-BlueZ is copyright (c) hashtagchris.
-
