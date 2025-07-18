@@ -1,3 +1,0 @@
-[submodule "src/submodules/DotNet-BlueZ"]
-	path = src/submodules/DotNet-BlueZ
-	url = https://github.com/wazzamatazz/DotNet-BlueZ
