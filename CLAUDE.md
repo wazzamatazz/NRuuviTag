@@ -44,6 +44,38 @@ The project uses Cake build automation with cross-platform support:
 The project uses NuGet Central Package Management to manage dependencies. The `Directory.Packages.props` file defines common package versions used across the solution.
 
 
+## Code Style
+
+The project uses an [EditorConfig](.editorconfig) file to enforce consistent coding styles across the solution. Follow the rules defined in this file when contributing code.
+
+The following subsections describe some additional conventions that should also be observed:
+
+### Control Statements
+
+Control statements such as `if` and `for` should always use braces, even for single line statements, to improve readability and maintainability.
+
+
+### Async/Await
+
+When generating an `await` statement in a class library project, always include `.ConfigureAwait(false)`. Is it not necessary to do this in ASP.NET Core projects, console applications, or unit test or benchmarking projects.
+
+
+### Cancellation Tokens
+
+`CancellationToken` parameters should be named `cancellationToken`. Do not suggest a default value for `cancellationToken` parameters in methods that are not `public` unless the method contains other parameters with default values.
+
+
+### XML DocComments
+
+When generating XML DocComments always use `<see langword="null"/>` instead of `null` or `<c>null</c>` when referring to the `null` C# language keyword.
+
+The preferred summary for a constructor is `Creates a new <see cref="TypeName"/> instance.`.
+
+The preferred text for a `CancellationToken` parameter is `The cancellation token for the operation.`.
+
+When generating `<exception>` tags for `ArgumentNullException`, a separate tag should be generated for each parameter than can cause the exception. The preferred text is `<paramref name="parameterName"/> is <see langword="null"/>.`.
+
+
 ## Architecture
 
 ### Core Components
@@ -55,7 +87,7 @@ The project uses NuGet Central Package Management to manage dependencies. The `D
 
 2. **Platform Listeners**
     - `NRuuviTag.Listener.Windows` - Windows 10 SDK implementation
-    - `NRuuviTag.Listener.Linux` - BlueZ D-Bus implementation via DotNet-BlueZ submodule
+    - `NRuuviTag.Listener.Linux` - BlueZ D-Bus implementation via Linux.Bluetooth package
 
 3. **Publishing Agents**
     - `NRuuviTag.Mqtt.Agent` - MQTT publishing with configurable options
