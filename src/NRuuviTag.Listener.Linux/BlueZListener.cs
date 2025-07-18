@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-using HashtagChris.DotNetBlueZ;
+using Linux.Bluetooth;
 
 using Microsoft.Extensions.Logging;
 
@@ -128,7 +128,7 @@ namespace NRuuviTag.Listener.Linux {
 
             // Adds a watcher for the specified device so that we can emit new samples when the
             // device properties change.
-            async Task<bool> AddDeviceWatcher(HashtagChris.DotNetBlueZ.Device device, Device1Properties properties) {
+            async Task<bool> AddDeviceWatcher(global::Linux.Bluetooth.Device device, Device1Properties properties) {
                 if (!running || cancellationToken.IsCancellationRequested) {
                     return false;
                 }
