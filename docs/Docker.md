@@ -16,15 +16,13 @@ To build a Linux container image for the NRuuviTag CLI application, run the 'Pub
 ./build.sh --target PublishContainer --configuration Release
 ``` 
 
-The default settings publish an x64 Linux image to the local Docker or Podman registry. To publish an image for a different architecture (e.g. `arm64`) specify the `--container-arch` parameter when running the build script. You can also publish the image to an alternative container registry by specifying the `--container-registry` parameter. For example:
+The default settings publish x64, arm and arm64 Linux images to the local Docker or Podman registry. You can also publish the image to an alternative container registry by specifying the `--container-registry` parameter. For example:
 
 **PowerShell**
 
 ```pwsh
 .\build.ps1 `
     --target PublishContainer `
-    --configuration Release `
-    --container-arch arm64 `
     --container-registry myregistry.mymachine.local:5000
 ``` 
 
@@ -33,8 +31,6 @@ The default settings publish an x64 Linux image to the local Docker or Podman re
 ```sh
 ./build.sh \
     --target PublishContainer \
-    --configuration Release \
-    --container-arch arm64 \
     --container-registry myregistry.mymachine.local:5000
 ``` 
 
@@ -58,7 +54,7 @@ Run the application as follows:
 docker run -it --rm \
     -v /var/run/dbus:/var/run/dbus \
     -v $HOME/.nruuvitag:/root/.nruuvitag \
-    nruuvitag:latest
+    wazzamatazz/nruuvitag:latest
 ```
 
 You can append the command arguments to the end of the call to `docker run` e.g. to list known devices:
