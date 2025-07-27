@@ -48,13 +48,9 @@ const string VersionFile = "./build/version.json";
 //   The container registry to use when the PublishContainer target is specified.
 //     Default: Local Docker or Podman daemon
 //
-// --container-os=<OS>
-//   The container operating system to use when the PublishContainer target is specified.
-//     Default: linux
-//
-// --container-arch=<ARCHITECTURE>
-//   The container processor architecture to use when the PublishContainer target is specified.
-//     Default: Same as current machine
+// --container-rid=<RUNTIME IDENTIFIER>
+//   The runtime identifier to build the container image for when calling the PublishContainer target.
+//     Default: Inferred from the RuntimeIdentifier or RuntimeIdentifiers build property
 //
 // --property=<PROPERTY>
 //   Specifies an additional property to pass to MSBuild during Build and Pack targets. The value
@@ -73,7 +69,7 @@ const string VersionFile = "./build/version.json";
 // 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#load nuget:?package=Jaahas.Cake.Extensions&version=4.0.1
+#load nuget:?package=Jaahas.Cake.Extensions&version=5.0.0
 
 // Bootstrap build context and tasks.
 Bootstrap(
