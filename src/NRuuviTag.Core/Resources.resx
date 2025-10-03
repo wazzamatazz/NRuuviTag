@@ -135,4 +135,7 @@
     <value>Data format {0} is unknown.</value>
     <comment>{0} - data format version</comment>
   </data>
+  <data name="Error_IncorrectMacAddressSequenceLength" xml:space="preserve">
+    <value>Sequence must contain at least {0} bytes starting from the specified offset position.</value>
+  </data>
 </root>
