@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -35,7 +35,7 @@ namespace NRuuviTag.Listener.Windows {
             };
 
             watcher.AdvertisementFilter.Advertisement.ManufacturerData.Add(manufacturerDataFilter);
-            watcher.Received += (sender, args) => { 
+            watcher.Received += (_, args) => { 
                 if (filter != null && !filter.Invoke(RuuviTagUtilities.ConvertMacAddressToString(args.BluetoothAddress))) {
                     return;
                 }
@@ -43,32 +43,31 @@ namespace NRuuviTag.Listener.Windows {
                 channel.Writer.TryWrite(args);
             };
 
+            var buffer = ArrayPool<byte>.Shared.Rent(255);
             try {
                 watcher.Start();
 
-                // Payload of a RuuviTag advertisement is 24 bytes long. Note that this does not
-                // include standard advertisement header content such as the manufacturer ID.
-                var payloadBuffer = new byte[24];
-
                 await foreach (var args in channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)) {
                     foreach (var manufacturerData in args.Advertisement.ManufacturerData) {
-                        // If the payload is not 24 bytes long, we need to create a new buffer of
-                        // the correct size. This would only occur if e.g. a custom data format
-                        // was being used or if Ruuvi changed the payload format in the future.
-                        var data = manufacturerData.Data.Length == payloadBuffer.Length
-                            ? payloadBuffer
-                            : new byte[manufacturerData.Data.Length];
-
+                        if (manufacturerData.Data.Length > buffer.Length) {
+                            ArrayPool<byte>.Shared.Return(buffer);
+                            buffer = ArrayPool<byte>.Shared.Rent((int) manufacturerData.Data.Length);
+                        }
+                        
                         using (var reader = DataReader.FromBuffer(manufacturerData.Data)) {
-                            reader.ReadBytes(data);
+                            reader.ReadBytes(buffer);
                         }
 
-                        var sample = RuuviTagUtilities.CreateSampleFromPayload(args.Timestamp, args.RawSignalStrengthInDBm, data);
-                        yield return sample;
+                        if (!RuuviTagUtilities.TryParsePayload(new Span<byte>(buffer, 0, (int) manufacturerData.Data.Length), out var sample)) {
+                            continue;
+                        }
+                        
+                        yield return new RuuviTagSample(args.Timestamp, args.RawSignalStrengthInDBm, sample);
                     }
                 }
             }
             finally {
+                ArrayPool<byte>.Shared.Return(buffer);
                 watcher.Stop();
                 channel.Writer.TryComplete();
             }

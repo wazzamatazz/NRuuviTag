@@ -68,57 +68,6 @@ namespace NRuuviTag.Listener.Linux {
 
             var running = true;
 
-            void EmitDeviceProperties(Device1Properties properties) {
-                if (!running || cancellationToken.IsCancellationRequested) {
-                    return;
-                }
-
-                try {
-                    if (!properties.ManufacturerData.TryGetValue(Constants.ManufacturerId, out var o) || o is not byte[] payload) {
-                        throw new InvalidOperationException("Device properties did not contain manufacturer data.");
-                    }
-
-                    var timestamp = DateTimeOffset.Now;
-                    var sample = RuuviTagUtilities.CreateSampleFromPayload(timestamp, properties.RSSI, payload);
-                    if (channel!.Writer.TryWrite(sample)) {
-                        LogSampleEmitted(properties.Address, timestamp);
-                    }
-                }
-                catch (Exception error) {
-                    LogInvalidManufacturerData(properties.Address, error);
-                }
-            }
-
-            void UpdateDeviceProperties(Device1Properties properties, Tmds.DBus.PropertyChanges changes) {
-                if (!running || cancellationToken.IsCancellationRequested) {
-                    return;
-                }
-
-                // For each change, update the existing properties if a property that we are
-                // interested in has changed value.
-
-                var dirty = false;
-
-                foreach (var item in changes.Changed) {
-                    switch (item.Key) {
-                        case nameof(Device1Properties.RSSI):
-                            properties.RSSI = Convert.ToInt16(item.Value);
-                            dirty = true;
-                            break;
-                        case nameof(Device1Properties.ManufacturerData):
-                            properties.ManufacturerData = (IDictionary<ushort, object>) item.Value;
-                            dirty = true;
-                            break;
-                    }
-                }
-
-                if (!dirty) {
-                    return;
-                }
-
-                EmitDeviceProperties(properties);
-            }
-
             // Get the adapter from BlueZ.
             using var adapter = await BlueZManager.GetAdapterAsync(_adapterName).ConfigureAwait(false);
             using var @lock = new SemaphoreSlim(1, 1);
@@ -126,35 +75,8 @@ namespace NRuuviTag.Listener.Linux {
             // Registrations for devices that we are observing.
             var watchers = new Dictionary<string, IDisposable>(StringComparer.OrdinalIgnoreCase);
 
-            // Adds a watcher for the specified device so that we can emit new samples when the
-            // device properties change.
-            async Task<bool> AddDeviceWatcher(global::Linux.Bluetooth.Device device, Device1Properties properties) {
-                if (!running || cancellationToken.IsCancellationRequested) {
-                    return false;
-                }
-
-                await @lock.WaitAsync(cancellationToken).ConfigureAwait(false);
-                try {
-                    if (watchers.ContainsKey(properties.Address)) {
-                        return false;
-                    }
-
-                    // Emit initial scan result.
-                    EmitDeviceProperties(properties);
-
-                    watchers[properties.Address] = await device.WatchPropertiesAsync(changes => {
-                        UpdateDeviceProperties(properties, changes);
-                    }).ConfigureAwait(false);
-
-                    return true;
-                }
-                finally {
-                    @lock.Release();
-                }
-            }
-
             // Handler for when BlueZ detects a new device.
-            adapter.DeviceFound += async (sender, args) => {
+            adapter.DeviceFound += async (_, args) => {
                 var disposeDevice = false;
 
                 try {
@@ -170,8 +92,8 @@ namespace NRuuviTag.Listener.Linux {
                     }
 
                     if (props.ManufacturerData == null || !props.ManufacturerData.ContainsKey(Constants.ManufacturerId)) {
-                        // This is not a RuuviTag.
-                        LogDeviceIgnored(props.Address, "not a RuuviTag device");
+                        // This is not a Ruuvi device.
+                        LogDeviceIgnored(props.Address, "not a Ruuvi device");
                         disposeDevice = true;
                         return;
                     }
@@ -213,7 +135,7 @@ namespace NRuuviTag.Listener.Linux {
                 channel.Writer.TryComplete();
 
                 // Dispose of the watcher registrations.
-                await @lock.WaitAsync().ConfigureAwait(false);
+                await @lock.WaitAsync(CancellationToken.None).ConfigureAwait(false);
                 try {
                     foreach (var item in watchers.Values) {
                         item.Dispose();
@@ -222,6 +144,91 @@ namespace NRuuviTag.Listener.Linux {
                 }
                 finally {
                     @lock.Release();
+                }
+            }
+
+            yield break;
+
+            // Adds a watcher for the specified device so that we can emit new samples when the
+            // device properties change.
+            async Task<bool> AddDeviceWatcher(global::Linux.Bluetooth.Device device, Device1Properties properties) {
+                if (!running || cancellationToken.IsCancellationRequested) {
+                    return false;
+                }
+
+                await @lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+                try {
+                    if (watchers.ContainsKey(properties.Address)) {
+                        return false;
+                    }
+
+                    // Emit initial scan result.
+                    EmitDeviceProperties(properties);
+
+                    watchers[properties.Address] = await device.WatchPropertiesAsync(changes => {
+                        UpdateDeviceProperties(properties, changes);
+                    }).ConfigureAwait(false);
+
+                    return true;
+                }
+                finally {
+                    @lock.Release();
+                }
+            }
+
+            
+            void UpdateDeviceProperties(Device1Properties properties, Tmds.DBus.PropertyChanges changes) {
+                if (!running || cancellationToken.IsCancellationRequested) {
+                    return;
+                }
+
+                // For each change, update the existing properties if a property that we are
+                // interested in has changed value.
+
+                var dirty = false;
+
+                foreach (var item in changes.Changed) {
+                    switch (item.Key) {
+                        case nameof(Device1Properties.RSSI):
+                            properties.RSSI = Convert.ToInt16(item.Value);
+                            dirty = true;
+                            break;
+                        case nameof(Device1Properties.ManufacturerData):
+                            properties.ManufacturerData = (IDictionary<ushort, object>) item.Value;
+                            dirty = true;
+                            break;
+                    }
+                }
+
+                if (!dirty) {
+                    return;
+                }
+
+                EmitDeviceProperties(properties);
+            }
+
+            void EmitDeviceProperties(Device1Properties properties) {
+                if (!running || cancellationToken.IsCancellationRequested) {
+                    return;
+                }
+
+                try {
+                    if (!properties.ManufacturerData.TryGetValue(Constants.ManufacturerId, out var o) || o is not byte[] payload) {
+                        throw new InvalidOperationException("Device properties did not contain manufacturer data.");
+                    }
+
+                    var timestamp = DateTimeOffset.Now;
+
+                    if (!RuuviTagUtilities.TryParsePayload(payload, out var sample)) {
+                        return;
+                    }
+                    
+                    if (channel!.Writer.TryWrite(new RuuviTagSample(timestamp, properties.RSSI, sample))) {
+                        LogSampleEmitted(properties.Address, timestamp);
+                    }
+                }
+                catch (Exception error) {
+                    LogInvalidManufacturerData(properties.Address, error);
                 }
             }
         }

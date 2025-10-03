@@ -2,12 +2,17 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
-    <Description>Windows SDK-based listener for NRuuviTag - a library for reading RuuviTag IoT sensors.</Description>
+    <Description>Windows SDK-based listener for NRuuviTag - a library for reading Ruuvi IoT sensor data.</Description>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\NRuuviTag.Core\NRuuviTag.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
