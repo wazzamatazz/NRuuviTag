@@ -16,7 +16,7 @@ namespace NRuuviTag {
         /// <summary>
         /// Active subscription channels.
         /// </summary>
-        private readonly HashSet<Channel<RuuviTagSample>> _subscriptions = new HashSet<Channel<RuuviTagSample>>();
+        private readonly HashSet<Channel<RuuviTagSample>> _subscriptions = [];
 
 
         /// <inheritdoc/>
@@ -36,7 +36,7 @@ namespace NRuuviTag {
 
             try {
                 await foreach (var item in channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)) { 
-                    if (item.MacAddress == null) {
+                    if (item?.MacAddress == null) {
                         continue;
                     }
 
