@@ -81,7 +81,7 @@ namespace NRuuviTag.Cli.Commands {
                     Console.WriteLine();
 
                     await foreach (var sample in _listener.ListenAsync(ctSource.Token).ConfigureAwait(false)) {
-                        if (string.IsNullOrWhiteSpace(sample.MacAddress)) {
+                        if (string.IsNullOrWhiteSpace(sample?.MacAddress)) {
                             continue;
                         }
 

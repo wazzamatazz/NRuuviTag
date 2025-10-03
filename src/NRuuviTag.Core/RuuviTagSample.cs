@@ -1,86 +1,53 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 namespace NRuuviTag {
 
     /// <summary>
-    /// Describes a sample received from a RuuviTag sensor.
+    /// Describes a sample received from a Ruuvi sensor.
     /// </summary>
     /// <remarks>
     ///   See https://docs.ruuvi.com/communication/bluetooth-advertisements for details about 
     ///   Bluetooth LE advertisements.
     /// </remarks>
-    /// <seealso cref="RuuviTagUtilities.CreateSampleFromPayload"/>
-    public class RuuviTagSample {
+    public record RuuviTagSample : RuuviDataPayload {
 
         /// <summary>
         /// Sample time.
         /// </summary>
-        public DateTimeOffset? Timestamp { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public DateTimeOffset? Timestamp { get; init; }
 
         /// <summary>
         /// Signal strength (dBm).
         /// </summary>
-        public double? SignalStrength { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public double? SignalStrength { get; init; }
 
-        /// <summary>
-        /// Payload data format (see https://docs.ruuvi.com/communication/bluetooth-advertisements).
-        /// </summary>
-        public byte? DataFormat { get; set; }
-
-        /// <summary>
-        /// Temperature (deg C).
-        /// </summary>
-        public double? Temperature { get; set; }
-
-        /// <summary>
-        /// Humidity (%).
-        /// </summary>
-        public double? Humidity { get; set; }
-
-        /// <summary>
-        /// Pressure (hPa).
-        /// </summary>
-        public double? Pressure { get; set; }
-
-        /// <summary>
-        /// X-acceleration (g).
-        /// </summary>
-        public double? AccelerationX { get; set; }
-
-        /// <summary>
-        /// Y-acceleration (g).
-        /// </summary>
-        public double? AccelerationY { get; set; }
-
-        /// <summary>
-        /// Z-acceleration (g).
-        /// </summary>
-        public double? AccelerationZ { get; set; }
-
-        /// <summary>
-        /// Battery voltage (V).
-        /// </summary>
-        public double? BatteryVoltage { get; set; }
-
-        /// <summary>
-        /// TX power (dBm).
-        /// </summary>
-        public double? TxPower { get; set; }
-
-        /// <summary>
-        /// Movement counter (counts).
-        /// </summary>
-        public byte? MovementCounter { get; set; }
         
         /// <summary>
-        /// Measurement sequence.
+        /// Creates a new <see cref="RuuviTagSample"/> instance.
         /// </summary>
-        public ushort? MeasurementSequence { get; set; }
+        public RuuviTagSample() {}
+        
 
         /// <summary>
-        /// MAC address of device.
+        /// Creates a new <see cref="RuuviTagSample"/> instance.
         /// </summary>
-        public string? MacAddress { get; set; }
+        /// <param name="timestamp">
+        ///   Sample time.
+        /// </param>
+        /// <param name="signalStrength">
+        ///   Signal strength (dBm).
+        /// </param>
+        /// <param name="payload">
+        ///   The <see cref="RuuviDataPayload"/> received from the Ruuvi device.
+        /// </param>
+        public RuuviTagSample(DateTimeOffset? timestamp, double? signalStrength, RuuviDataPayload payload) : base(payload) {
+            Timestamp = timestamp;
+            SignalStrength = signalStrength;
+        }
 
     }
+    
 }

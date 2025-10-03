@@ -4,14 +4,15 @@
     <TargetFramework>net9.0</TargetFramework>
     <RuntimeIdentifiers>linux-arm;linux-arm64;linux-x64</RuntimeIdentifiers>
     <AssemblyName>nruuvitag</AssemblyName>
-    <Description>Command-line tool that can receive broadcasts from RuuviTag IoT sensors and publish readings to a destination.</Description>
+    <Description>Command-line tool that can receive broadcasts from Ruuvi IoT sensors and publish readings to a destination.</Description>
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     <UserSecretsId>ef771434-9cd9-4037-b363-b7ca31975c30</UserSecretsId>
   </PropertyGroup>
 
   <PropertyGroup>
     <ContainerRepository>wazzamatazz/nruuvitag</ContainerRepository>
-    <ContainerImageTags>latest;$(MajorVersion)</ContainerImageTags>
+    <ContainerImageTags Condition=" '$(IsPrereleaseVersion)' != 'true' ">latest;$(MajorVersion)</ContainerImageTags>
+    <ContainerImageTags Condition=" '$(IsPrereleaseVersion)' == 'true' ">$(MajorVersion)-preview</ContainerImageTags>
     <!-- Container uses root so that it can access the Bluetooth adapter -->
     <ContainerUser>root</ContainerUser>
     <PrivateRepositoryUrl>$(PackageProjectUrl)</PrivateRepositoryUrl>

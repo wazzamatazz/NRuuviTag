@@ -60,14 +60,14 @@ namespace NRuuviTag.AzureEventHubs {
         /// <remarks>
         /// 
         /// <para>
-        ///   Use the <see cref="PrepareForPublish"/> callback to modify a <see cref="RuuviTagSample"/> 
+        ///   Use the <see cref="PrepareForPublish"/> callback to modify a <see cref="RuuviTagSampleExtended"/> 
         ///   instance prior to it being published to the event hub (e.g. to perform unit conversion). 
         ///   Set any property on a sample to <see langword="null"/> to exclude that property from the 
-        ///   publish.
+        ///   published data.
         /// </para>
         /// 
         /// </remarks>
-        public Action<RuuviTagSampleExtended>? PrepareForPublish { get; set; }
+        public Func<RuuviTagSampleExtended, RuuviTagSampleExtended>? PrepareForPublish { get; set; }
 
     }
 }

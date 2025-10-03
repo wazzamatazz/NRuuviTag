@@ -67,8 +67,8 @@ namespace NRuuviTag.Mqtt {
         ///   The topic name can include <c>{clientId}</c> and <c>{deviceId}</c> as placeholders. 
         ///   At runtime, <c>{clientId}</c> will be replaced with the <see cref="ClientId"/> for 
         ///   the MQTT connection, and <c>{deviceId}</c> will be replaced with the device ID for 
-        ///   the sample that is being published. The <see cref="GetDeviceId"/> callback can be 
-        ///   used to define the device ID to use for a given <see cref="RuuviTagSample"/>.
+        ///   the sample that is being published. The <see cref="GetDeviceInfo"/> callback can be 
+        ///   used to define the device ID to use for a given <see cref="RuuviDataPayload"/>.
         /// </remarks>
         /// <seealso cref="DefaultTopicName"/>
         [Required]
@@ -102,14 +102,14 @@ namespace NRuuviTag.Mqtt {
         /// <remarks>
         /// 
         /// <para>
-        ///   Use the <see cref="PrepareForPublish"/> callback to modify a <see cref="RuuviTagSample"/> 
+        ///   Use the <see cref="PrepareForPublish"/> callback to modify a <see cref="RuuviTagSampleExtended"/> 
         ///   instance prior to it being published to the MQTT broker (e.g. to perform unit conversion). 
-        ///   Set any property on a sample to <see langword="null"/> to exclude that property from the 
-        ///   publish.
+        ///   Set any property on a sample to <see langword="null"/> to prevent that property from being
+        /// published.
         /// </para>
         /// 
         /// </remarks>
-        public Action<RuuviTagSampleExtended>? PrepareForPublish { get; set; }
+        public Func<RuuviTagSampleExtended, RuuviTagSampleExtended>? PrepareForPublish { get; set; }
 
     }
 

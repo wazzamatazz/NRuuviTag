@@ -19,9 +19,7 @@ namespace OpenTelemetry.Metrics {
         ///   <paramref name="builder"/> is <see langword="null"/>.
         /// </exception>
         public static MeterProviderBuilder AddNRuuviTagInstrumentation(this MeterProviderBuilder builder) {
-            if (builder == null) {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ArgumentNullException.ThrowIfNull(builder);
 
             return builder.AddMeter(NRuuviTag.Telemetry.MeterName);
         }

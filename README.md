@@ -16,7 +16,7 @@ The `nruuvitag` [command-line tool](#command-line-application) can be used to as
 
 > See the [samples](/samples) folder for more detailed examples of usage.
 
-Usage is very straightforward. For example, to listen via the Windows 10 SDK using the [NRuuviTag.Listener.Windows](https://www.nuget.org/packages/NRuuviTag.Listener.Windows) NuGet package ([source](/src/NRuuviTag.Listener.Windows)):
+Usage is very straightforward. For example, to listen via the Windows SDK using the [NRuuviTag.Listener.Windows](https://www.nuget.org/packages/NRuuviTag.Listener.Windows) NuGet package ([source](/src/NRuuviTag.Listener.Windows)):
 
 ```csharp
 IRuuviTagListener client = new WindowsSdkListener();
@@ -55,16 +55,22 @@ The [NRuuviTag.Mqtt.Agent](https://www.nuget.org/packages/NRuuviTag.Mqtt.Agent) 
 
 ```csharp
 public async Task RunMqttAgent(
-  IRuuviTagListener listener,
-  ILoggerFactory? loggerFactory = null,
-  CancellationToken cancellationToken = default
+    IRuuviTagListener listener,
+    ILoggerFactory? loggerFactory = null,
+    CancellationToken cancellationToken = default
 ) {
-  var agentOptions = new MqttAgentOptions() {
-    Hostname = "my-mqtt-service.local:1883",
-    ClientId = "MY_CLIENT_ID"
-  };
-  var agent = new MqttAgent(listener, agentOptions, new MqttFactory(), loggerFactory?.CreateLogger<MqttAgent>());
-  await agent.RunAsync(cancellationToken);
+    var agentOptions = new MqttAgentOptions() {
+        Hostname = "my-mqtt-service.local:1883",
+        ClientId = "MY_CLIENT_ID"
+    };
+  
+    await using var agent = new MqttAgent(
+        listener, 
+        agentOptions, 
+        new MQTTnet.MqttFactory(), 
+        loggerFactory?.CreateLogger<MqttAgent>());
+  
+    await agent.RunAsync(cancellationToken);
 }
 ```
 
@@ -74,17 +80,22 @@ public async Task RunMqttAgent(
 The [NRuuviTag.AzureEventHubs.Agent](https://www.nuget.org/packages/NRuuviTag.AzureEventHubs.Agent) NuGet package ([source](/src/NRuuviTag.AzureEventHubs.Agent)) can be used to observe RuuviTag broadcasts and forward the samples to an Azure Event Hub:
 
 ```csharp
-public async Task AzureEventHubAgent(
-  IRuuviTagListener listener,
-  ILoggerFactory? loggerFactory = null,
-  CancellationToken cancellationToken = default
+public async Task RunAzureEventHubAgent(
+    IRuuviTagListener listener,
+    ILoggerFactory? loggerFactory = null,
+    CancellationToken cancellationToken = default
 ) {
-  var agentOptions = new AzureEventHubAgentOptions() {
-    ConnectionString = "Endpoint=sb://MY_NAMESPACE.servicebus.windows.net/;SharedAccessKeyName=MY_KEY_NAME;SharedAccessKey=MY_KEY",
-    EventHubName = "MY_EVENT_HUB"
-  };
-  var agent = new AzureEventHubAgent(listener, agentOptions, loggerFactory?.CreateLogger<AzureEventHubAgent>());
-  await agent.RunAsync(cancellationToken);
+    var agentOptions = new AzureEventHubAgentOptions() {
+        ConnectionString = "Endpoint=sb://MY_NAMESPACE.servicebus.windows.net/;SharedAccessKeyName=MY_KEY_NAME;SharedAccessKey=MY_KEY",
+        EventHubName = "MY_EVENT_HUB"
+    };
+  
+    await using var agent = new AzureEventHubAgent(
+        listener, 
+        agentOptions, 
+        loggerFactory?.CreateLogger<AzureEventHubAgent>());
+  
+    await agent.RunAsync(cancellationToken);
 }
 ```
 
