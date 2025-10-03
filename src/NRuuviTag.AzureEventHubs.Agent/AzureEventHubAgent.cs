@@ -34,7 +34,7 @@ namespace NRuuviTag.AzureEventHubs {
         /// A delegate that can be used to make final modifications to a sample prior to 
         /// publishing it to the event hub.
         /// </summary>
-        private readonly Action<RuuviTagSampleExtended>? _prepareForPublish;
+        private readonly Func<RuuviTagSampleExtended, RuuviTagSampleExtended>? _prepareForPublish;
 
         /// <summary>
         /// Event hub connection string.
@@ -89,10 +89,8 @@ namespace NRuuviTag.AzureEventHubs {
         ///   <paramref name="options"/> fails validation.
         /// </exception>
         public AzureEventHubAgent(IRuuviTagListener listener, AzureEventHubAgentOptions options, ILoggerFactory? loggerFactory = null) 
-            : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), loggerFactory?.CreateLogger<RuuviTagPublisher>()) { 
-            if (options == null) {
-                throw new ArgumentNullException(nameof(options));
-            }
+            : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
+            ArgumentNullException.ThrowIfNull(options);
             Validator.ValidateObject(options, new ValidationContext(options), true);
 
             _logger = loggerFactory?.CreateLogger<AzureEventHubAgent>() ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<AzureEventHubAgent>.Instance;
@@ -119,72 +117,82 @@ namespace NRuuviTag.AzureEventHubs {
         ///   <paramref name="options"/> is <see langword="null"/>.
         /// </exception>
         private static Func<string, bool> BuildFilterDelegate(AzureEventHubAgentOptions options) {
-            if (options == null) {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             if (!options.KnownDevicesOnly) {
-                return addr => true;
+                return _ => true;
             }
 
             var getDeviceInfo = options.GetDeviceInfo;
             return getDeviceInfo == null
-                ? addr => false
+                ? _ => false
                 : addr => getDeviceInfo.Invoke(addr) != null;
         }
 
 
         protected override async Task RunAsync(IAsyncEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
             LogStartingEventHubClient();
+
+            await using var client = new EventHubProducerClient(_connectionString, _eventHubName);
             
-            await using (var client = new EventHubProducerClient(_connectionString, _eventHubName)) {
-                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-                var batch = await client.CreateBatchAsync(cancellationToken).ConfigureAwait(false);
-                TimeSpan currentBatchStartedAt = TimeSpan.Zero;
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var batch = await client.CreateBatchAsync(cancellationToken).ConfigureAwait(false);
+            var currentBatchStartedAt = TimeSpan.Zero;
 
-                async Task PublishBatch() {
-                    try {
-                        await client!.SendAsync(batch).ConfigureAwait(false);
-                        LogEventHubBatchPublished(batch.Count);
-                        batch = await client.CreateBatchAsync().ConfigureAwait(false);
+            try {
+                await foreach (var item in samples.WithCancellation(cancellationToken).ConfigureAwait(false)) {
+                    var device = _getDeviceInfo?.Invoke(item.MacAddress!);
+
+                    var sample = device is null
+                        ? new RuuviTagSampleExtended(null, null, item)
+                        : new RuuviTagSampleExtended(device.DeviceId, device.DisplayName, item);
+                    
+                    if (_prepareForPublish is not null) {
+                        sample = _prepareForPublish.Invoke(sample);
                     }
-                    catch (Exception e) {
-                        LogEventHubPublishError(batch.Count, e);
+                    var eventData = new EventData(JsonSerializer.SerializeToUtf8Bytes(sample, _jsonOptions)) {
+                        Properties = {
+                            ["Content-Type"] = "application/json"
+                        }
+                    };
+
+                    if (batch.TryAdd(eventData) && batch.Count == 1) {
+                        // Start of new batch
+                        currentBatchStartedAt = stopwatch.Elapsed;
                     }
+
+                    if (batch.Count == 0) {
+                        continue;
+                    }
+
+                    if (batch.Count < _maximumBatchSize && (stopwatch.Elapsed - currentBatchStartedAt).TotalSeconds < _maximumBatchAge) {
+                        continue;
+                    }
+
+                    await PublishBatchAsync(client, batch, _logger, cancellationToken).ConfigureAwait(false);
+                    batch = await client.CreateBatchAsync(cancellationToken).ConfigureAwait(false);
                 }
+            }
+            catch (OperationCanceledException) {
+                if (batch?.Count > 0) {
+                    await PublishBatchAsync(client, batch, _logger, cancellationToken).ConfigureAwait(false);
+                    batch = null;
+                }
+            }
+            finally {
+                batch?.Dispose();
+                LogEventHubClientStopped();
+            }
 
+            return;
+
+            static async Task PublishBatchAsync(EventHubProducerClient client, EventDataBatch batch, ILogger<AzureEventHubAgent> logger, CancellationToken cancellationToken) {
                 try {
-                    await foreach (var item in samples.ConfigureAwait(false)) {
-                        var device = _getDeviceInfo?.Invoke(item.MacAddress!);
-                        var sample = RuuviTagSampleExtended.Create(item, device?.DeviceId, device?.DisplayName);
-                        _prepareForPublish?.Invoke(sample);
-                        var eventData = new EventData(JsonSerializer.SerializeToUtf8Bytes(sample, _jsonOptions));
-                        eventData.Properties["Content-Type"] = "application/json";
-
-                        if (batch.TryAdd(eventData) && batch.Count == 1) {
-                            // Start of new batch
-                            currentBatchStartedAt = stopwatch.Elapsed;
-                        }
-
-                        if (batch.Count == 0) {
-                            continue;
-                        }
-
-                        if (batch.Count < _maximumBatchSize && (stopwatch.Elapsed - currentBatchStartedAt).TotalSeconds < _maximumBatchAge) {
-                            continue;
-                        }
-
-                        await PublishBatch().ConfigureAwait(false);
-                    }
+                    await client.SendAsync(batch, cancellationToken).ConfigureAwait(false);
+                    LogEventHubBatchPublished(logger, batch.Count);
                 }
-                catch (OperationCanceledException) {
-                    if (batch?.Count > 0) {
-                        await PublishBatch().ConfigureAwait(false);
-                    }
-                }
-                finally {
-                    batch?.Dispose();
-                    LogEventHubClientStopped();
+                catch (Exception e) {
+                    LogEventHubPublishError(logger, batch.Count, e);
                 }
             }
         }
@@ -197,10 +205,10 @@ namespace NRuuviTag.AzureEventHubs {
         partial void LogEventHubClientStopped();
 
         [LoggerMessage(3, LogLevel.Debug, "Published {count} items to the event hub.")]
-        partial void LogEventHubBatchPublished(int count);
+        static partial void LogEventHubBatchPublished(ILogger logger, int count);
 
         [LoggerMessage(4, LogLevel.Error, "An error occurred while publishing {count} items to the event hub.")]
-        partial void LogEventHubPublishError(int count, Exception error);
+        static partial void LogEventHubPublishError(ILogger logger, int count, Exception error);
 
     }
 }
