@@ -18,14 +18,8 @@ namespace NRuuviTag.Mqtt.Tests {
 
         private const ushort Port = 21883;
 
-        /// <summary>
-        /// Raw RuuviTag payload taken from https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-5-rawv2#case-valid-data
-        /// </summary>
-        private static readonly byte[] s_rawPayload = {
-            0x05, 0x12, 0xFC, 0x53, 0x94, 0xC3, 0x7C, 0x00,
-            0x04, 0xFF, 0xFC, 0x04, 0x0C, 0xAC, 0x36, 0x42,
-            0x00, 0xCD, 0xCB, 0xB8, 0x33, 0x4C, 0x88, 0x4F
-        };
+        // See https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-5-rawv2#case-valid-data
+        private const string RawDataV2Valid = "0512FC5394C37C0004FFFC040CAC364200CDCBB8334C884F";
 
         private static MqttServer s_mqttServer = default!;
 
@@ -85,7 +79,7 @@ namespace NRuuviTag.Mqtt.Tests {
             var now = DateTimeOffset.Now;
             var signalStrength = -79;
 
-            var sample = RuuviTagUtilities.CreateSampleFromPayload(now, signalStrength, s_rawPayload);
+            var sample = new RuuviTagSample(now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
             var expectedTopicName = bridge.GetTopicNameForSample(sample);
 
             var tcs = new TaskCompletionSource<MqttApplicationMessage?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -98,45 +92,33 @@ namespace NRuuviTag.Mqtt.Tests {
 
             try {
                 MessageReceived += OnMessageReceived;
-                using (var ctSource = new CancellationTokenSource(TimeSpan.FromSeconds(15))) {
-                    _ = bridge.RunAsync(ctSource.Token);
-                    listener.Publish(sample);
+                using var ctSource = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                _ = bridge.RunAsync(ctSource.Token);
+                listener.Publish(sample);
 
-                    _ = Task.Run(async () => { 
-                        try {
-                            await Task.Delay(-1, ctSource.Token).ConfigureAwait(false);
-                            tcs.TrySetResult(null);
-                        }
-                        catch (OperationCanceledException) {
-                            tcs.TrySetCanceled();
-                        }
-                        catch (Exception e) {
-                            tcs.TrySetException(e);
-                        }
-                    });
+                _ = Task.Run(async () => { 
+                    try {
+                        await Task.Delay(-1, ctSource.Token).ConfigureAwait(false);
+                        tcs.TrySetResult(null);
+                    }
+                    catch (OperationCanceledException) {
+                        tcs.TrySetCanceled();
+                    }
+                    catch (Exception e) {
+                        tcs.TrySetException(e);
+                    }
+                });
 
-                    var msg = await tcs.Task.ConfigureAwait(false);
-                    Assert.IsNotNull(msg);
+                var msg = await tcs.Task.ConfigureAwait(false);
+                Assert.IsNotNull(msg);
 
-                    var json = msg.ConvertPayloadToString();
-                    var sampleFromMqtt = JsonSerializer.Deserialize<RuuviTagSample>(json, new JsonSerializerOptions() { 
-                        PropertyNameCaseInsensitive = true 
-                    });
+                var json = msg.ConvertPayloadToString();
+                var sampleFromMqtt = JsonSerializer.Deserialize<RuuviTagSample>(json, new JsonSerializerOptions() { 
+                    PropertyNameCaseInsensitive = true 
+                });
 
-                    Assert.IsNotNull(sampleFromMqtt);
-                    Assert.AreEqual(sample.AccelerationX, sampleFromMqtt.AccelerationX);
-                    Assert.AreEqual(sample.AccelerationY, sampleFromMqtt.AccelerationY);
-                    Assert.AreEqual(sample.AccelerationZ, sampleFromMqtt.AccelerationZ);
-                    Assert.AreEqual(sample.BatteryVoltage, sampleFromMqtt.BatteryVoltage);
-                    Assert.AreEqual(sample.Humidity, sampleFromMqtt.Humidity);
-                    Assert.AreEqual(sample.MeasurementSequence, sampleFromMqtt.MeasurementSequence);
-                    Assert.AreEqual(sample.MovementCounter, sampleFromMqtt.MovementCounter);
-                    Assert.AreEqual(sample.Pressure, sampleFromMqtt.Pressure);
-                    Assert.AreEqual(sample.SignalStrength, sampleFromMqtt.SignalStrength);
-                    Assert.AreEqual(sample.Temperature, sampleFromMqtt.Temperature);
-                    Assert.AreEqual(sample.Timestamp, sampleFromMqtt.Timestamp);
-                    Assert.AreEqual(sample.TxPower, sampleFromMqtt.TxPower);
-                }
+                Assert.IsNotNull(sampleFromMqtt);
+                Assert.AreEqual(sample, sampleFromMqtt);
             }
             finally {
                 MessageReceived -= OnMessageReceived;
@@ -156,15 +138,13 @@ namespace NRuuviTag.Mqtt.Tests {
                 TlsOptions = new MqttAgentTlsOptions() {
                     UseTls = false
                 },
-                PrepareForPublish = s => {
-                    s.AccelerationX = null;
-                }
+                PrepareForPublish = s => s with { AccelerationX = null }
             }, new MqttFactory(), s_loggerFactory);
 
             var now = DateTimeOffset.Now;
             var signalStrength = -79;
 
-            var sample = RuuviTagUtilities.CreateSampleFromPayload(now, signalStrength, s_rawPayload);
+            var sample = new RuuviTagSample(now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
             var expectedTopicName = bridge.GetTopicNameForSample(sample);
 
             var tcs = new TaskCompletionSource<MqttApplicationMessage?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -177,45 +157,33 @@ namespace NRuuviTag.Mqtt.Tests {
 
             try {
                 MessageReceived += OnMessageReceived;
-                using (var ctSource = new CancellationTokenSource(TimeSpan.FromSeconds(15))) {
-                    _ = bridge.RunAsync(ctSource.Token);
-                    listener.Publish(sample);
+                using var ctSource = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                _ = bridge.RunAsync(ctSource.Token);
+                listener.Publish(sample);
 
-                    _ = Task.Run(async () => {
-                        try {
-                            await Task.Delay(-1, ctSource.Token).ConfigureAwait(false);
-                            tcs.TrySetResult(null);
-                        }
-                        catch (OperationCanceledException) {
-                            tcs.TrySetCanceled();
-                        }
-                        catch (Exception e) {
-                            tcs.TrySetException(e);
-                        }
-                    });
+                _ = Task.Run(async () => {
+                    try {
+                        await Task.Delay(-1, ctSource.Token).ConfigureAwait(false);
+                        tcs.TrySetResult(null);
+                    }
+                    catch (OperationCanceledException) {
+                        tcs.TrySetCanceled();
+                    }
+                    catch (Exception e) {
+                        tcs.TrySetException(e);
+                    }
+                });
 
-                    var msg = await tcs.Task.ConfigureAwait(false);
-                    Assert.IsNotNull(msg);
+                var msg = await tcs.Task.ConfigureAwait(false);
+                Assert.IsNotNull(msg);
 
-                    var json = msg.ConvertPayloadToString();
-                    var sampleFromMqtt = JsonSerializer.Deserialize<RuuviTagSample>(json, new JsonSerializerOptions() {
-                        PropertyNameCaseInsensitive = true
-                    });
+                var json = msg.ConvertPayloadToString();
+                var sampleFromMqtt = JsonSerializer.Deserialize<RuuviTagSample>(json, new JsonSerializerOptions() {
+                    PropertyNameCaseInsensitive = true
+                });
 
-                    Assert.IsNotNull(sampleFromMqtt);
-                    Assert.IsNull(sampleFromMqtt.AccelerationX);
-                    Assert.AreEqual(sample.AccelerationY, sampleFromMqtt.AccelerationY);
-                    Assert.AreEqual(sample.AccelerationZ, sampleFromMqtt.AccelerationZ);
-                    Assert.AreEqual(sample.BatteryVoltage, sampleFromMqtt.BatteryVoltage);
-                    Assert.AreEqual(sample.Humidity, sampleFromMqtt.Humidity);
-                    Assert.AreEqual(sample.MeasurementSequence, sampleFromMqtt.MeasurementSequence);
-                    Assert.AreEqual(sample.MovementCounter, sampleFromMqtt.MovementCounter);
-                    Assert.AreEqual(sample.Pressure, sampleFromMqtt.Pressure);
-                    Assert.AreEqual(sample.SignalStrength, sampleFromMqtt.SignalStrength);
-                    Assert.AreEqual(sample.Temperature, sampleFromMqtt.Temperature);
-                    Assert.AreEqual(sample.Timestamp, sampleFromMqtt.Timestamp);
-                    Assert.AreEqual(sample.TxPower, sampleFromMqtt.TxPower);
-                }
+                Assert.IsNotNull(sampleFromMqtt);
+                Assert.AreEqual(sample with { AccelerationX = null }, sampleFromMqtt);
             }
             finally {
                 MessageReceived -= OnMessageReceived;
@@ -239,116 +207,141 @@ namespace NRuuviTag.Mqtt.Tests {
 
             var now = DateTimeOffset.Now;
             var signalStrength = -79;
-
-            var sample = RuuviTagUtilities.CreateSampleFromPayload(now, signalStrength, s_rawPayload);
+            var sample = new RuuviTagSample(now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
+            
             var expectedTopicPrefix = bridge.GetTopicNameForSample(sample);
-            const int expectedMessageCount = 13;
+            const int expectedMessageCount = 14;
 
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var receivedMessages = new List<MqttApplicationMessage>();
 
-            void OnMessageReceived(MqttApplicationMessage msg) {
-                if (msg.Topic.StartsWith(expectedTopicPrefix!)) {
-                    lock (receivedMessages) {
-                        receivedMessages.Add(msg);
-                        if (receivedMessages.Count >= expectedMessageCount) {
-                            tcs.TrySetResult(true);
-                        }
-                    }
-                }
-            }
-
             try {
                 MessageReceived += OnMessageReceived;
-                using (var ctSource = new CancellationTokenSource(TimeSpan.FromSeconds(15))) {
-                    _ = bridge.RunAsync(ctSource.Token);
-                    listener.Publish(sample);
+                using var ctSource = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                
+                _ = bridge.RunAsync(ctSource.Token);
+                listener.Publish(sample);
 
-                    _ = Task.Run(async () => {
-                        try {
-                            await Task.Delay(-1, ctSource.Token).ConfigureAwait(false);
-                            tcs.TrySetResult(false);
-                        }
-                        catch (OperationCanceledException) {
-                            tcs.TrySetCanceled();
-                        }
-                        catch (Exception e) {
-                            tcs.TrySetException(e);
-                        }
-                    });
-
-                    var success = await tcs.Task.ConfigureAwait(false);
-                    Assert.IsTrue(success);
-
-                    Assert.AreEqual(expectedMessageCount, receivedMessages.Count);
-
-                    var sampleFromMqtt = new RuuviTagSample();
-                    foreach (var msg in receivedMessages) {
-                        var json = msg.ConvertPayloadToString();
-                        var fieldName = msg.Topic.Substring(expectedTopicPrefix.Length);
-
-                        switch (fieldName) {
-                            case "/acceleration-x":
-                                sampleFromMqtt.AccelerationX = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/acceleration-y":
-                                sampleFromMqtt.AccelerationY = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/acceleration-z":
-                                sampleFromMqtt.AccelerationZ = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/battery-voltage":
-                                sampleFromMqtt.BatteryVoltage = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/humidity":
-                                sampleFromMqtt.Humidity = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/mac-address":
-                                sampleFromMqtt.MacAddress = JsonSerializer.Deserialize<string>(json);
-                                break;
-                            case "/measurement-sequence":
-                                sampleFromMqtt.MeasurementSequence = JsonSerializer.Deserialize<ushort>(json);
-                                break;
-                            case "/movement-counter":
-                                sampleFromMqtt.MovementCounter = JsonSerializer.Deserialize<byte>(json);
-                                break;
-                            case "/pressure":
-                                sampleFromMqtt.Pressure = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/signal-strength":
-                                sampleFromMqtt.SignalStrength = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/temperature":
-                                sampleFromMqtt.Temperature = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/timestamp":
-                                sampleFromMqtt.Timestamp = JsonSerializer.Deserialize<DateTimeOffset>(json);
-                                break;
-                            case "/tx-power":
-                                sampleFromMqtt.TxPower = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            default:
-                                Assert.Fail("Unexpected field: " + fieldName);
-                                break;
-                        }
+                _ = Task.Run(async () => {
+                    try {
+                        await Task.Delay(-1, ctSource.Token).ConfigureAwait(false);
+                        tcs.TrySetResult(false);
                     }
+                    catch (OperationCanceledException) {
+                        tcs.TrySetCanceled();
+                    }
+                    catch (Exception e) {
+                        tcs.TrySetException(e);
+                    }
+                });
 
-                    Assert.AreEqual(sample.AccelerationX, sampleFromMqtt.AccelerationX);
-                    Assert.AreEqual(sample.AccelerationY, sampleFromMqtt.AccelerationY);
-                    Assert.AreEqual(sample.AccelerationZ, sampleFromMqtt.AccelerationZ);
-                    Assert.AreEqual(sample.BatteryVoltage, sampleFromMqtt.BatteryVoltage);
-                    Assert.AreEqual(sample.Humidity, sampleFromMqtt.Humidity);
-                    Assert.AreEqual(sample.MeasurementSequence, sampleFromMqtt.MeasurementSequence);
-                    Assert.AreEqual(sample.MovementCounter, sampleFromMqtt.MovementCounter);
-                    Assert.AreEqual(sample.Pressure, sampleFromMqtt.Pressure);
-                    Assert.AreEqual(sample.SignalStrength, sampleFromMqtt.SignalStrength);
-                    Assert.AreEqual(sample.Timestamp, sampleFromMqtt.Timestamp);
-                    Assert.AreEqual(sample.Temperature, sampleFromMqtt.Temperature);
-                    Assert.AreEqual(sample.TxPower, sampleFromMqtt.TxPower);
+                var success = await tcs.Task.ConfigureAwait(false);
+                Assert.IsTrue(success);
+
+                Assert.AreEqual(expectedMessageCount, receivedMessages.Count);
+
+                var sampleFromMqtt = new RuuviTagSample();
+                
+                foreach (var msg in receivedMessages) {
+                    var json = msg.ConvertPayloadToString();
+                    var fieldName = msg.Topic[expectedTopicPrefix.Length..];
+
+                    switch (fieldName) {
+                        case "/acceleration-x":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                AccelerationX = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/acceleration-y":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                AccelerationY = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/acceleration-z":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                AccelerationZ = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/battery-voltage":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                BatteryVoltage = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/data-format":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                DataFormat = JsonSerializer.Deserialize<byte>(json)
+                            };
+                            break;
+                        case "/humidity":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                Humidity = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/mac-address":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                MacAddress = JsonSerializer.Deserialize<string>(json)
+                            };
+                            break;
+                        case "/measurement-sequence":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                MeasurementSequence = JsonSerializer.Deserialize<uint>(json)
+                            };
+                            break;
+                        case "/movement-counter":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                MovementCounter = JsonSerializer.Deserialize<byte>(json)
+                            };
+                            break;
+                        case "/pressure":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                Pressure = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/signal-strength":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                SignalStrength = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/temperature":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                Temperature = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/timestamp":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                Timestamp = JsonSerializer.Deserialize<DateTimeOffset>(json)
+                            };
+                            break;
+                        case "/tx-power":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                TxPower = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        default:
+                            Assert.Fail("Unexpected field: " + fieldName);
+                            break;
+                    }
                 }
+
+                Assert.AreEqual(sample, sampleFromMqtt);
             }
             finally {
                 MessageReceived -= OnMessageReceived;
+            }
+
+            return;
+
+            void OnMessageReceived(MqttApplicationMessage msg) {
+                if (!msg.Topic.StartsWith(expectedTopicPrefix!)) {
+                    return;
+                }
+
+                lock (receivedMessages) {
+                    receivedMessages.Add(msg);
+                    if (receivedMessages.Count >= expectedMessageCount) {
+                        tcs.TrySetResult(true);
+                    }
+                }
             }
         }
 
@@ -365,121 +358,145 @@ namespace NRuuviTag.Mqtt.Tests {
                 TlsOptions = new MqttAgentTlsOptions() {
                     UseTls = false
                 },
-                PrepareForPublish = s => {
-                    s.AccelerationX = null;
-                    s.MacAddress = null;
-                }
+                PrepareForPublish = s => s with { AccelerationX = null, MacAddress = null }
             }, new MqttFactory(), s_loggerFactory);
 
             var now = DateTimeOffset.Now;
             var signalStrength = -79;
-
-            var sample = RuuviTagUtilities.CreateSampleFromPayload(now, signalStrength, s_rawPayload);
+            var sample = new RuuviTagSample(now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
+            
             var expectedTopicPrefix = bridge.GetTopicNameForSample(sample);
-            const int expectedMessageCount = 11;
+            const int expectedMessageCount = 12;
 
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var receivedMessages = new List<MqttApplicationMessage>();
 
-            void OnMessageReceived(MqttApplicationMessage msg) {
-                if (msg.Topic.StartsWith(expectedTopicPrefix!)) {
-                    lock (receivedMessages) {
-                        receivedMessages.Add(msg);
-                        if (receivedMessages.Count >= expectedMessageCount) {
-                            tcs.TrySetResult(true);
-                        }
-                    }
-                }
-            }
-
             try {
                 MessageReceived += OnMessageReceived;
-                using (var ctSource = new CancellationTokenSource(TimeSpan.FromSeconds(15))) {
-                    _ = bridge.RunAsync(ctSource.Token);
-                    listener.Publish(sample);
+                using var ctSource = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                _ = bridge.RunAsync(ctSource.Token);
+                listener.Publish(sample);
 
-                    _ = Task.Run(async () => {
-                        try {
-                            await Task.Delay(-1, ctSource.Token).ConfigureAwait(false);
-                            tcs.TrySetResult(false);
-                        }
-                        catch (OperationCanceledException) {
-                            tcs.TrySetCanceled();
-                        }
-                        catch (Exception e) {
-                            tcs.TrySetException(e);
-                        }
-                    });
-
-                    var success = await tcs.Task.ConfigureAwait(false);
-                    Assert.IsTrue(success);
-
-                    Assert.AreEqual(expectedMessageCount, receivedMessages.Count);
-
-                    var sampleFromMqtt = new RuuviTagSample();
-                    foreach (var msg in receivedMessages) {
-                        var json = msg.ConvertPayloadToString();
-                        var fieldName = msg.Topic.Substring(expectedTopicPrefix.Length);
-
-                        switch (fieldName) {
-                            case "/acceleration-x":
-                                sampleFromMqtt.AccelerationX = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/acceleration-y":
-                                sampleFromMqtt.AccelerationY = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/acceleration-z":
-                                sampleFromMqtt.AccelerationZ = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/battery-voltage":
-                                sampleFromMqtt.BatteryVoltage = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/humidity":
-                                sampleFromMqtt.Humidity = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/measurement-sequence":
-                                sampleFromMqtt.MeasurementSequence = JsonSerializer.Deserialize<ushort>(json);
-                                break;
-                            case "/movement-counter":
-                                sampleFromMqtt.MovementCounter = JsonSerializer.Deserialize<byte>(json);
-                                break;
-                            case "/pressure":
-                                sampleFromMqtt.Pressure = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/signal-strength":
-                                sampleFromMqtt.SignalStrength = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/temperature":
-                                sampleFromMqtt.Temperature = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            case "/timestamp":
-                                sampleFromMqtt.Timestamp = JsonSerializer.Deserialize<DateTimeOffset>(json);
-                                break;
-                            case "/tx-power":
-                                sampleFromMqtt.TxPower = JsonSerializer.Deserialize<double>(json);
-                                break;
-                            default:
-                                Assert.Fail("Unexpected field: " + fieldName);
-                                break;
-                        }
+                _ = Task.Run(async () => {
+                    try {
+                        await Task.Delay(-1, ctSource.Token).ConfigureAwait(false);
+                        tcs.TrySetResult(false);
                     }
+                    catch (OperationCanceledException) {
+                        tcs.TrySetCanceled();
+                    }
+                    catch (Exception e) {
+                        tcs.TrySetException(e);
+                    }
+                });
 
-                    Assert.IsNull(sampleFromMqtt.AccelerationX);
-                    Assert.AreEqual(sample.AccelerationY, sampleFromMqtt.AccelerationY);
-                    Assert.AreEqual(sample.AccelerationZ, sampleFromMqtt.AccelerationZ);
-                    Assert.AreEqual(sample.BatteryVoltage, sampleFromMqtt.BatteryVoltage);
-                    Assert.AreEqual(sample.Humidity, sampleFromMqtt.Humidity);
-                    Assert.AreEqual(sample.MeasurementSequence, sampleFromMqtt.MeasurementSequence);
-                    Assert.AreEqual(sample.MovementCounter, sampleFromMqtt.MovementCounter);
-                    Assert.AreEqual(sample.Pressure, sampleFromMqtt.Pressure);
-                    Assert.AreEqual(sample.SignalStrength, sampleFromMqtt.SignalStrength);
-                    Assert.AreEqual(sample.Temperature, sampleFromMqtt.Temperature);
-                    Assert.AreEqual(sample.Timestamp, sampleFromMqtt.Timestamp);
-                    Assert.AreEqual(sample.TxPower, sampleFromMqtt.TxPower);
+                var success = await tcs.Task.ConfigureAwait(false);
+                Assert.IsTrue(success);
+
+                Assert.AreEqual(expectedMessageCount, receivedMessages.Count);
+
+                var sampleFromMqtt = new RuuviTagSample();
+                
+                foreach (var msg in receivedMessages) {
+                    var json = msg.ConvertPayloadToString();
+                    var fieldName = msg.Topic[expectedTopicPrefix.Length..];
+
+                    switch (fieldName) {
+                        case "/acceleration-x":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                AccelerationX = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/acceleration-y":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                AccelerationY = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/acceleration-z":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                AccelerationZ = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/battery-voltage":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                BatteryVoltage = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/data-format":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                DataFormat = JsonSerializer.Deserialize<byte>(json)
+                            };
+                            break;
+                        case "/humidity":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                Humidity = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/mac-address":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                MacAddress = JsonSerializer.Deserialize<string>(json)
+                            };
+                            break;
+                        case "/measurement-sequence":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                MeasurementSequence = JsonSerializer.Deserialize<ushort>(json)
+                            };
+                            break;
+                        case "/movement-counter":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                MovementCounter = JsonSerializer.Deserialize<byte>(json)
+                            };
+                            break;
+                        case "/pressure":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                Pressure = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/signal-strength":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                SignalStrength = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/temperature":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                Temperature = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        case "/timestamp":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                Timestamp = JsonSerializer.Deserialize<DateTimeOffset>(json)
+                            };
+                            break;
+                        case "/tx-power":
+                            sampleFromMqtt = sampleFromMqtt with {
+                                TxPower = JsonSerializer.Deserialize<double>(json)
+                            };
+                            break;
+                        default:
+                            Assert.Fail("Unexpected field: " + fieldName);
+                            break;
+                    }
                 }
+
+                Assert.AreEqual(sample with { AccelerationX = null, MacAddress = null }, sampleFromMqtt);
             }
             finally {
                 MessageReceived -= OnMessageReceived;
+            }
+
+            return;
+
+            void OnMessageReceived(MqttApplicationMessage msg) {
+                if (!msg.Topic.StartsWith(expectedTopicPrefix!)) {
+                    return;
+                }
+
+                lock (receivedMessages) {
+                    receivedMessages.Add(msg);
+                    if (receivedMessages.Count >= expectedMessageCount) {
+                        tcs.TrySetResult(true);
+                    }
+                }
             }
         }
 

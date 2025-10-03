@@ -29,11 +29,6 @@ namespace NRuuviTag.Mqtt {
         private static readonly HashAlgorithm s_deviceIdHash = SHA256.Create();
 
         /// <summary>
-        /// Matches hostnames in <c>{name}</c> and <c>{name}:{port}</c> formats.
-        /// </summary>
-        private static readonly Regex s_hostnameParser = new Regex(@"^(?<hostname>[^\:]+?)(?:\:(?<port>\d+))?$");
-
-        /// <summary>
         /// Device ID for all devices where the device ID cannot be determined.
         /// </summary>
         private const string UnknownDeviceId = "unknown";
@@ -145,7 +140,7 @@ namespace NRuuviTag.Mqtt {
                 // Configure TCP MQTT connection.
 
                 // Check in case hostname was specified in '<hostname>:<port>' format.
-                var m = s_hostnameParser.Match(hostname);
+                var m = HostnameParser().Match(hostname!);
 
                 // Get hostname from match; use 'localhost' as a fallback.
                 var host = m.Groups["hostname"]?.Value;
@@ -215,9 +210,7 @@ namespace NRuuviTag.Mqtt {
         ///   <paramref name="options"/> is <see langword="null"/>.
         /// </exception>
         private static Func<string, bool> BuildFilterDelegate(MqttAgentOptions options) {
-            if (options == null) {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             if (!options.KnownDevicesOnly) {
                 return addr => true;
@@ -225,7 +218,7 @@ namespace NRuuviTag.Mqtt {
 
             var getDeviceInfo = options.GetDeviceInfo;
             return getDeviceInfo == null
-                ? addr => false
+                ? _ => false
                 : addr => getDeviceInfo.Invoke(addr) != null;
         }
 
@@ -263,11 +256,13 @@ namespace NRuuviTag.Mqtt {
                 Uri.UriSchemeHttp,
                 "wss",
                 "ws"
-            }) { 
-                if (uri.Scheme.Equals(scheme, StringComparison.OrdinalIgnoreCase)) {
-                    websocketUri = uri;
-                    return true;
+            }) {
+                if (!uri.Scheme.Equals(scheme, StringComparison.OrdinalIgnoreCase)) {
+                    continue;
                 }
+
+                websocketUri = uri;
+                return true;
             }
 
             return false;
@@ -340,9 +335,7 @@ namespace NRuuviTag.Mqtt {
         ///   <paramref name="macAddress"/> is <see langword="null"/>.
         /// </exception>
         public static string GetDefaultDeviceId(string macAddress) {
-            if (macAddress == null) {
-                throw new ArgumentNullException(nameof(macAddress));
-            }
+            ArgumentNullException.ThrowIfNull(macAddress);
 
             return string.Join("", s_deviceIdHash.ComputeHash(Encoding.UTF8.GetBytes(macAddress)).Select(x => x.ToString("X2")));
         }
@@ -357,8 +350,8 @@ namespace NRuuviTag.Mqtt {
         /// <returns>
         ///   The device information.
         /// </returns>
-        private Device GetDeviceInfo(RuuviTagSample sample) {
-            if (string.IsNullOrWhiteSpace(sample.MacAddress)) {
+        private Device GetDeviceInfo(RuuviDataPayload sample) {
+            if (string.IsNullOrWhiteSpace(sample?.MacAddress)) {
                 return new Device() { DeviceId = UnknownDeviceId };
             }
 
@@ -394,10 +387,8 @@ namespace NRuuviTag.Mqtt {
         ///   If the publishing mode for the bridge is <see cref="PublishType.TopicPerMeasurement"/>, 
         ///   the value returned by this method is the topic prefix to use.
         /// </remarks>
-        public string GetTopicNameForSample(RuuviTagSample sample) {
-            if (sample == null) {
-                throw new ArgumentNullException(nameof(sample));
-            }
+        public string GetTopicNameForSample(RuuviDataPayload sample) {
+            ArgumentNullException.ThrowIfNull(sample);
 
             return GetTopicNameForSample(sample, GetDeviceInfo(sample));
         }
@@ -423,20 +414,16 @@ namespace NRuuviTag.Mqtt {
         ///   If the publishing mode for the bridge is <see cref="PublishType.TopicPerMeasurement"/>, 
         ///   the value returned by this method is the topic prefix to use.
         /// </remarks>
-        private string GetTopicNameForSample(RuuviTagSample sample, Device deviceInfo) {
-            if (sample == null) {
-                throw new ArgumentNullException(nameof(sample));
-            }
+        private string GetTopicNameForSample(RuuviDataPayload sample, Device deviceInfo) {
+            ArgumentNullException.ThrowIfNull(sample);
 
-            var topic = _topicTemplate;
-
-            if (!topic.Contains("{deviceId}")) {
+            if (!_topicTemplate.Contains("{deviceId}")) {
                 // Publish channel does not contain any device ID placeholders, so just return it
                 // as-is.
-                return topic;
+                return _topicTemplate;
             }
 
-            return topic.Replace("{deviceId}", deviceInfo.DeviceId);
+            return _topicTemplate.Replace("{deviceId}", deviceInfo.DeviceId);
         }
 
 
@@ -470,10 +457,10 @@ namespace NRuuviTag.Mqtt {
 
         /// <summary>
         /// Builds the MQTT messages that should be published to the broker for a given 
-        /// <see cref="RuuviTagSample"/>.
+        /// <see cref="RuuviDataPayload"/>.
         /// </summary>
         /// <param name="sample">
-        ///   The <see cref="RuuviTagSample"/> to be published.
+        ///   The <see cref="RuuviDataPayload"/> to be published.
         /// </param>
         /// <returns>
         ///   An <see cref="IEnumerable{MqttApplicationMessage}"/> that contains the messages to 
@@ -487,9 +474,7 @@ namespace NRuuviTag.Mqtt {
         ///   <paramref name="sample"/> is <see langword="null"/>.
         /// </exception>
         public IEnumerable<MqttApplicationMessage> BuildMqttMessages(RuuviTagSample sample) {
-            if (sample == null) {
-                throw new ArgumentNullException(nameof(sample));
-            }
+            ArgumentNullException.ThrowIfNull(sample);
 
             return BuildMqttMessages(sample, GetDeviceInfo(sample));
         }
@@ -497,10 +482,10 @@ namespace NRuuviTag.Mqtt {
 
         /// <summary>
         /// Builds the MQTT messages that should be published to the broker for a given 
-        /// <see cref="RuuviTagSample"/>.
+        /// <see cref="RuuviDataPayload"/>.
         /// </summary>
         /// <param name="sample">
-        ///   The <see cref="RuuviTagSample"/> to be published.
+        ///   The <see cref="RuuviDataPayload"/> to be published.
         /// </param>
         /// <param name="deviceInfo">
         ///   The device ID for the sample.
@@ -517,14 +502,14 @@ namespace NRuuviTag.Mqtt {
         ///   <paramref name="sample"/> is <see langword="null"/>.
         /// </exception>
         private IEnumerable<MqttApplicationMessage> BuildMqttMessages(RuuviTagSample sample, Device deviceInfo) {
-            if (sample == null) {
-                throw new ArgumentNullException(nameof(sample));
-            }
+            ArgumentNullException.ThrowIfNull(sample);
 
-            var sampleWithDisplayName = RuuviTagSampleExtended.Create(sample, deviceInfo.DeviceId, deviceInfo.DisplayName);
+            var sampleWithDisplayName = new RuuviTagSampleExtended(deviceInfo.DeviceId, deviceInfo.DisplayName, sample);
             var topic = GetTopicNameForSample(sampleWithDisplayName, deviceInfo);
 
-            _options.PrepareForPublish?.Invoke(sampleWithDisplayName);
+            sampleWithDisplayName = _options.PrepareForPublish is null
+                ? sampleWithDisplayName
+                : _options.PrepareForPublish.Invoke(sampleWithDisplayName);
 
             if (_options.PublishType == PublishType.SingleTopic) {
                 // Single topic publish.
@@ -534,47 +519,77 @@ namespace NRuuviTag.Mqtt {
 
             // Topic per measurement.
 
-            if (sampleWithDisplayName.AccelerationX != null) {
-                yield return BuildMqttMessage(topic + "/acceleration-x", sampleWithDisplayName.AccelerationX);
+            if (sampleWithDisplayName.AccelerationX is { } accelerationX) {
+                yield return BuildMqttMessage(topic + "/acceleration-x", accelerationX);
             }
-            if (sampleWithDisplayName.AccelerationY != null) {
-                yield return BuildMqttMessage(topic + "/acceleration-y", sampleWithDisplayName.AccelerationY);
+            if (sampleWithDisplayName.AccelerationY is { } accelerationY) {
+                yield return BuildMqttMessage(topic + "/acceleration-y", accelerationY);
             }
-            if (sampleWithDisplayName.AccelerationZ != null) {
-                yield return BuildMqttMessage(topic + "/acceleration-z", sampleWithDisplayName.AccelerationZ);
+            if (sampleWithDisplayName.AccelerationZ is { } accelerationZ) {
+                yield return BuildMqttMessage(topic + "/acceleration-z", accelerationZ);
             }
-            if (sampleWithDisplayName.BatteryVoltage != null) {
-                yield return BuildMqttMessage(topic + "/battery-voltage", sampleWithDisplayName.BatteryVoltage);
+            if (sampleWithDisplayName.BatteryVoltage is { } batteryVoltage) {
+                yield return BuildMqttMessage(topic + "/battery-voltage", batteryVoltage);
             }
-            if (sampleWithDisplayName.DisplayName != null) {
-                yield return BuildMqttMessage(topic + "/display-name", sampleWithDisplayName.DisplayName);
+            if (sampleWithDisplayName.Calibrated is { } calibrated) {
+                yield return BuildMqttMessage(topic + "/calibrated", calibrated);
             }
-            if (sampleWithDisplayName.Humidity != null) {
-                yield return BuildMqttMessage(topic + "/humidity", sampleWithDisplayName.Humidity);
+            if (sampleWithDisplayName.CO2 is { } co2) {
+                yield return BuildMqttMessage(topic + "/co2", co2);
             }
-            if (sampleWithDisplayName.MacAddress != null) {
-                yield return BuildMqttMessage(topic + "/mac-address", sampleWithDisplayName.MacAddress);
+            if (sampleWithDisplayName.DataFormat is { } dataFormat) {
+                yield return BuildMqttMessage(topic + "/data-format", dataFormat);
             }
-            if (sampleWithDisplayName.MeasurementSequence != null) {
-                yield return BuildMqttMessage(topic + "/measurement-sequence", sampleWithDisplayName.MeasurementSequence);
+            if (sampleWithDisplayName.DisplayName is { } displayName) {
+                yield return BuildMqttMessage(topic + "/display-name", displayName);
             }
-            if (sampleWithDisplayName.MovementCounter != null) {
-                yield return BuildMqttMessage(topic + "/movement-counter", sampleWithDisplayName.MovementCounter);
+            if (sampleWithDisplayName.Humidity is { } humidity) {
+                yield return BuildMqttMessage(topic + "/humidity", humidity);
             }
-            if (sampleWithDisplayName.Pressure != null) {
-                yield return BuildMqttMessage(topic + "/pressure", sampleWithDisplayName.Pressure);
+            if (sampleWithDisplayName.Luminosity is { } luminosity) {
+                yield return BuildMqttMessage(topic + "/luminosity", luminosity);
             }
-            if (sampleWithDisplayName.SignalStrength != null) {
-                yield return BuildMqttMessage(topic + "/signal-strength", sampleWithDisplayName.SignalStrength);
+            if (sampleWithDisplayName.MacAddress is { } macAddress) {
+                yield return BuildMqttMessage(topic + "/mac-address", macAddress);
             }
-            if (sampleWithDisplayName.Temperature != null) {
-                yield return BuildMqttMessage(topic + "/temperature", sampleWithDisplayName.Temperature);
+            if (sampleWithDisplayName.MeasurementSequence is { } measurementSequence) {
+                yield return BuildMqttMessage(topic + "/measurement-sequence", measurementSequence);
             }
-            if (sampleWithDisplayName.Timestamp != default) {
-                yield return BuildMqttMessage(topic + "/timestamp", sampleWithDisplayName.Timestamp!.Value.UtcDateTime);
+            if (sampleWithDisplayName.MovementCounter is { } movementCounter) {
+                yield return BuildMqttMessage(topic + "/movement-counter", movementCounter);
             }
-            if (sampleWithDisplayName.TxPower != null) {
-                yield return BuildMqttMessage(topic + "/tx-power", sampleWithDisplayName.TxPower);
+            if (sampleWithDisplayName.NOX is { } nox) {
+                yield return BuildMqttMessage(topic + "/nox", nox);
+            }
+            if (sampleWithDisplayName.PM10 is { } pm10) {
+                yield return BuildMqttMessage(topic + "/pm-1.0", pm10);
+            }
+            if (sampleWithDisplayName.PM25 is { } pm25) {
+                yield return BuildMqttMessage(topic + "/pm-2.5", pm25);
+            }
+            if (sampleWithDisplayName.PM40 is { } pm40) {
+                yield return BuildMqttMessage(topic + "/pm-4.0", pm40);
+            }
+            if (sampleWithDisplayName.PM100 is { } pm100) {
+                yield return BuildMqttMessage(topic + "/pm-10.0", pm100);
+            }
+            if (sampleWithDisplayName.Pressure is { } pressure) {
+                yield return BuildMqttMessage(topic + "/pressure", pressure);
+            }
+            if (sampleWithDisplayName.SignalStrength is { } signalStrength) {
+                yield return BuildMqttMessage(topic + "/signal-strength", signalStrength);
+            }
+            if (sampleWithDisplayName.Temperature is { } temperature) {
+                yield return BuildMqttMessage(topic + "/temperature", temperature);
+            }
+            if (sampleWithDisplayName.Timestamp is { } timestamp) {
+                yield return BuildMqttMessage(topic + "/timestamp", timestamp.UtcDateTime);
+            }
+            if (sampleWithDisplayName.TxPower is { } txPower) {
+                yield return BuildMqttMessage(topic + "/tx-power", txPower);
+            }
+            if (sampleWithDisplayName.VOC is { } voc) {
+                yield return BuildMqttMessage(topic + "/voc", voc);
             }
         }
 
@@ -612,6 +627,13 @@ namespace NRuuviTag.Mqtt {
                 LogMqttAgentStopped();
             }
         }
+        
+        
+        /// <summary>
+        /// Matches hostnames in <c>{name}</c> and <c>{name}:{port}</c> formats.
+        /// </summary>
+        [GeneratedRegex(@"^(?<hostname>[^\:]+?)(?:\:(?<port>\d+))?$")]
+        private static partial Regex HostnameParser();
 
 
         [LoggerMessage(1, LogLevel.Information, "Starting MQTT agent.")]
@@ -634,6 +656,6 @@ namespace NRuuviTag.Mqtt {
 
         [LoggerMessage(7, LogLevel.Error, "Error publishing message to MQTT broker.")]
         partial void LogMqttPublishError(Exception error);
-
+        
     }
 }
