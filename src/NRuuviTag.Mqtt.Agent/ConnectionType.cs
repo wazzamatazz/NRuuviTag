@@ -1,19 +1,18 @@
-﻿namespace NRuuviTag.Mqtt {
+﻿namespace NRuuviTag.Mqtt;
+
+/// <summary>
+/// Describes the MQTT connection type used by an <see cref="MqttAgent"/>.
+/// </summary>
+public enum ConnectionType {
 
     /// <summary>
-    /// Describes the MQTT connection type used by an <see cref="MqttAgent"/>.
+    /// TCP connection.
     /// </summary>
-    public enum ConnectionType {
+    Tcp,
 
-        /// <summary>
-        /// TCP connection.
-        /// </summary>
-        Tcp,
+    /// <summary>
+    /// Websocket connection.
+    /// </summary>
+    Websocket
 
-        /// <summary>
-        /// Websocket connection.
-        /// </summary>
-        Websocket
-
-    }
 }
