@@ -1,19 +1,18 @@
-﻿namespace NRuuviTag.Cli {
+﻿namespace NRuuviTag.Cli;
+
+/// <summary>
+/// An entry in a <see cref="DeviceCollection"/>.
+/// </summary>
+public class DeviceCollectionEntry {
 
     /// <summary>
-    /// An entry in a <see cref="DeviceCollection"/>.
+    /// The MAC address for the device.
     /// </summary>
-    public class DeviceCollectionEntry {
+    public string MacAddress { get; set; } = default!;
 
-        /// <summary>
-        /// The MAC address for the device.
-        /// </summary>
-        public string MacAddress { get; set; } = default!;
+    /// <summary>
+    /// The display name for the device.
+    /// </summary>
+    public string? DisplayName { get; set; }
 
-        /// <summary>
-        /// The display name for the device.
-        /// </summary>
-        public string? DisplayName { get; set; }
-
-    }
 }

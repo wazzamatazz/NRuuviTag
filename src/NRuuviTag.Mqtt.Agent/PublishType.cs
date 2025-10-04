@@ -1,20 +1,19 @@
-﻿namespace NRuuviTag.Mqtt {
+﻿namespace NRuuviTag.Mqtt;
+
+/// <summary>
+/// Describes the MQTT publishing type for an <see cref="MqttAgent"/>.
+/// </summary>
+public enum PublishType {
 
     /// <summary>
-    /// Describes the MQTT publishing type for an <see cref="MqttAgent"/>.
+    /// Samples are published to a single MQTT topic.
     /// </summary>
-    public enum PublishType {
+    SingleTopic,
 
-        /// <summary>
-        /// Samples are published to a single MQTT topic.
-        /// </summary>
-        SingleTopic,
-
-        /// <summary>
-        /// Samples are published to multiple topics, one per instrument (i.e. separate topics 
-        /// for temperature, pressure, and so on).
-        /// </summary>
-        TopicPerMeasurement
+    /// <summary>
+    /// Samples are published to multiple topics, one per instrument (i.e. separate topics 
+    /// for temperature, pressure, and so on).
+    /// </summary>
+    TopicPerMeasurement
         
-    }
 }

@@ -13,144 +13,142 @@ using NRuuviTag.AzureEventHubs;
 
 using Spectre.Console.Cli;
 
-namespace NRuuviTag.Cli.Commands {
+namespace NRuuviTag.Cli.Commands;
+
+/// <summary>
+/// <see cref="CommandApp"/> command for listening to RuuviTag broadcasts and publishing the
+/// samples to an Azure Event Hub.
+/// </summary>
+public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubCommandSettings> {
 
     /// <summary>
-    /// <see cref="CommandApp"/> command for listening to RuuviTag broadcasts and publishing the
-    /// samples to an Azure Event Hub.
+    /// The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
     /// </summary>
-    public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubCommandSettings> {
+    private readonly IRuuviTagListener _listener;
 
-        /// <summary>
-        /// The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
-        /// </summary>
-        private readonly IRuuviTagListener _listener;
+    /// <summary>
+    /// The known RuuviTag devices.
+    /// </summary>
+    private readonly IOptionsMonitor<DeviceCollection> _devices;
 
-        /// <summary>
-        /// The known RuuviTag devices.
-        /// </summary>
-        private readonly IOptionsMonitor<DeviceCollection> _devices;
+    /// <summary>
+    /// The <see cref="IHostApplicationLifetime"/> for the .NET host application.
+    /// </summary>
+    private readonly IHostApplicationLifetime _appLifetime;
 
-        /// <summary>
-        /// The <see cref="IHostApplicationLifetime"/> for the .NET host application.
-        /// </summary>
-        private readonly IHostApplicationLifetime _appLifetime;
-
-        /// <summary>
-        /// The <see cref="ILoggerFactory"/> for the application.
-        /// </summary>
-        private readonly ILoggerFactory _loggerFactory;
+    /// <summary>
+    /// The <see cref="ILoggerFactory"/> for the application.
+    /// </summary>
+    private readonly ILoggerFactory _loggerFactory;
 
 
-        /// <summary>
-        /// Creates a new <see cref="PublishMqttCommand"/> object.
-        /// </summary>
-        /// <param name="listener">
-        ///   The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
-        /// </param>
-        /// <param name="mqttFactory">
-        ///   The <see cref="IMqttFactory"/> that is used to create an MQTT client.
-        /// </param>
-        /// <param name="devices">
-        ///   The known RuuviTag devices.
-        /// </param>
-        /// <param name="appLifetime">
-        ///   The <see cref="IHostApplicationLifetime"/> for the .NET host application.
-        /// </param>
-        /// <param name="loggerFactory">
-        ///   The <see cref="ILoggerFactory"/> for the application.
-        /// </param>
-        public PublishAzureEventHubCommand(
-            IRuuviTagListener listener,
-            IOptionsMonitor<DeviceCollection> devices,
-            IHostApplicationLifetime appLifetime,
-            ILoggerFactory loggerFactory
-        ) {
-            _listener = listener;
-            _devices = devices;
-            _loggerFactory = loggerFactory;
-            _appLifetime = appLifetime;
+    /// <summary>
+    /// Creates a new <see cref="PublishMqttCommand"/> object.
+    /// </summary>
+    /// <param name="listener">
+    ///   The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
+    /// </param>
+    /// <param name="mqttFactory">
+    ///   The <see cref="IMqttFactory"/> that is used to create an MQTT client.
+    /// </param>
+    /// <param name="devices">
+    ///   The known RuuviTag devices.
+    /// </param>
+    /// <param name="appLifetime">
+    ///   The <see cref="IHostApplicationLifetime"/> for the .NET host application.
+    /// </param>
+    /// <param name="loggerFactory">
+    ///   The <see cref="ILoggerFactory"/> for the application.
+    /// </param>
+    public PublishAzureEventHubCommand(
+        IRuuviTagListener listener,
+        IOptionsMonitor<DeviceCollection> devices,
+        IHostApplicationLifetime appLifetime,
+        ILoggerFactory loggerFactory
+    ) {
+        _listener = listener;
+        _devices = devices;
+        _loggerFactory = loggerFactory;
+        _appLifetime = appLifetime;
+    }
+
+
+    /// <inheritdoc/>
+    public override async Task<int> ExecuteAsync(CommandContext context, PublishAzureEventHubCommandSettings settings) {
+        if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
+            try { await Task.Delay(Timeout.InfiniteTimeSpan, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (_appLifetime.ApplicationStarted.IsCancellationRequested) { }
         }
 
+        IEnumerable<Device> devices = Array.Empty<Device>();
 
-        /// <inheritdoc/>
-        public override async Task<int> ExecuteAsync(CommandContext context, PublishAzureEventHubCommandSettings settings) {
-            if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
-                try { await Task.Delay(Timeout.InfiniteTimeSpan, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
-                catch (OperationCanceledException) when (_appLifetime.ApplicationStarted.IsCancellationRequested) { }
+        void UpdateDevices(DeviceCollection? devicesFromConfig) {
+            lock (this) {
+                devices = devicesFromConfig?.GetDevices() ?? Array.Empty<Device>();
             }
+        }
 
-            IEnumerable<Device> devices = Array.Empty<Device>();
+        UpdateDevices(_devices.CurrentValue);
 
-            void UpdateDevices(DeviceCollection? devicesFromConfig) {
+        var agentOptions = new AzureEventHubAgentOptions() {
+            ConnectionString = settings.ConnectionString!,
+            EventHubName = settings.EventHubName!,
+            SampleRate = settings.SampleRate,
+            MaximumBatchSize = settings.MaximumBatchSize,
+            MaximumBatchAge = settings.MaximumBatchAge,
+            KnownDevicesOnly = settings.KnownDevicesOnly,
+            GetDeviceInfo = addr => {
                 lock (this) {
-                    devices = devicesFromConfig?.GetDevices() ?? Array.Empty<Device>();
+                    return devices.FirstOrDefault(x => MacAddressComparer.Instance.Equals(addr, x.MacAddress));
                 }
             }
+        };
 
-            UpdateDevices(_devices.CurrentValue);
+        var agent = new AzureEventHubAgent(_listener, agentOptions, _loggerFactory);
 
-            var agentOptions = new AzureEventHubAgentOptions() {
-                ConnectionString = settings.ConnectionString!,
-                EventHubName = settings.EventHubName!,
-                SampleRate = settings.SampleRate,
-                MaximumBatchSize = settings.MaximumBatchSize,
-                MaximumBatchAge = settings.MaximumBatchAge,
-                KnownDevicesOnly = settings.KnownDevicesOnly,
-                GetDeviceInfo = addr => {
-                    lock (this) {
-                        return devices.FirstOrDefault(x => MacAddressComparer.Instance.Equals(addr, x.MacAddress));
-                    }
-                }
-            };
-
-            var agent = new AzureEventHubAgent(_listener, agentOptions, _loggerFactory);
-
-            using (_devices.OnChange(newDevices => UpdateDevices(newDevices)))
-            using (var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping)) {
-                try {
-                    await agent.RunAsync(ctSource.Token).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) { }
+        using (_devices.OnChange(newDevices => UpdateDevices(newDevices)))
+        using (var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping)) {
+            try {
+                await agent.RunAsync(ctSource.Token).ConfigureAwait(false);
             }
-
-            return 0;
+            catch (OperationCanceledException) { }
         }
 
+        return 0;
     }
 
+}
 
-    /// <summary>
-    /// Settings for <see cref="PublishMqttCommand"/>.
-    /// </summary>
-    public class PublishAzureEventHubCommandSettings : CommandSettings {
 
-        [CommandArgument(0, "<CONNECTION_STRING>")]
-        [Description("The Azure Event Hub connection string.")]
-        public string? ConnectionString { get; set; }
+/// <summary>
+/// Settings for <see cref="PublishMqttCommand"/>.
+/// </summary>
+public class PublishAzureEventHubCommandSettings : CommandSettings {
 
-        [CommandArgument(1, "<EVENT_HUB_NAME>")]
-        [Description("The Event Hub name.")]
-        public string? EventHubName { get; set; }
+    [CommandArgument(0, "<CONNECTION_STRING>")]
+    [Description("The Azure Event Hub connection string.")]
+    public string? ConnectionString { get; set; }
 
-        [CommandOption("--sample-rate <INTERVAL>")]
-        [Description("Limits the RuuviTag sample rate to the specified number of seconds. Only the most-recent reading for each RuuviTag device will be included in the next Event Hub batch publish. If not specified, all observed samples will be send to the Event Hub.")]
-        public int SampleRate { get; set; }
+    [CommandArgument(1, "<EVENT_HUB_NAME>")]
+    [Description("The Event Hub name.")]
+    public string? EventHubName { get; set; }
 
-        [CommandOption("--batch-size-limit <LIMIT>")]
-        [DefaultValue(50)]
-        [Description("Sets the maximum number of samples that can be added to an Event Hub data batch before the batch will be published to the hub.")]
-        public int MaximumBatchSize { get; set; }
+    [CommandOption("--sample-rate <INTERVAL>")]
+    [Description("Limits the RuuviTag sample rate to the specified number of seconds. Only the most-recent reading for each RuuviTag device will be included in the next Event Hub batch publish. If not specified, all observed samples will be send to the Event Hub.")]
+    public int SampleRate { get; set; }
 
-        [CommandOption("--batch-age-limit <LIMIT>")]
-        [DefaultValue(60)]
-        [Description("Sets the maximum age of an Event Hub data batch (in seconds) before the batch will be published to the hub. The age is measured from the time that the first sample is added to the batch.")]
-        public int MaximumBatchAge { get; set; }
+    [CommandOption("--batch-size-limit <LIMIT>")]
+    [DefaultValue(50)]
+    [Description("Sets the maximum number of samples that can be added to an Event Hub data batch before the batch will be published to the hub.")]
+    public int MaximumBatchSize { get; set; }
 
-        [CommandOption("--known-devices")]
-        [Description("Specifies if only samples from pre-registered devices should be published to the event hub.")]
-        public bool KnownDevicesOnly { get; set; }
+    [CommandOption("--batch-age-limit <LIMIT>")]
+    [DefaultValue(60)]
+    [Description("Sets the maximum age of an Event Hub data batch (in seconds) before the batch will be published to the hub. The age is measured from the time that the first sample is added to the batch.")]
+    public int MaximumBatchAge { get; set; }
 
-    }
+    [CommandOption("--known-devices")]
+    [Description("Specifies if only samples from pre-registered devices should be published to the event hub.")]
+    public bool KnownDevicesOnly { get; set; }
 
 }
