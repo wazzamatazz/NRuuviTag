@@ -20,8 +20,8 @@
     <File Path="docs/LinuxSystemdService.md" />
   </Folder>
   <Folder Name="/samples/">
-    <File Path="samples/Directory.Build.props" />
     <Project Path="samples/ExampleWindowsSdkClient/ExampleWindowsSdkClient.csproj" />
+    <File Path="samples/Directory.Build.props" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/NRuuviTag.AzureEventHubs.Agent/NRuuviTag.AzureEventHubs.Agent.csproj" />
@@ -35,8 +35,9 @@
     <Project Path="src/NRuuviTag.OpenTelemetry/NRuuviTag.OpenTelemetry.csproj" />
   </Folder>
   <Folder Name="/test/">
-    <File Path="test/Directory.Build.props" />
     <Project Path="test/NRuuviTag.Core.Tests/NRuuviTag.Core.Tests.csproj" />
     <Project Path="test/NRuuviTag.Mqtt.Tests/NRuuviTag.Mqtt.Tests.csproj" />
+    <Project Path="test\NRuuviTag.Benchmarks\NRuuviTag.Benchmarks.csproj" Type="Classic C#" />
+    <File Path="test/Directory.Build.props" />
   </Folder>
 </Solution>
