@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>NRuuviTag.Mqtt</RootNamespace>
     <Description>A library that can publish readings from Ruuvi IoT sensors to an MQTT broker.</Description>
   </PropertyGroup>
@@ -10,7 +10,6 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="MQTTnet.Extensions.ManagedClient" />
     <PackageReference Include="System.ComponentModel.Annotations" />
-    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>

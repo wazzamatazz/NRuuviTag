@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>NRuuviTag.AzureEventHubs</RootNamespace>
     <Description>A library that can publish readings from Ruuvi IoT sensors to an Azure Event Hub.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -10,8 +10,6 @@
   <ItemGroup>
     <PackageReference Include="Azure.Messaging.EventHubs" />
     <PackageReference Include="System.ComponentModel.Annotations" />
-    <PackageReference Include="System.Net.WebSockets.Client" />
-    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>
