@@ -11,6 +11,8 @@ using MQTTnet;
 using MQTTnet.Diagnostics;
 using MQTTnet.Server;
 
+[assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
+
 namespace NRuuviTag.Mqtt.Tests;
 
 [TestClass]
@@ -238,7 +240,7 @@ public class MqttPublishTests {
             var success = await tcs.Task.ConfigureAwait(false);
             Assert.IsTrue(success);
 
-            Assert.AreEqual(expectedMessageCount, receivedMessages.Count);
+            Assert.HasCount(expectedMessageCount, receivedMessages);
 
             var sampleFromMqtt = new RuuviTagSample();
                 
@@ -393,7 +395,7 @@ public class MqttPublishTests {
             var success = await tcs.Task.ConfigureAwait(false);
             Assert.IsTrue(success);
 
-            Assert.AreEqual(expectedMessageCount, receivedMessages.Count);
+            Assert.HasCount(expectedMessageCount, receivedMessages);
 
             var sampleFromMqtt = new RuuviTagSample();
                 

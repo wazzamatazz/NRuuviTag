@@ -22,12 +22,7 @@ namespace NRuuviTag.Mqtt;
 /// an MQTT broker.
 /// </summary>
 public partial class MqttAgent : RuuviTagPublisher {
-
-    /// <summary>
-    /// For creating device IDs if no callback for performing this task is specified.
-    /// </summary>
-    private static readonly HashAlgorithm s_deviceIdHash = SHA256.Create();
-
+    
     /// <summary>
     /// Device ID for all devices where the device ID cannot be determined.
     /// </summary>
@@ -252,11 +247,11 @@ public partial class MqttAgent : RuuviTagPublisher {
         }
 
         foreach (var scheme in new[] {
-                     Uri.UriSchemeHttps,
-                     Uri.UriSchemeHttp,
-                     "wss",
-                     "ws"
-                 }) {
+            Uri.UriSchemeHttps,
+            Uri.UriSchemeHttp,
+            "wss",
+            "ws"
+        }) {
             if (!uri.Scheme.Equals(scheme, StringComparison.OrdinalIgnoreCase)) {
                 continue;
             }
@@ -336,8 +331,7 @@ public partial class MqttAgent : RuuviTagPublisher {
     /// </exception>
     public static string GetDefaultDeviceId(string macAddress) {
         ArgumentNullException.ThrowIfNull(macAddress);
-
-        return string.Join("", s_deviceIdHash.ComputeHash(Encoding.UTF8.GetBytes(macAddress)).Select(x => x.ToString("X2")));
+        return string.Join("", SHA256.HashData(Encoding.UTF8.GetBytes(macAddress)).Select(x => x.ToString("X2")));
     }
 
 

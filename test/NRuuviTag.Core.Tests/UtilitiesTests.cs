@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+[assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
+
 namespace NRuuviTag.Core.Tests;
 
 [TestClass]

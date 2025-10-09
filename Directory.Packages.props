@@ -13,24 +13,20 @@
     <PackageVersion Include="Jaahas.CertificateUtilities" Version="1.2.0" />
     <PackageVersion Include="Jaahas.OpenTelemetry.Extensions" Version="3.0.0" />
     <PackageVersion Include="Jaahas.Spectre.Extensions.Hosting" Version="2.0.0" />
-    <PackageVersion Include="Linux.Bluetooth" Version="5.67.1" />
-    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.9" />
+    <PackageVersion Include="Linux.Bluetooth" Version="6.0.0-pre2" />
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.0-rc.1.25451.107" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0-rc.1.25451.107" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Systemd" Version="10.0.0-rc.1.25451.107" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.0-rc.1.25451.107" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0-rc.1.25451.107" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.0-rc.1.25451.107" />
     <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" />
     <PackageVersion Include="MQTTnet.Extensions.ManagedClient" Version="4.3.7.1207" />
-    <PackageVersion Include="MSTest" Version="3.10.4" />
+    <PackageVersion Include="MSTest" Version="4.0.0" />
     <PackageVersion Include="Nito.AsyncEx.Coordination" Version="5.1.2" />
-    <PackageVersion Include="OpenTelemetry.Api" Version="1.12.0" />
+    <PackageVersion Include="OpenTelemetry.Api" Version="1.13.0" />
     <PackageVersion Include="Spectre.Console.Cli" Version="0.51.1" />
     <PackageVersion Include="System.ComponentModel.Annotations" Version="5.0.0" />
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="9.0.9" />
-    <PackageVersion Include="System.Net.WebSockets.Client" Version="4.3.2" />
-    <PackageVersion Include="System.Text.Json" Version="9.0.9" />
-    <PackageVersion Include="System.Threading.Channels" Version="9.0.9" />
     <PackageVersion Include="Tmds.DBus" Version="0.21.2" />
   </ItemGroup>
 </Project>

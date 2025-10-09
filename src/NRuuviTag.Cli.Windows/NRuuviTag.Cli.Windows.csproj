@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
-    <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <RuntimeIdentifiers>win-arm64;win-x64</RuntimeIdentifiers>
     <AssemblyName>nruuvitag</AssemblyName>
     <Description>Command-line tool that can receive broadcasts from Ruuvi IoT sensors and publish readings to a destination.</Description>
