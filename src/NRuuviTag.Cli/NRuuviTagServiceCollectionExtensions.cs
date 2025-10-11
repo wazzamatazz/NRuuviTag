@@ -7,6 +7,7 @@ using MQTTnet;
 using NRuuviTag;
 using NRuuviTag.Cli;
 using NRuuviTag.Cli.Commands;
+using NRuuviTag.Mqtt;
 
 using Spectre.Console.Cli;
 
@@ -52,7 +53,7 @@ public static class NRuuviTagServiceCollectionExtensions {
 
 
     /// <summary>
-    /// Registers services required for a <see cref="CommandApp"/> that will run an <see cref="NRuuviTag.Mqtt.MqttAgent"/>.
+    /// Registers services required for a <see cref="CommandApp"/> that will run an <see cref="MqttPublisher"/>.
     /// </summary>
     /// <typeparam name="TListener">
     ///   The <see cref="IRuuviTagListener"/> that the agent will use to listen for RuuviTag 

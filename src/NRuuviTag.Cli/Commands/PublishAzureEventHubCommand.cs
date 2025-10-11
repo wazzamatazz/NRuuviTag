@@ -48,9 +48,6 @@ public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubComm
     /// <param name="listener">
     ///   The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
     /// </param>
-    /// <param name="mqttFactory">
-    ///   The <see cref="IMqttFactory"/> that is used to create an MQTT client.
-    /// </param>
     /// <param name="devices">
     ///   The known RuuviTag devices.
     /// </param>
@@ -80,17 +77,11 @@ public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubComm
             catch (OperationCanceledException) when (_appLifetime.ApplicationStarted.IsCancellationRequested) { }
         }
 
-        IEnumerable<Device> devices = Array.Empty<Device>();
-
-        void UpdateDevices(DeviceCollection? devicesFromConfig) {
-            lock (this) {
-                devices = devicesFromConfig?.GetDevices() ?? Array.Empty<Device>();
-            }
-        }
+        IEnumerable<Device> devices = null!;
 
         UpdateDevices(_devices.CurrentValue);
 
-        var agentOptions = new AzureEventHubAgentOptions() {
+        var publisherOptions = new AzureEventHubPublisherOptions() {
             ConnectionString = settings.ConnectionString!,
             EventHubName = settings.EventHubName!,
             SampleRate = settings.SampleRate,
@@ -104,17 +95,23 @@ public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubComm
             }
         };
 
-        var agent = new AzureEventHubAgent(_listener, agentOptions, _loggerFactory);
+        await using var publisher = new AzureEventHubPublisher(_listener, publisherOptions, _loggerFactory);
 
-        using (_devices.OnChange(newDevices => UpdateDevices(newDevices)))
+        using (_devices.OnChange(UpdateDevices))
         using (var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping)) {
             try {
-                await agent.RunAsync(ctSource.Token).ConfigureAwait(false);
+                await publisher.RunAsync(ctSource.Token).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException) when (ctSource.IsCancellationRequested) { }
         }
 
         return 0;
+
+        void UpdateDevices(DeviceCollection? devicesFromConfig) {
+            lock (this) {
+                devices = devicesFromConfig?.GetDevices() ?? [];
+            }
+        }
     }
 
 }
