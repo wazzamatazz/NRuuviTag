@@ -5,7 +5,7 @@ using System.Text;
 
 namespace NRuuviTag.AzureEventHubs;
 
-public class AzureEventHubAgentOptions {
+public class AzureEventHubPublisherOptions {
 
     /// <summary>
     /// The Event Hub connection string.
@@ -32,7 +32,7 @@ public class AzureEventHubAgentOptions {
 
     /// <summary>
     /// The fastest rate (in seconds) that values will be sampled at for each observed device. 
-    /// Less than zero means that all observed values are immediately passed to the <see cref="AzureEventHubAgent"/> 
+    /// Less than zero means that all observed values are immediately passed to the <see cref="AzureEventHubPublisher"/> 
     /// for processing.
     /// </summary>
     public int SampleRate { get; set; }
