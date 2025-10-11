@@ -16,12 +16,12 @@ namespace NRuuviTag.AzureEventHubs;
 /// Observes measurements emitted by an <see cref="IRuuviTagListener"/> and publishes them to 
 /// an Azure Event Hub.
 /// </summary>
-public partial class AzureEventHubAgent : RuuviTagPublisher {
+public partial class AzureEventHubPublisher : RuuviTagPublisher {
 
     /// <summary>
     /// Logging.
     /// </summary>
-    private readonly ILogger<AzureEventHubAgent> _logger;
+    private readonly ILogger<AzureEventHubPublisher> _logger;
 
     /// <summary>
     /// A delegate that retrieves the device information for a sample based on the MAC address 
@@ -67,7 +67,7 @@ public partial class AzureEventHubAgent : RuuviTagPublisher {
 
 
     /// <summary>
-    /// Creates a new <see cref="AzureEventHubAgent"/> object.
+    /// Creates a new <see cref="AzureEventHubPublisher"/> object.
     /// </summary>
     /// <param name="listener">
     ///   The <see cref="IRuuviTagListener"/> to observe for sensor readings.
@@ -87,12 +87,12 @@ public partial class AzureEventHubAgent : RuuviTagPublisher {
     /// <exception cref="ValidationException">
     ///   <paramref name="options"/> fails validation.
     /// </exception>
-    public AzureEventHubAgent(IRuuviTagListener listener, AzureEventHubAgentOptions options, ILoggerFactory? loggerFactory = null) 
+    public AzureEventHubPublisher(IRuuviTagListener listener, AzureEventHubPublisherOptions options, ILoggerFactory? loggerFactory = null) 
         : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
         ArgumentNullException.ThrowIfNull(options);
         Validator.ValidateObject(options, new ValidationContext(options), true);
 
-        _logger = loggerFactory?.CreateLogger<AzureEventHubAgent>() ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<AzureEventHubAgent>.Instance;
+        _logger = loggerFactory?.CreateLogger<AzureEventHubPublisher>() ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<AzureEventHubPublisher>.Instance;
         _connectionString = options.ConnectionString; 
         _eventHubName = options.EventHubName;
         _maximumBatchSize = options.MaximumBatchSize;
@@ -115,7 +115,7 @@ public partial class AzureEventHubAgent : RuuviTagPublisher {
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="options"/> is <see langword="null"/>.
     /// </exception>
-    private static Func<string, bool> BuildFilterDelegate(AzureEventHubAgentOptions options) {
+    private static Func<string, bool> BuildFilterDelegate(AzureEventHubPublisherOptions options) {
         ArgumentNullException.ThrowIfNull(options);
 
         if (!options.KnownDevicesOnly) {
@@ -185,7 +185,7 @@ public partial class AzureEventHubAgent : RuuviTagPublisher {
 
         return;
 
-        static async Task PublishBatchAsync(EventHubProducerClient client, EventDataBatch batch, ILogger<AzureEventHubAgent> logger, CancellationToken cancellationToken) {
+        static async Task PublishBatchAsync(EventHubProducerClient client, EventDataBatch batch, ILogger<AzureEventHubPublisher> logger, CancellationToken cancellationToken) {
             try {
                 await client.SendAsync(batch, cancellationToken).ConfigureAwait(false);
                 LogEventHubBatchPublished(logger, batch.Count);

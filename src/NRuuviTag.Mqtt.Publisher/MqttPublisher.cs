@@ -21,7 +21,7 @@ namespace NRuuviTag.Mqtt;
 /// Observes measurements emitted by an <see cref="IRuuviTagListener"/> and publishes them to 
 /// an MQTT broker.
 /// </summary>
-public partial class MqttAgent : RuuviTagPublisher {
+public partial class MqttPublisher : RuuviTagPublisher {
     
     /// <summary>
     /// Device ID for all devices where the device ID cannot be determined.
@@ -31,7 +31,7 @@ public partial class MqttAgent : RuuviTagPublisher {
     /// <summary>
     /// Logging.
     /// </summary>
-    private readonly ILogger<MqttAgent> _logger;
+    private readonly ILogger<MqttPublisher> _logger;
 
     /// <summary>
     /// MQTT client.
@@ -46,7 +46,7 @@ public partial class MqttAgent : RuuviTagPublisher {
     /// <summary>
     /// MQTT bridge options.
     /// </summary>
-    private readonly MqttAgentOptions _options;
+    private readonly MqttPublisherOptions _options;
 
     /// <summary>
     /// The template for the MQTT topic that messages will be published to.
@@ -63,7 +63,7 @@ public partial class MqttAgent : RuuviTagPublisher {
 
 
     /// <summary>
-    /// Creates a new <see cref="MqttAgent"/> object.
+    /// Creates a new <see cref="MqttPublisher"/> object.
     /// </summary>
     /// <param name="listener">
     ///   The <see cref="IRuuviTagListener"/> to observe for sensor readings.
@@ -86,12 +86,12 @@ public partial class MqttAgent : RuuviTagPublisher {
     /// <exception cref="ValidationException">
     ///   <paramref name="options"/> fails validation.
     /// </exception>
-    public MqttAgent(IRuuviTagListener listener, MqttAgentOptions options, MqttFactory factory, ILoggerFactory? loggerFactory = null)
+    public MqttPublisher(IRuuviTagListener listener, MqttPublisherOptions options, MqttFactory factory, ILoggerFactory? loggerFactory = null)
         : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         Validator.ValidateObject(options, new ValidationContext(options), true);
 
-        _logger = loggerFactory?.CreateLogger<MqttAgent>() ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttAgent>.Instance;
+        _logger = loggerFactory?.CreateLogger<MqttPublisher>() ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttPublisher>.Instance;
 
         // If no client ID was specified, we'll generate one.
         var clientId = string.IsNullOrWhiteSpace(_options.ClientId) 
@@ -101,11 +101,11 @@ public partial class MqttAgent : RuuviTagPublisher {
         // Set the template for the MQTT topic to post to. We can replace the {clientId}
         // placeholder immediately.
         _topicTemplate = string.IsNullOrWhiteSpace(_options.TopicName)
-            ? MqttAgentOptions.DefaultTopicName.Replace("{clientId}", clientId)
+            ? MqttPublisherOptions.DefaultTopicName.Replace("{clientId}", clientId)
             : _options.TopicName.Replace("{clientId}", clientId);
 
         var clientOptionsBuilder = new MqttClientOptionsBuilder()
-            .WithCleanSession(true)
+            .WithCleanSession()
             .WithClientId(clientId)
             .WithProtocolVersion(_options.ProtocolVersion);
 
@@ -117,7 +117,7 @@ public partial class MqttAgent : RuuviTagPublisher {
         // the start.
         var hostname = isWebsocketConnection
             // websocketUri.Scheme.Length + 3 so that we move past the :// in the URL
-            ? websocketUri!.ToString().Substring(websocketUri.Scheme.Length + 3)
+            ? websocketUri!.ToString()[(websocketUri.Scheme.Length + 3)..]
             : _options.Hostname;
 
         // We will tell the client to use TLS if it has been explicitly specified in the options,
@@ -174,7 +174,7 @@ public partial class MqttAgent : RuuviTagPublisher {
             });
         }
 
-        // Configure credentials if either a user name or password has been provided.
+        // Configure credentials if either a username or password has been provided.
         if (!string.IsNullOrWhiteSpace(_options.UserName) || !string.IsNullOrWhiteSpace(_options.Password)) {
             clientOptionsBuilder = clientOptionsBuilder.WithCredentials(_options.UserName, _options.Password);
         }
@@ -204,11 +204,11 @@ public partial class MqttAgent : RuuviTagPublisher {
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="options"/> is <see langword="null"/>.
     /// </exception>
-    private static Func<string, bool> BuildFilterDelegate(MqttAgentOptions options) {
+    private static Func<string, bool> BuildFilterDelegate(MqttPublisherOptions options) {
         ArgumentNullException.ThrowIfNull(options);
 
         if (!options.KnownDevicesOnly) {
-            return addr => true;
+            return _ => true;
         }
 
         var getDeviceInfo = options.GetDeviceInfo;
@@ -246,12 +246,14 @@ public partial class MqttAgent : RuuviTagPublisher {
             return false;
         }
 
-        foreach (var scheme in new[] {
+        ReadOnlySpan<string> validSchemes = [
             Uri.UriSchemeHttps,
             Uri.UriSchemeHttp,
             "wss",
             "ws"
-        }) {
+        ];
+        
+        foreach (var scheme in validSchemes) {
             if (!uri.Scheme.Equals(scheme, StringComparison.OrdinalIgnoreCase)) {
                 continue;
             }
@@ -296,7 +298,7 @@ public partial class MqttAgent : RuuviTagPublisher {
                 System.Net.IPEndPoint ip => $"{ip.Address}:{ip.Port}",
                 _ => "<unknown>"
             },
-            MqttClientWebSocketOptions wsOptions => wsOptions.Uri.ToString(),
+            MqttClientWebSocketOptions wsOptions => wsOptions.Uri,
             _ => "<unknown>"
         };
         LogMqttClientConnected(hostname);
@@ -360,7 +362,7 @@ public partial class MqttAgent : RuuviTagPublisher {
                 };
         }
 
-        return deviceInfo!;
+        return deviceInfo;
     }
 
 
@@ -411,13 +413,11 @@ public partial class MqttAgent : RuuviTagPublisher {
     private string GetTopicNameForSample(RuuviDataPayload sample, Device deviceInfo) {
         ArgumentNullException.ThrowIfNull(sample);
 
-        if (!_topicTemplate.Contains("{deviceId}")) {
+        return _topicTemplate.Contains("{deviceId}") 
+            ? _topicTemplate.Replace("{deviceId}", deviceInfo.DeviceId)
             // Publish channel does not contain any device ID placeholders, so just return it
             // as-is.
-            return _topicTemplate;
-        }
-
-        return _topicTemplate.Replace("{deviceId}", deviceInfo.DeviceId);
+            : _topicTemplate;
     }
 
 
@@ -461,7 +461,7 @@ public partial class MqttAgent : RuuviTagPublisher {
     ///   publish to the broker.
     /// </returns>
     /// <remarks>
-    ///   The number of messages returned depends on the <see cref="MqttAgentOptions.PublishType"/> 
+    ///   The number of messages returned depends on the <see cref="MqttPublisherOptions.PublishType"/> 
     ///   setting for the bridge.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
@@ -489,7 +489,7 @@ public partial class MqttAgent : RuuviTagPublisher {
     ///   publish to the broker.
     /// </returns>
     /// <remarks>
-    ///   The number of messages returned depends on the <see cref="MqttAgentOptions.PublishType"/> 
+    ///   The number of messages returned depends on the <see cref="MqttPublisherOptions.PublishType"/> 
     ///   setting for the bridge.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
@@ -590,7 +590,7 @@ public partial class MqttAgent : RuuviTagPublisher {
 
     /// <inheritdoc/>
     protected override async Task RunAsync(IAsyncEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
-        LogStartingMqttAgent();
+        LogStartingMqttPublisher();
 
         await _mqttClient.StartAsync(_mqttClientOptions).ConfigureAwait(false);
         try {
@@ -618,7 +618,7 @@ public partial class MqttAgent : RuuviTagPublisher {
         }
         finally {
             await _mqttClient.StopAsync().ConfigureAwait(false);
-            LogMqttAgentStopped();
+            LogMqttPublisherStopped();
         }
     }
         
@@ -630,11 +630,11 @@ public partial class MqttAgent : RuuviTagPublisher {
     private static partial Regex HostnameParser();
 
 
-    [LoggerMessage(1, LogLevel.Information, "Starting MQTT agent.")]
-    partial void LogStartingMqttAgent();
+    [LoggerMessage(1, LogLevel.Information, "Starting MQTT publisher.")]
+    partial void LogStartingMqttPublisher();
 
-    [LoggerMessage(2, LogLevel.Information, "Stopped MQTT agent.")]
-    partial void LogMqttAgentStopped();
+    [LoggerMessage(2, LogLevel.Information, "Stopped MQTT publisher.")]
+    partial void LogMqttPublisherStopped();
 
     [LoggerMessage(3, LogLevel.Information, "Connected to MQTT broker: {hostname}")]
     partial void LogMqttClientConnected(string hostname);

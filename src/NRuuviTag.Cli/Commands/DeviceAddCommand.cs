@@ -43,7 +43,7 @@ public class DeviceAddCommand : AsyncCommand<DeviceAddCommandSettings> {
             MacAddress = settings.MacAddress,
             DisplayName = settings.DisplayName,
             DeviceId = string.IsNullOrWhiteSpace(settings.DeviceId)
-                ? MqttAgent.GetDefaultDeviceId(settings.MacAddress)
+                ? MqttPublisher.GetDefaultDeviceId(settings.MacAddress)
                 : settings.DeviceId!
         };
 

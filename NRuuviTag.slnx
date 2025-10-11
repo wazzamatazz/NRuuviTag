@@ -24,15 +24,15 @@
     <File Path="samples/Directory.Build.props" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="src/NRuuviTag.AzureEventHubs.Agent/NRuuviTag.AzureEventHubs.Agent.csproj" />
     <Project Path="src/NRuuviTag.Cli.Linux/NRuuviTag.Cli.Linux.csproj" />
     <Project Path="src/NRuuviTag.Cli.Windows/NRuuviTag.Cli.Windows.csproj" />
     <Project Path="src/NRuuviTag.Cli/NRuuviTag.Cli.csproj" />
     <Project Path="src/NRuuviTag.Core/NRuuviTag.Core.csproj" />
     <Project Path="src/NRuuviTag.Listener.Linux/NRuuviTag.Listener.Linux.csproj" />
     <Project Path="src/NRuuviTag.Listener.Windows/NRuuviTag.Listener.Windows.csproj" />
-    <Project Path="src/NRuuviTag.Mqtt.Agent/NRuuviTag.Mqtt.Agent.csproj" />
     <Project Path="src/NRuuviTag.OpenTelemetry/NRuuviTag.OpenTelemetry.csproj" />
+    <Project Path="src\NRuuviTag.AzureEventHubs.Publisher\NRuuviTag.AzureEventHubs.Publisher.csproj" />
+    <Project Path="src\NRuuviTag.Mqtt.Publisher\NRuuviTag.Mqtt.Publisher.csproj" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/NRuuviTag.Core.Tests/NRuuviTag.Core.Tests.csproj" />

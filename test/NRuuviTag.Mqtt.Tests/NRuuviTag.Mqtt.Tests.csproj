@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\NRuuviTag.Mqtt.Agent\NRuuviTag.Mqtt.Agent.csproj" />
+    <ProjectReference Include="..\..\src\NRuuviTag.Mqtt.Publisher\NRuuviTag.Mqtt.Publisher.csproj" />
   </ItemGroup>
 
 </Project>

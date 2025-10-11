@@ -6,9 +6,9 @@ using MQTTnet.Formatter;
 namespace NRuuviTag.Mqtt;
 
 /// <summary>
-/// Options for <see cref="MqttAgent"/>.
+/// Options for <see cref="MqttPublisher"/>.
 /// </summary>
-public class MqttAgentOptions {
+public class MqttPublisherOptions {
 
     /// <summary>
     /// The default value for <see cref="TopicName"/>.
@@ -24,7 +24,7 @@ public class MqttAgentOptions {
     /// <summary>
     /// TLS-related options.
     /// </summary>
-    public MqttAgentTlsOptions TlsOptions { get; set; } = new MqttAgentTlsOptions();
+    public MqttPublisherTlsOptions TlsOptions { get; set; } = new MqttPublisherTlsOptions();
 
     /// <summary>
     /// The MQTT client ID to use.
@@ -47,13 +47,13 @@ public class MqttAgentOptions {
     public MqttProtocolVersion ProtocolVersion { get; set; } = MqttProtocolVersion.V500;
 
     /// <summary>
-    /// The publishing type for the <see cref="MqttAgent"/>.
+    /// The publishing type for the <see cref="MqttPublisher"/>.
     /// </summary>
     public PublishType PublishType { get; set; }
 
     /// <summary>
     /// The fastest rate (in seconds) that values will be sampled at for each observed device. 
-    /// Less than zero means that all observed values are immediately passed to the <see cref="MqttAgent"/> 
+    /// Less than zero means that all observed values are immediately passed to the <see cref="MqttPublisher"/> 
     /// for processing.
     /// </summary>
     public int SampleRate { get; set; }

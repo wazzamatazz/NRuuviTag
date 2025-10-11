@@ -99,30 +99,19 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommandSettings> {
             version = vEnum;
         }
         else if (Version.TryParse(settings.ProtocolVersion, out var v)) {
-            switch (v.ToString(3)) {
-                case "3.1.0":
-                    version = MqttProtocolVersion.V310;
-                    break;
-                case "3.1.1":
-                    version = MqttProtocolVersion.V311;
-                    break;
-                case "5.0.0":
-                    version = MqttProtocolVersion.V500;
-                    break;
-            }
+            version = v.ToString(3) switch {
+                "3.1.0" => MqttProtocolVersion.V310,
+                "3.1.1" => MqttProtocolVersion.V311,
+                "5.0.0" => MqttProtocolVersion.V500,
+                _ => version
+            };
         }
 
-        IEnumerable<Device> devices = Array.Empty<Device>();
-
-        void UpdateDevices(DeviceCollection? devicesFromConfig) {
-            lock (this) {
-                devices = devicesFromConfig?.GetDevices() ?? Array.Empty<Device>();
-            }
-        }
+        IEnumerable<Device> devices = null!;
 
         UpdateDevices(_devices.CurrentValue);
 
-        var agentOptions = new MqttAgentOptions() {
+        var publisherOptions = new MqttPublisherOptions() {
             Hostname = settings.Hostname,
             ClientId = settings.ClientId,
             UserName = settings.UserName,
@@ -132,7 +121,7 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommandSettings> {
             SampleRate = settings.SampleRate,
             PublishType = settings.PublishType,
             KnownDevicesOnly = settings.KnownDevicesOnly,
-            TlsOptions = new MqttAgentTlsOptions() { 
+            TlsOptions = new MqttPublisherTlsOptions() { 
                 UseTls = settings.UseTls,
                 AllowUntrustedCertificates = settings.AllowUntrustedCertificates,
                 IgnoreCertificateChainErrors = settings.IgnoreCertificateChainErrors,
@@ -145,17 +134,23 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommandSettings> {
             }
         };
 
-        var agent = new MqttAgent(_listener, agentOptions, _mqttFactory, _loggerFactory);
+        await using var publisher = new MqttPublisher(_listener, publisherOptions, _mqttFactory, _loggerFactory);
 
-        using (_devices.OnChange(newDevices => UpdateDevices(newDevices)))
+        using (_devices.OnChange(UpdateDevices))
         using (var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping)) {
             try {
-                await agent.RunAsync(ctSource.Token).ConfigureAwait(false);
+                await publisher.RunAsync(ctSource.Token).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException) when (ctSource.IsCancellationRequested) { }
         }
 
         return 0;
+
+        void UpdateDevices(DeviceCollection? devicesFromConfig) {
+            lock (this) {
+                devices = devicesFromConfig?.GetDevices() ?? [];
+            }
+        }
     }
 
 }
@@ -198,7 +193,7 @@ public class PublishMqttCommandSettings : CommandSettings {
     public PublishType PublishType { get; set; }
 
     [CommandOption("--topic <TOPIC>")]
-    [DefaultValue(MqttAgentOptions.DefaultTopicName)]
+    [DefaultValue(MqttPublisherOptions.DefaultTopicName)]
     [Description("The MQTT topic to publish messages to. In topic-per-measurement mode, this is used as the topic prefix.")]
     public string TopicName { get; set; } = default!;
 
