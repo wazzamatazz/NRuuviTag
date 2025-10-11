@@ -6,9 +6,9 @@ using System.Security.Cryptography.X509Certificates;
 namespace NRuuviTag.Mqtt;
 
 /// <summary>
-/// TLS-related options for <see cref="MqttAgent"/>.
+/// TLS-related options for <see cref="MqttPublisher"/>.
 /// </summary>
-public class MqttAgentTlsOptions {
+public class MqttPublisherTlsOptions {
 
     /// <summary>
     /// Specifies if TLS should be used for the MQTT connection.

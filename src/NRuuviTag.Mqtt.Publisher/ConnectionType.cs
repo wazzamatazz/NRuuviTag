@@ -1,7 +1,7 @@
 ﻿namespace NRuuviTag.Mqtt;
 
 /// <summary>
-/// Describes the MQTT connection type used by an <see cref="MqttAgent"/>.
+/// Describes the MQTT connection type used by an <see cref="MqttPublisher"/>.
 /// </summary>
 public enum ConnectionType {
 

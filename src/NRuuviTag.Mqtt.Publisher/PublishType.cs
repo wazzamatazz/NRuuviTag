@@ -1,7 +1,7 @@
 ﻿namespace NRuuviTag.Mqtt;
 
 /// <summary>
-/// Describes the MQTT publishing type for an <see cref="MqttAgent"/>.
+/// Describes the MQTT publishing type for an <see cref="MqttPublisher"/>.
 /// </summary>
 public enum PublishType {
 
