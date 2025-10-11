@@ -51,51 +51,51 @@ await foreach (var sample in client.ListenAsync(CanProcessMessage, cancellationT
 
 # Publishing Samples to MQTT
 
-The [NRuuviTag.Mqtt.Agent](https://www.nuget.org/packages/NRuuviTag.Mqtt.Agent) NuGet package ([source](/src/NRuuviTag.Mqtt.Agent)) can be used to observe RuuviTag broadcasts and forward the samples to an MQTT server:
+The [NRuuviTag.Mqtt.Publisher](https://www.nuget.org/packages/NRuuviTag.Mqtt.Publisher) NuGet package ([source](./src/NRuuviTag.Mqtt.Publisher)) can be used to observe RuuviTag broadcasts and forward the samples to an MQTT server:
 
 ```csharp
-public async Task RunMqttAgent(
+public async Task RunMqttPublisherAsync(
     IRuuviTagListener listener,
     ILoggerFactory? loggerFactory = null,
     CancellationToken cancellationToken = default
 ) {
-    var agentOptions = new MqttAgentOptions() {
+    var options = new MqttPublisherOptions() {
         Hostname = "my-mqtt-service.local:1883",
         ClientId = "MY_CLIENT_ID"
     };
   
-    await using var agent = new MqttAgent(
+    await using var publisher = new MqttPublisher(
         listener, 
-        agentOptions, 
+        options, 
         new MQTTnet.MqttFactory(), 
-        loggerFactory?.CreateLogger<MqttAgent>());
+        loggerFactory?.CreateLogger<MqttPublisher>());
   
-    await agent.RunAsync(cancellationToken);
+    await publisher.RunAsync(cancellationToken);
 }
 ```
 
 
 # Publishing Samples to Azure Event Hubs
 
-The [NRuuviTag.AzureEventHubs.Agent](https://www.nuget.org/packages/NRuuviTag.AzureEventHubs.Agent) NuGet package ([source](/src/NRuuviTag.AzureEventHubs.Agent)) can be used to observe RuuviTag broadcasts and forward the samples to an Azure Event Hub:
+The [NRuuviTag.AzureEventHubs.Publisher](https://www.nuget.org/packages/NRuuviTag.AzureEventHubs.Publisher) NuGet package ([source](./src/NRuuviTag.AzureEventHubs.Publisher)) can be used to observe RuuviTag broadcasts and forward the samples to an Azure Event Hub:
 
 ```csharp
-public async Task RunAzureEventHubAgent(
+public async Task RunAzureEventHubPublisherAsync(
     IRuuviTagListener listener,
     ILoggerFactory? loggerFactory = null,
     CancellationToken cancellationToken = default
 ) {
-    var agentOptions = new AzureEventHubAgentOptions() {
+    var options = new AzureEventHubPublisherOptions() {
         ConnectionString = "Endpoint=sb://MY_NAMESPACE.servicebus.windows.net/;SharedAccessKeyName=MY_KEY_NAME;SharedAccessKey=MY_KEY",
         EventHubName = "MY_EVENT_HUB"
     };
   
-    await using var agent = new AzureEventHubAgent(
+    await using var publisher = new AzureEventHubPublisher(
         listener, 
-        agentOptions, 
-        loggerFactory?.CreateLogger<AzureEventHubAgent>());
+        options, 
+        loggerFactory?.CreateLogger<AzureEventHubPublisher>());
   
-    await agent.RunAsync(cancellationToken);
+    await publisher.RunAsync(cancellationToken);
 }
 ```
 
