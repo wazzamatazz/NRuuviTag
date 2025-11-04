@@ -16,12 +16,14 @@ public record RuuviTagSampleExtended : RuuviTagSample {
     ///   recommended that device identifiers consist only of alphanumeric characters, 
     ///   hyphens, and underscores.
     /// </remarks>
+    [JsonPropertyName("deviceId")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? DeviceId { get; init; }
 
     /// <summary>
     /// The display name for the device that emitted the sample.
     /// </summary>
+    [JsonPropertyName("displayName")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? DisplayName { get; init; }
 

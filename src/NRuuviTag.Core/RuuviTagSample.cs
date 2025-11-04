@@ -15,12 +15,14 @@ public record RuuviTagSample : RuuviDataPayload {
     /// <summary>
     /// Sample time.
     /// </summary>
+    [JsonPropertyName("timestamp")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public DateTimeOffset? Timestamp { get; init; }
 
     /// <summary>
     /// Signal strength (dBm).
     /// </summary>
+    [JsonPropertyName("signalStrength")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public double? SignalStrength { get; init; }
 
