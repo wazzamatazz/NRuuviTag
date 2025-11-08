@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace NRuuviTag.Cli;
@@ -21,20 +21,22 @@ internal class ConsoleJsonPublisher : RuuviTagPublisher {
         IRuuviTagListener listener, 
         Func<string, bool>? filter,
         Func<string, Device?>? getDeviceInfo
-    ) : base(listener, 0, filter) {
+    ) : base(listener, new RuuviTagPublisherOptions(), filter) {
         _getDeviceInfo = getDeviceInfo;
     }
 
 
-    protected override async Task RunAsync(IAsyncEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
-        await foreach (var item in samples.WithCancellation(cancellationToken).ConfigureAwait(false)) {
-            var knownDevice = _getDeviceInfo?.Invoke(item.MacAddress!);
+    protected override async Task RunAsync(ChannelReader<RuuviTagSample> samples, CancellationToken cancellationToken) {
+        while (await samples.WaitToReadAsync(cancellationToken)) {
+            while (samples.TryRead(out var item)) {
+                var knownDevice = _getDeviceInfo?.Invoke(item.MacAddress!);
 
-            var json = knownDevice == null
-                ? JsonSerializer.Serialize(item, _jsonOptions)
-                : JsonSerializer.Serialize(new RuuviTagSampleExtended(knownDevice.DeviceId, knownDevice.DisplayName, item), _jsonOptions);
+                var json = knownDevice == null
+                    ? JsonSerializer.Serialize(item, _jsonOptions)
+                    : JsonSerializer.Serialize(new RuuviTagSampleExtended(knownDevice.DeviceId, knownDevice.DisplayName, item), _jsonOptions);
 
-            Console.WriteLine(json);
+                Console.WriteLine(json);
+            }
         }
     }
 

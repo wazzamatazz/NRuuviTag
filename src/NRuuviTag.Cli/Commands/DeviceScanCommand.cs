@@ -50,7 +50,7 @@ public class DeviceScanCommand : AsyncCommand<DeviceScanCommandSettings> {
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, DeviceScanCommandSettings settings) {
+    public override async Task<int> ExecuteAsync(CommandContext context, DeviceScanCommandSettings settings, CancellationToken cancellationToken) {
         // Wait until the host application has started if required.
         if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
             try { await Task.Delay(-1, _appLifetime.ApplicationStarted).ConfigureAwait(false); }

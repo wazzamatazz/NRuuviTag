@@ -8,7 +8,7 @@ namespace NRuuviTag.Mqtt;
 /// <summary>
 /// Options for <see cref="MqttPublisher"/>.
 /// </summary>
-public class MqttPublisherOptions {
+public class MqttPublisherOptions : RuuviTagPublisherOptions {
 
     /// <summary>
     /// The default value for <see cref="TopicName"/>.
@@ -52,13 +52,6 @@ public class MqttPublisherOptions {
     public PublishType PublishType { get; set; }
 
     /// <summary>
-    /// The fastest rate (in seconds) that values will be sampled at for each observed device. 
-    /// Less than zero means that all observed values are immediately passed to the <see cref="MqttPublisher"/> 
-    /// for processing.
-    /// </summary>
-    public int SampleRate { get; set; }
-
-    /// <summary>
     /// The topic that MQTT messages will be published to. When <see cref="PublishType"/> is 
     /// <see cref="PublishType.TopicPerMeasurement"/>, the <see cref="TopicName"/> is 
     /// used as a prefix for the individual measurement channels.
@@ -76,7 +69,7 @@ public class MqttPublisherOptions {
 
     /// <summary>
     /// A callback that is used to retrieve the device information to use for a given 
-    ///MAC address.
+    /// MAC address.
     /// </summary>
     /// <remarks>
     ///   If <see cref="GetDeviceInfo"/> is <see langword="null"/>, a default <see cref="Device"/> 
@@ -105,7 +98,7 @@ public class MqttPublisherOptions {
     ///   Use the <see cref="PrepareForPublish"/> callback to modify a <see cref="RuuviTagSampleExtended"/> 
     ///   instance prior to it being published to the MQTT broker (e.g. to perform unit conversion). 
     ///   Set any property on a sample to <see langword="null"/> to prevent that property from being
-    /// published.
+    ///   published.
     /// </para>
     /// 
     /// </remarks>

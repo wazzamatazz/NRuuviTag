@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Options;
@@ -33,7 +34,7 @@ public class DeviceListCommand : Command<DeviceListCommandSettings> {
 
 
     /// <inheritdoc/>
-    public override int Execute([NotNull] CommandContext context, [NotNull] DeviceListCommandSettings settings) {
+    public override int Execute(CommandContext context, DeviceListCommandSettings settings, CancellationToken cancellationToken) {
         Console.WriteLine();
         CommandUtilities.PrintDevicesToConsole(_devices);
         Console.WriteLine();

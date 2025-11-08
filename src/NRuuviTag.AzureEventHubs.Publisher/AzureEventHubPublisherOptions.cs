@@ -5,7 +5,7 @@ using System.Text;
 
 namespace NRuuviTag.AzureEventHubs;
 
-public class AzureEventHubPublisherOptions {
+public class AzureEventHubPublisherOptions : RuuviTagPublisherOptions {
 
     /// <summary>
     /// The Event Hub connection string.
@@ -29,14 +29,7 @@ public class AzureEventHubPublisherOptions {
     ///   for a given sample.
     /// </remarks>
     public bool KnownDevicesOnly { get; set; }
-
-    /// <summary>
-    /// The fastest rate (in seconds) that values will be sampled at for each observed device. 
-    /// Less than zero means that all observed values are immediately passed to the <see cref="AzureEventHubPublisher"/> 
-    /// for processing.
-    /// </summary>
-    public int SampleRate { get; set; }
-
+    
     /// <summary>
     /// The maximum number of samples to add to an event hub data batch before publishing the 
     /// batch to the event hub.

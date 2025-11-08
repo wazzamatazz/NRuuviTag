@@ -54,7 +54,7 @@ public class PublishConsoleCommand : AsyncCommand<PublishConsoleCommandSettings>
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, PublishConsoleCommandSettings settings) {
+    public override async Task<int> ExecuteAsync(CommandContext context, PublishConsoleCommandSettings settings, CancellationToken cancellationToken) {
         // Wait until the host application has started if required.
         if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
             try { await Task.Delay(-1, _appLifetime.ApplicationStarted).ConfigureAwait(false); }

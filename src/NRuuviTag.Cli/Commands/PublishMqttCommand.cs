@@ -61,7 +61,7 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommandSettings> {
     ///   The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
     /// </param>
     /// <param name="mqttFactory">
-    ///   The <see cref="IMqttFactory"/> that is used to create an MQTT client.
+    ///   The <see cref="MqttFactory"/> that is used to create an MQTT client.
     /// </param>
     /// <param name="devices">
     ///   The known RuuviTag devices.
@@ -88,7 +88,7 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommandSettings> {
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, PublishMqttCommandSettings settings) {
+    public override async Task<int> ExecuteAsync(CommandContext context, PublishMqttCommandSettings settings, CancellationToken cancellationToken) {
         if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
             try { await Task.Delay(-1, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
             catch (OperationCanceledException) { }
@@ -118,7 +118,8 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommandSettings> {
             Password = settings.Password,
             ProtocolVersion = version,
             TopicName = settings.TopicName,
-            SampleRate = settings.SampleRate,
+            PublishInterval = TimeSpan.FromSeconds(settings.PublishInterval),
+            PerDevicePublishBehaviour = settings.PublishBehaviour,
             PublishType = settings.PublishType,
             KnownDevicesOnly = settings.KnownDevicesOnly,
             TlsOptions = new MqttPublisherTlsOptions() { 
@@ -183,9 +184,14 @@ public class PublishMqttCommandSettings : CommandSettings {
     [Description("MQTT protocol version to use.")]
     public string? ProtocolVersion { get; set; }
 
-    [CommandOption("--sample-rate <INTERVAL>")]
-    [Description("The sample rate to use, in seconds. If not specified, samples will be published to the MQTT server as soon as they are observed.")]
-    public int SampleRate { get; set; }
+    [CommandOption("--publish-interval <INTERVAL>")]
+    [Description("The publish to use, in seconds. When a publish interval is specified, the '--publish-behaviour' setting controls if all observed samples for a device are included in the next publish, or if only the most-recent reading for each device are included. If a publish inteval is not specified, samples will be published to the MQTT server as soon as they are observed.")]
+    public int PublishInterval { get; set; }
+    
+    [CommandOption("--publish-behaviour <BEHAVIOUR>")]
+    [Description("The per-device publish behaviour to use when a non-zero publish interval is specified. Possible values are: " + nameof(BatchPublishDeviceBehaviour.AllSamples) + " (default), " + nameof(BatchPublishDeviceBehaviour.LatestSampleOnly))]
+    [DefaultValue(BatchPublishDeviceBehaviour.AllSamples)]
+    public BatchPublishDeviceBehaviour PublishBehaviour { get; set; }
 
     [CommandOption("--publish-type <PUBLISH_TYPE>")]
     [DefaultValue(PublishType.SingleTopic)]

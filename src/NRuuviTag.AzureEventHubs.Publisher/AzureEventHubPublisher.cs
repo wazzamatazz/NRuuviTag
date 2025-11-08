@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 using Azure.Messaging.EventHubs;
@@ -73,7 +74,7 @@ public partial class AzureEventHubPublisher : RuuviTagPublisher {
     ///   The <see cref="IRuuviTagListener"/> to observe for sensor readings.
     /// </param>
     /// <param name="options">
-    ///   Agent options.
+    ///   Publisher options.
     /// </param>
     /// <param name="loggerFactory">
     ///   The logger factory to use.
@@ -88,7 +89,7 @@ public partial class AzureEventHubPublisher : RuuviTagPublisher {
     ///   <paramref name="options"/> fails validation.
     /// </exception>
     public AzureEventHubPublisher(IRuuviTagListener listener, AzureEventHubPublisherOptions options, ILoggerFactory? loggerFactory = null) 
-        : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
+        : base(listener, options, BuildFilterDelegate(options), loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
         ArgumentNullException.ThrowIfNull(options);
         Validator.ValidateObject(options, new ValidationContext(options), true);
 
@@ -122,14 +123,13 @@ public partial class AzureEventHubPublisher : RuuviTagPublisher {
             return _ => true;
         }
 
-        var getDeviceInfo = options.GetDeviceInfo;
-        return getDeviceInfo == null
+        return options.GetDeviceInfo is null
             ? _ => false
-            : addr => getDeviceInfo.Invoke(addr) != null;
+            : CreateKnownDevicesFilterDelegate(options.GetDeviceInfo);
     }
 
 
-    protected override async Task RunAsync(IAsyncEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
+    protected override async Task RunAsync(ChannelReader<RuuviTagSample> samples, CancellationToken cancellationToken) {
         LogStartingEventHubClient();
 
         await using var client = new EventHubProducerClient(_connectionString, _eventHubName);
@@ -139,37 +139,39 @@ public partial class AzureEventHubPublisher : RuuviTagPublisher {
         var currentBatchStartedAt = TimeSpan.Zero;
 
         try {
-            await foreach (var item in samples.WithCancellation(cancellationToken).ConfigureAwait(false)) {
-                var device = _getDeviceInfo?.Invoke(item.MacAddress!);
+            while (await samples.WaitToReadAsync(cancellationToken).ConfigureAwait(false)) {
+                while (samples.TryRead(out var item)) {
+                    var device = _getDeviceInfo?.Invoke(item.MacAddress!);
 
-                var sample = device is null
-                    ? new RuuviTagSampleExtended(null, null, item)
-                    : new RuuviTagSampleExtended(device.DeviceId, device.DisplayName, item);
+                    var sample = device is null
+                        ? new RuuviTagSampleExtended(null, null, item)
+                        : new RuuviTagSampleExtended(device.DeviceId, device.DisplayName, item);
                     
-                if (_prepareForPublish is not null) {
-                    sample = _prepareForPublish.Invoke(sample);
-                }
-                var eventData = new EventData(JsonSerializer.SerializeToUtf8Bytes(sample, _jsonOptions)) {
-                    Properties = {
-                        ["Content-Type"] = "application/json"
+                    if (_prepareForPublish is not null) {
+                        sample = _prepareForPublish.Invoke(sample);
                     }
-                };
+                    var eventData = new EventData(JsonSerializer.SerializeToUtf8Bytes(sample, _jsonOptions)) {
+                        Properties = {
+                            ["Content-Type"] = "application/json"
+                        }
+                    };
 
-                if (batch.TryAdd(eventData) && batch.Count == 1) {
-                    // Start of new batch
-                    currentBatchStartedAt = stopwatch.Elapsed;
+                    if (batch.TryAdd(eventData) && batch.Count == 1) {
+                        // Start of new batch
+                        currentBatchStartedAt = stopwatch.Elapsed;
+                    }
+
+                    if (batch.Count == 0) {
+                        continue;
+                    }
+
+                    if (batch.Count < _maximumBatchSize && (stopwatch.Elapsed - currentBatchStartedAt).TotalSeconds < _maximumBatchAge) {
+                        continue;
+                    }
+
+                    await PublishBatchAsync(client, batch, _logger, cancellationToken).ConfigureAwait(false);
+                    batch = await client.CreateBatchAsync(cancellationToken).ConfigureAwait(false);
                 }
-
-                if (batch.Count == 0) {
-                    continue;
-                }
-
-                if (batch.Count < _maximumBatchSize && (stopwatch.Elapsed - currentBatchStartedAt).TotalSeconds < _maximumBatchAge) {
-                    continue;
-                }
-
-                await PublishBatchAsync(client, batch, _logger, cancellationToken).ConfigureAwait(false);
-                batch = await client.CreateBatchAsync(cancellationToken).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) {

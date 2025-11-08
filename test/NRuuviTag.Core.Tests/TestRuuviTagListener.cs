@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -16,24 +17,23 @@ public sealed class TestRuuviTagListener : RuuviTagListener {
     /// <summary>
     /// Active subscription channels.
     /// </summary>
-    private readonly HashSet<Channel<RuuviTagSample>> _subscriptions = [];
-
+    private readonly ConcurrentDictionary<Guid, Channel<RuuviTagSample>> _subscriptions = [];
+    
 
     /// <inheritdoc/>
-    protected sealed override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
+    protected override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
         Func<string, bool>? filter, 
         [EnumeratorCancellation]
         CancellationToken cancellationToken
     ) {
+        var channelId = Guid.NewGuid();
         var channel = Channel.CreateUnbounded<RuuviTagSample>(new UnboundedChannelOptions() { 
             SingleReader = true,
-            SingleWriter = false
+            SingleWriter = true,
+            AllowSynchronousContinuations = true
         });
-
-        lock (_subscriptions) {
-            _subscriptions.Add(channel);
-        }
-
+        _subscriptions[channelId] = channel;
+        
         try {
             await foreach (var item in channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)) { 
                 if (item?.MacAddress == null) {
@@ -48,31 +48,53 @@ public sealed class TestRuuviTagListener : RuuviTagListener {
             }
         }
         finally {
-            lock (_subscriptions) {
-                _subscriptions.Remove(channel);
-            }
+            _subscriptions.TryRemove(channelId, out _);
             channel.Writer.TryComplete();
         }
     }
 
 
     /// <summary>
-    /// Publishes a sample to all active subscription channels.
+    /// Publishes samples to all active subscription channels.
     /// </summary>
-    /// <param name="sample">
-    ///   The sample.
+    /// <param name="samples">
+    ///   The samples.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="sample"/> is <see langword="null"/>.
+    ///   <paramref name="samples"/> is <see langword="null"/>.
     /// </exception>
-    public void Publish(RuuviTagSample sample) {
-        if (sample == null) {
-            throw new ArgumentNullException(nameof(sample));
+    public void Publish(params IReadOnlyList<RuuviTagSample> samples) {
+        ArgumentNullException.ThrowIfNull(samples);
+        if (samples.Count == 0) {
+            return;
         }
 
-        lock (_subscriptions) {
-            foreach (var channel in _subscriptions) {
+        foreach (var channel in _subscriptions.Values) {
+            foreach (var sample in samples) {
                 channel.Writer.TryWrite(sample);
+            }
+        }
+    }
+    
+    
+    /// <summary>
+    /// Publishes samples to all active subscription channels.
+    /// </summary>
+    /// <param name="samples">
+    ///   The samples.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="samples"/> is <see langword="null"/>.
+    /// </exception>
+    public async ValueTask PublishAsync(params IReadOnlyList<RuuviTagSample> samples) {
+        ArgumentNullException.ThrowIfNull(samples);
+        if (samples.Count == 0) {
+            return;
+        }
+
+        foreach (var channel in _subscriptions.Values) {
+            foreach (var sample in samples) {
+                await channel.Writer.WriteAsync(sample);
             }
         }
     }

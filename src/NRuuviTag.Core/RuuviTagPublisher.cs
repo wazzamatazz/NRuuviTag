@@ -1,11 +1,14 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
+
+using Nito.AsyncEx;
 
 namespace NRuuviTag;
 
@@ -31,20 +34,34 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     private readonly IRuuviTagListener _listener;
 
     /// <summary>
-    /// The publish interval to use, in seconds.
+    /// The publisher options.
     /// </summary>
-    private readonly int _publishInterval;
+    private readonly RuuviTagPublisherOptions _options;
 
     /// <summary>
-    /// A callback that receives the MAC address for a RuuviTag broadcast and returns a flag 
-    /// that indicates if the publisher should process the broadcast.
+    /// An optional filter function to select which devices to publish samples for.
     /// </summary>
-    private readonly Func<string, bool>? _filter;
+    private readonly Func<string, bool>? _deviceFilter;
 
     /// <summary>
     /// Indicates if a call to <see cref="RunAsync"/> is currently ongoing.
     /// </summary>
     private int _running;
+
+    /// <summary>
+    /// Signal that notifies when the publisher is running.
+    /// </summary>
+    private readonly AsyncManualResetEvent _runningSignal = new AsyncManualResetEvent();
+    
+    /// <summary>
+    /// Signal that notifies when the publisher should emit pending samples.
+    /// </summary>
+    private readonly AsyncAutoResetEvent _publishSignal = new AsyncAutoResetEvent();
+    
+    /// <summary>
+    /// Raised when a sample has been received.
+    /// </summary>
+    public Action<RuuviTagSample>? SampleReceived { get; set; }
 
 
     /// <summary>
@@ -53,13 +70,12 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     /// <param name="listener">
     ///   The <see cref="IRuuviTagListener"/> to observe.
     /// </param>
-    /// <param name="publishInterval">
-    ///   The publish interval to use, in seconds. A value of zero indicates that samples 
-    ///   should be published as soon as they are observed.
+    /// <param name="options">
+    ///   The publisher options.
     /// </param>
-    /// <param name="filter">
-    ///   A callback that receives the MAC address for a RuuviTag advertisement and returns a 
-    ///   flag that indicates if the publisher should process the advertisement.
+    /// <param name="deviceFilter">
+    ///   An optional filter function to select which devices to publish samples for based on the
+    ///   MAC address of the device.
     /// </param>
     /// <param name="logger">
     ///   The <see cref="ILogger"/> for the agent.
@@ -69,14 +85,44 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     /// </exception>
     protected RuuviTagPublisher(
         IRuuviTagListener listener, 
-        int publishInterval, 
-        Func<string, bool>? filter = null, 
+        RuuviTagPublisherOptions options,
+        Func<string, bool>? deviceFilter = null,
         ILogger<RuuviTagPublisher>? logger = null
     ) {
         _listener = listener ?? throw new ArgumentNullException(nameof(listener));
-        _publishInterval = publishInterval;
-        _filter = filter;
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _deviceFilter = deviceFilter;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RuuviTagPublisher>.Instance;
+    }
+    
+    
+    /// <summary>
+    /// Builds a filter delegate compatible with the <see cref="RuuviTagPublisher"/> constructor
+    /// that can restrict listening to broadcasts from only known devices.
+    /// </summary>
+    /// <param name="callback">
+    ///   A delegate that can be used to retrieve device information for a given MAC address.
+    /// </param>
+    /// <returns>
+    ///   The filter delegate.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="callback"/> is <see langword="null"/>.
+    /// </exception>
+    protected static Func<string, bool> CreateKnownDevicesFilterDelegate(Func<string, Device?> callback) {
+        ArgumentNullException.ThrowIfNull(callback);
+        return addr => callback.Invoke(addr) is not null;
+    }
+    
+    
+    /// <summary>
+    /// Waits until the publisher is running.
+    /// </summary>
+    /// <param name="cancellationToken">
+    ///  The cancellation token for the operation.
+    /// </param>
+    public async ValueTask WaitForRunningAsync(CancellationToken cancellationToken = default) {
+        await _runningSignal.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
 
@@ -100,10 +146,12 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
         }
 
         try {
+            _runningSignal.Set();
             await RunAsyncCore(cancellationToken).ConfigureAwait(false);
         }
         finally {
-            _running = 0;
+            _runningSignal.Reset();
+            Interlocked.Exchange(ref _running, 0);
         }
 
     }
@@ -122,19 +170,21 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     private async Task RunAsyncCore(CancellationToken cancellationToken) {
         var publishChannel = Channel.CreateUnbounded<RuuviTagSample>(new UnboundedChannelOptions() { 
             SingleReader = true,
-            SingleWriter = true
+            SingleWriter = true,
+            AllowSynchronousContinuations = false
         });
 
-        var useBackgroundPublish = _publishInterval > 0;
+        var publishInterval = _options.PublishInterval;
+        var useBackgroundPublish = publishInterval > TimeSpan.Zero;
 
         // Samples pending publish, indexed by MAC address.
         var pendingPublish = useBackgroundPublish
-            ? new Dictionary<string, RuuviTagSample>(StringComparer.OrdinalIgnoreCase)
+            ? new BackgroundPublishQueue(_options.PerDevicePublishBehaviour)
             : null;
 
         _ = Task.Run(async () => { 
             try {
-                await RunAsync(publishChannel.Reader.ReadAllAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
+                await RunAsync(publishChannel, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) { }
             catch (ChannelClosedException) { }
@@ -144,13 +194,25 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
         }, cancellationToken);
 
         if (useBackgroundPublish) {
-            // We're using a scheduled publish interval - start the background task that
-            // will perform this job.
+            // We're using a scheduled publishing interval - start the background task that
+            // will signal when a publish operation should occur.
             _ = Task.Run(async () => {
                 try {
                     while (!cancellationToken.IsCancellationRequested) {
-                        await Task.Delay(TimeSpan.FromSeconds(_publishInterval), cancellationToken).ConfigureAwait(false);
-                        await PublishPendingSamples(cancellationToken).ConfigureAwait(false);
+                        await Task.Delay(publishInterval, cancellationToken).ConfigureAwait(false);
+                        _publishSignal.Set();
+                    }
+                }
+                catch (OperationCanceledException) { }
+            }, cancellationToken);
+            
+            // Start the background publishing task. We use a separate task here instead of just
+            // publishing after the Task.Delay above to allow manual triggering of the publish signal.
+            _ = Task.Run(async () => {
+                try {
+                    while (!cancellationToken.IsCancellationRequested) {
+                        await _publishSignal.WaitAsync(cancellationToken).ConfigureAwait(false);
+                        await PublishPendingSamples(publishChannel, pendingPublish!, cancellationToken).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException) { }
@@ -159,21 +221,21 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
 
         try {
             // Start the listener
-            await foreach (var item in _listener.ListenAsync(_filter, cancellationToken).ConfigureAwait(false)) {
+            await foreach (var item in _listener.ListenAsync(_deviceFilter, cancellationToken).ConfigureAwait(false)) {
                 if (string.IsNullOrWhiteSpace(item.MacAddress)) {
                     continue;
                 }
 
                 if (useBackgroundPublish) {
                     // Add messages to pending publish list.
-                    lock (pendingPublish!) {
-                        pendingPublish[item.MacAddress] = item;
-                    }
+                    await pendingPublish!.EnqueueAsync(item, cancellationToken).ConfigureAwait(false);
                 }
                 else {
                     // Publish immediately.
                     await PublishAsync(publishChannel, item, cancellationToken).ConfigureAwait(false);
                 }
+
+                SampleReceived?.Invoke(item);
             }
         }
         catch (OperationCanceledException) {
@@ -185,38 +247,22 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
         finally {
             if (useBackgroundPublish) {
                 // Flush any pending values.
-                await PublishPendingSamples(default).ConfigureAwait(false);
+                await PublishPendingSamples(publishChannel, pendingPublish!, default).ConfigureAwait(false);
             }
         }
 
         return;
 
         // Publishes all pending samples and clears the pendingPublish dictionary.
-        async Task PublishPendingSamples(CancellationToken ct) {
+        async Task PublishPendingSamples(ChannelWriter<RuuviTagSample> channel, BackgroundPublishQueue pendingSamples, CancellationToken ct) {
             if (!useBackgroundPublish) {
                 return;
             }
-
-            RuuviTagSample[] samples;
-            var count = -1;
             
-            lock (pendingPublish!) {
-                if (pendingPublish.Count == 0) {
-                    return;
-                }
-                
-                samples = ArrayPool<RuuviTagSample>.Shared.Rent(pendingPublish.Count);
-                pendingPublish.Values.CopyTo(samples, 0);
-                count = pendingPublish.Count;
-                pendingPublish.Clear();
-            }
-
-            try {
-                await PublishAsync(publishChannel, new ArraySegment<RuuviTagSample>(samples, 0, count), ct).ConfigureAwait(false);
-            }
-            finally {
-                ArrayPool<RuuviTagSample>.Shared.Return(samples, clearArray: true);
-            }
+            await PublishAsync(
+                channel, 
+                await pendingSamples.DequeueAllAsync(ct).ConfigureAwait(false), 
+                ct).ConfigureAwait(false);
         }
     }
 
@@ -225,7 +271,7 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     /// Publishes the specified samples.
     /// </summary>
     /// <param name="samples">
-    ///   An <see cref="IAsyncEnumerable{T}"/> that will emit the observed samples.
+    ///   A <see cref="ChannelReader{T}"/> that will emit the observed samples.
     /// </param>
     /// <param name="cancellationToken">
     ///   The cancellation token for the operation.
@@ -234,7 +280,7 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     ///   A <see cref="Task"/> that will complete when <paramref name="samples"/> stops 
     ///   emitting new items.
     /// </returns>
-    protected abstract Task RunAsync(IAsyncEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken);
+    protected abstract Task RunAsync(ChannelReader<RuuviTagSample> samples, CancellationToken cancellationToken);
 
 
     /// <summary>
@@ -252,7 +298,11 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     /// <returns>
     ///   A <see cref="Task"/> that will perform the publish operation.
     /// </returns>
-    private static async ValueTask PublishAsync(ChannelWriter<RuuviTagSample> channel, IEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
+    private static async ValueTask PublishAsync(ChannelWriter<RuuviTagSample> channel, IReadOnlyList<RuuviTagSample> samples, CancellationToken cancellationToken) {
+        if (samples.Count == 0) {
+            return;
+        }
+        
         foreach (var sample in samples) {
             await channel.WriteAsync(sample, cancellationToken).ConfigureAwait(false);
         }
@@ -277,6 +327,16 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     private static async ValueTask PublishAsync(ChannelWriter<RuuviTagSample> channel, RuuviTagSample sample, CancellationToken cancellationToken) {
         await channel.WriteAsync(sample, cancellationToken).ConfigureAwait(false);
     }
+    
+    
+    /// <summary>
+    /// Flushes any pending samples to be published immediately.
+    /// </summary>
+    /// <remarks>
+    ///   This method has no effect if the publisher is not configured to use a scheduled 
+    ///   publishing interval.
+    /// </remarks>
+    public void Flush() => _publishSignal.Set();
 
 
     /// <inheritdoc/>
@@ -303,5 +363,109 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
 
     [LoggerMessage(1, LogLevel.Error, "Error during publish.")]
     partial void LogPublishError(Exception error);
+
+
+    /// <summary>
+    /// Holds pending samples to be published in the background.
+    /// </summary>
+    private class BackgroundPublishQueue {
+        
+        private readonly BatchPublishDeviceBehaviour _publishBehaviour;
+        
+        private long _count;
+        
+        private readonly AsyncLock _lock = new AsyncLock();
+
+        private readonly Dictionary<string, DeviceBackgroundPublishQueue> _queue = new Dictionary<string, DeviceBackgroundPublishQueue>(StringComparer.OrdinalIgnoreCase);
+        
+        public long Count => Interlocked.Read(ref _count);
+        
+        
+        public BackgroundPublishQueue(BatchPublishDeviceBehaviour publishBehaviour) {
+            _publishBehaviour = publishBehaviour;
+        }
+
+
+        public async ValueTask EnqueueAsync(RuuviTagSample sample, CancellationToken cancellationToken) {
+            if (string.IsNullOrEmpty(sample.MacAddress)) {
+                return;
+            }
+            
+            using var _ = await _lock.LockAsync(cancellationToken).ConfigureAwait(false);
+            
+            if (!_queue.TryGetValue(sample.MacAddress, out var queue)) {
+                queue = new DeviceBackgroundPublishQueue(_publishBehaviour);
+                _queue[sample.MacAddress] = queue;
+            }
+
+            queue.Enqueue(sample);
+            Interlocked.Increment(ref _count);
+        }
+        
+        
+        public async ValueTask<IReadOnlyList<RuuviTagSample>> DequeueAllAsync(CancellationToken cancellationToken) {
+            using var _ = await _lock.LockAsync(cancellationToken).ConfigureAwait(false);
+            
+            var allSamples = new List<IReadOnlyList<RuuviTagSample>>(_queue.Count);
+            
+            foreach (var queue in _queue.Values) {
+                var samples = queue.DequeueAll();
+                if (samples.Count > 0) {
+                    allSamples.Add(samples);
+                }
+            }
+
+            _queue.Clear();
+            Interlocked.Exchange(ref _count, 0);
+            
+            return allSamples.SelectMany(x => x).ToList();
+        }
+
+    }
+    
+
+    /// <summary>
+    /// Holds pending samples for a specific device to be published in the background.
+    /// </summary>
+    private class DeviceBackgroundPublishQueue {
+
+        private readonly BatchPublishDeviceBehaviour _publishBehaviour;
+        
+        private RuuviTagSample? _latestSample;
+        
+        private ImmutableArray<RuuviTagSample> _samples = [];
+
+
+        public DeviceBackgroundPublishQueue(BatchPublishDeviceBehaviour publishBehaviour) {
+            _publishBehaviour = publishBehaviour;
+        }
+        
+        
+        public void Enqueue(RuuviTagSample sample) {
+            if (_publishBehaviour == BatchPublishDeviceBehaviour.LatestSampleOnly) {
+                _latestSample = sample;
+                return;
+            }
+            _samples = _samples.Add(sample);
+        }
+        
+        
+        public IReadOnlyList<RuuviTagSample> DequeueAll() {
+            if (_publishBehaviour == BatchPublishDeviceBehaviour.LatestSampleOnly) {
+                if (_latestSample is null) {
+                    return [];
+                }
+                    
+                var sample = _latestSample;
+                _latestSample = null;
+                return [sample];
+            }
+                
+            var samples = _samples;
+            _samples = [];
+            return samples;
+        }
+
+    }
 
 }

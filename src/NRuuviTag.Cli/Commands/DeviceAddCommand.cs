@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Hosting;
@@ -38,7 +39,7 @@ public class DeviceAddCommand : AsyncCommand<DeviceAddCommandSettings> {
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, DeviceAddCommandSettings settings) {
+    public override async Task<int> ExecuteAsync(CommandContext context, DeviceAddCommandSettings settings, CancellationToken cancellationToken) {
         var device = new Device() { 
             MacAddress = settings.MacAddress,
             DisplayName = settings.DisplayName,
@@ -70,9 +71,9 @@ public class DeviceAddCommand : AsyncCommand<DeviceAddCommandSettings> {
         // Ensure directory exists.
         devicesJsonFile.Directory!.Create();
 
-        using (var stream = devicesJsonFile.Open(FileMode.Create, FileAccess.Write)) {
-            await JsonSerializer.SerializeAsync(stream, updatedDeviceConfig, new JsonSerializerOptions() { WriteIndented = true }).ConfigureAwait(false);
-            await stream.FlushAsync().ConfigureAwait(false);
+        await using (var stream = devicesJsonFile.Open(FileMode.Create, FileAccess.Write)) {
+            await JsonSerializer.SerializeAsync(stream, updatedDeviceConfig, new JsonSerializerOptions() { WriteIndented = true }, cancellationToken).ConfigureAwait(false);
+            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         Console.WriteLine();
