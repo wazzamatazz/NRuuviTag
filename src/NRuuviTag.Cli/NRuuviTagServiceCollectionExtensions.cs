@@ -40,10 +40,8 @@ public static class NRuuviTagServiceCollectionExtensions {
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="configuration"/> is <see langword="null"/>.
     /// </exception>
-    public static IServiceCollection AddRuuviTagCommandApp<TListener>(this IServiceCollection services, IConfiguration configuration) where TListener : class, IRuuviTagListener { 
-        if (services == null) {
-            throw new ArgumentNullException(nameof(services));
-        }
+    public static IServiceCollection AddRuuviTagCommandApp<TListener>(this IServiceCollection services, IConfiguration configuration) where TListener : class, IRuuviTagListener {
+        ArgumentNullException.ThrowIfNull(services);
 
         services.AddCoreRuuviTagServices(configuration);
         services.AddTransient<IRuuviTagListener, TListener>();
@@ -81,15 +79,9 @@ public static class NRuuviTagServiceCollectionExtensions {
     ///   <paramref name="factory"/> is <see langword="null"/>.
     /// </exception>
     public static IServiceCollection AddRuuviTagCommandApp<TListener>(this IServiceCollection services, IConfiguration configuration, Func<IServiceProvider, TListener> factory) where TListener : class, IRuuviTagListener {
-        if (services == null) {
-            throw new ArgumentNullException(nameof(services));
-        }
-        if (configuration == null) {
-            throw new ArgumentNullException(nameof(configuration));
-        }
-        if (factory == null) {
-            throw new ArgumentNullException(nameof(factory));
-        }
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(factory);
 
         services.AddCoreRuuviTagServices(configuration);
         services.AddTransient<IRuuviTagListener, TListener>(factory);

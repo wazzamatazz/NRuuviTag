@@ -22,9 +22,7 @@ public static class NRuuviTagConfigurationBuilderExtensions {
     ///   <paramref name="builder"/> is <see langword="null"/>.
     /// </exception>
     public static IConfigurationBuilder AddRuuviTagDeviceConfiguration(this IConfigurationBuilder builder) {
-        if (builder == null) {
-            throw new ArgumentNullException(nameof(builder));
-        }
+        ArgumentNullException.ThrowIfNull(builder);
 
         builder.AddJsonFile(CommandUtilities.GetDevicesJsonFile().FullName, optional: true, reloadOnChange: true);
 
