@@ -71,7 +71,7 @@ public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubComm
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, PublishAzureEventHubCommandSettings settings) {
+    public override async Task<int> ExecuteAsync(CommandContext context, PublishAzureEventHubCommandSettings settings, CancellationToken cancellationToken) {
         if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
             try { await Task.Delay(Timeout.InfiniteTimeSpan, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
             catch (OperationCanceledException) when (_appLifetime.ApplicationStarted.IsCancellationRequested) { }
@@ -84,7 +84,8 @@ public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubComm
         var publisherOptions = new AzureEventHubPublisherOptions() {
             ConnectionString = settings.ConnectionString!,
             EventHubName = settings.EventHubName!,
-            SampleRate = settings.SampleRate,
+            PublishInterval = TimeSpan.FromSeconds(settings.PublishInterval),
+            PerDevicePublishBehaviour = settings.PublishBehaviour,
             MaximumBatchSize = settings.MaximumBatchSize,
             MaximumBatchAge = settings.MaximumBatchAge,
             KnownDevicesOnly = settings.KnownDevicesOnly,
@@ -130,9 +131,14 @@ public class PublishAzureEventHubCommandSettings : CommandSettings {
     [Description("The Event Hub name.")]
     public string? EventHubName { get; set; }
 
-    [CommandOption("--sample-rate <INTERVAL>")]
-    [Description("Limits the RuuviTag sample rate to the specified number of seconds. Only the most-recent reading for each RuuviTag device will be included in the next Event Hub batch publish. If not specified, all observed samples will be send to the Event Hub.")]
-    public int SampleRate { get; set; }
+    [CommandOption("--publish-internal <INTERVAL>")]
+    [Description("Limits the RuuviTag sample rate to the specified number of seconds. When a publish interval is specified, the '--publish-behaviour' setting controls if all observed samples for a device are included in the next publish, or if only the most-recent reading for each device are included. If a publish inteval is not specified, samples will be published to the Event Hub server as soon as they are observed.")]
+    public int PublishInterval { get; set; }
+    
+    [CommandOption("--publish-behaviour <BEHAVIOUR>")]
+    [Description("The per-device publish behaviour to use when a non-zero publish interval is specified. Possible values are: " + nameof(BatchPublishDeviceBehaviour.AllSamples) + " (default), " + nameof(BatchPublishDeviceBehaviour.LatestSampleOnly))]
+    [DefaultValue(BatchPublishDeviceBehaviour.AllSamples)]
+    public BatchPublishDeviceBehaviour PublishBehaviour { get; set; }
 
     [CommandOption("--batch-size-limit <LIMIT>")]
     [DefaultValue(50)]

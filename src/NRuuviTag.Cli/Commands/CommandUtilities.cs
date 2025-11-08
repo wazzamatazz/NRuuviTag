@@ -47,11 +47,15 @@ internal static class CommandUtilities {
 
             branchOptions.AddCommand<PublishMqttCommand>("mqtt")
                 .WithDescription("Publishes RuuviTag samples to an MQTT broker.")
-                .WithExample(["publish", "mqtt", "test.mosquitto.org", "--client-id", "\"MY_CLIENT_ID\"", "--sample-rate", "5", "--known-devices"]);
+                .WithExample(["publish", "mqtt", "test.mosquitto.org", "--client-id", "\"MY_CLIENT_ID\"", "--publish-interval", "5", "--known-devices"]);
 
             branchOptions.AddCommand<PublishAzureEventHubCommand>("az")
                 .WithDescription("Publishes RuuviTag samples to an Azure Event Hub.")
                 .WithExample(["publish", "az", "\"MY_CONNECTION_STRING\"", "\"MY_HUB\"", "--batch-size-limit", "100"]);
+            
+            branchOptions.AddCommand<PublishHttpCommand>("http")
+                .WithDescription("Publishes RuuviTag samples to an HTTP endpoint.")
+                .WithExample(["publish", "http", "\"https://localhost:44321/telemetry\"", "--known-devices"]);
         });
 
         options.AddBranch("devices", branchOptions => {

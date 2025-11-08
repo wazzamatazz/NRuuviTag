@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Options;
@@ -35,7 +36,7 @@ public class DeviceRemoveCommand : AsyncCommand<DeviceRemoveCommandSettings> {
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, DeviceRemoveCommandSettings settings) {
+    public override async Task<int> ExecuteAsync(CommandContext context, DeviceRemoveCommandSettings settings, CancellationToken cancellationToken) {
         if (_devices == null || _devices.Count == 0) {
             // No devices defined
             Console.WriteLine(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_DeviceNotFound, settings.Device));
@@ -75,9 +76,9 @@ public class DeviceRemoveCommand : AsyncCommand<DeviceRemoveCommandSettings> {
         // Ensure directory exists.
         devicesJsonFile.Directory!.Create();
 
-        using (var stream = devicesJsonFile.Open(FileMode.Create, FileAccess.Write)) {
-            await JsonSerializer.SerializeAsync(stream, updatedDeviceConfig, new JsonSerializerOptions() { WriteIndented = true }).ConfigureAwait(false);
-            await stream.FlushAsync().ConfigureAwait(false);
+        await using (var stream = devicesJsonFile.Open(FileMode.Create, FileAccess.Write)) {
+            await JsonSerializer.SerializeAsync(stream, updatedDeviceConfig, new JsonSerializerOptions() { WriteIndented = true }, cancellationToken).ConfigureAwait(false);
+            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         Console.WriteLine();

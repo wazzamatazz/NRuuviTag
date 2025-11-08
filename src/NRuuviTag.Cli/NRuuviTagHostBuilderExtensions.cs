@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using NRuuviTag.Cli;
 
 using OpenTelemetry;
-using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 
@@ -40,14 +39,12 @@ public static class NRuuviTagHostBuilderExtensions {
     ///   <paramref name="args"/> is <see langword="null"/>.
     /// </exception>
     public static async Task<int> BuildHostAndRunNRuuviTagAsync(this IHostBuilder builder, IEnumerable<string> args) {
-        if (builder == null) {
-            throw new ArgumentNullException(nameof(builder));
-        }
-        if (args == null) {
-            throw new ArgumentNullException(nameof(args));
-        }
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(args);
 
         builder.ConfigureServices((context, services) => {
+            services.AddHttpClient<NRuuviTag.Http.HttpPublisher>().AddStandardResilienceHandler();
+            
             services.AddOpenTelemetry()
                 .ConfigureResource(resource => resource.AddService<DeviceCollection>())
                 .AddOtlpExporter(context.Configuration)
