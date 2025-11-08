@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
@@ -69,7 +70,7 @@ public partial class MqttPublisher : RuuviTagPublisher {
     ///   The <see cref="IRuuviTagListener"/> to observe for sensor readings.
     /// </param>
     /// <param name="options">
-    ///   Agent options.
+    ///   Publisher options.
     /// </param>
     /// <param name="factory">
     ///   The factory to use when creating MQTT clients.
@@ -87,7 +88,7 @@ public partial class MqttPublisher : RuuviTagPublisher {
     ///   <paramref name="options"/> fails validation.
     /// </exception>
     public MqttPublisher(IRuuviTagListener listener, MqttPublisherOptions options, MqttFactory factory, ILoggerFactory? loggerFactory = null)
-        : base(listener, options?.SampleRate ?? 0, BuildFilterDelegate(options!), loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
+        : base(listener, options, BuildFilterDelegate(options!), loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         Validator.ValidateObject(options, new ValidationContext(options), true);
 
@@ -210,11 +211,10 @@ public partial class MqttPublisher : RuuviTagPublisher {
         if (!options.KnownDevicesOnly) {
             return _ => true;
         }
-
-        var getDeviceInfo = options.GetDeviceInfo;
-        return getDeviceInfo == null
+        
+        return options.GetDeviceInfo is null
             ? _ => false
-            : addr => getDeviceInfo.Invoke(addr) != null;
+            : CreateKnownDevicesFilterDelegate(options.GetDeviceInfo);
     }
 
 
@@ -589,30 +589,32 @@ public partial class MqttPublisher : RuuviTagPublisher {
 
 
     /// <inheritdoc/>
-    protected override async Task RunAsync(IAsyncEnumerable<RuuviTagSample> samples, CancellationToken cancellationToken) {
+    protected override async Task RunAsync(ChannelReader<RuuviTagSample> samples, CancellationToken cancellationToken) {
         LogStartingMqttPublisher();
 
         await _mqttClient.StartAsync(_mqttClientOptions).ConfigureAwait(false);
         try {
-            await foreach (var item in samples.WithCancellation(cancellationToken).ConfigureAwait(false)) {
-                var deviceInfo = GetDeviceInfo(item);
-                if (_options.KnownDevicesOnly && string.Equals(deviceInfo.DeviceId, UnknownDeviceId, StringComparison.OrdinalIgnoreCase)) {
-                    // Unknown device.
-                    LogSkippingUnknownDeviceSample(item.MacAddress!);
-                    continue;
-                }
-
-                if (_logger.IsEnabled(LogLevel.Trace)) {
-                    LogDeviceSample(deviceInfo.DeviceId!, deviceInfo.DisplayName, JsonSerializer.Serialize(item));
-                }
-
-                try {
-                    foreach (var message in BuildMqttMessages(item, deviceInfo)) {
-                        await _mqttClient.EnqueueAsync(message).ConfigureAwait(false);
+            while (await samples.WaitToReadAsync(cancellationToken).ConfigureAwait(false)) {
+                while (samples.TryRead(out var item)) {
+                    var deviceInfo = GetDeviceInfo(item);
+                    if (_options.KnownDevicesOnly && string.Equals(deviceInfo.DeviceId, UnknownDeviceId, StringComparison.OrdinalIgnoreCase)) {
+                        // Unknown device.
+                        LogSkippingUnknownDeviceSample(item.MacAddress!);
+                        continue;
                     }
-                }
-                catch (Exception e) {
-                    LogMqttPublishError(e);
+
+                    if (_logger.IsEnabled(LogLevel.Trace)) {
+                        LogDeviceSample(deviceInfo.DeviceId!, deviceInfo.DisplayName, JsonSerializer.Serialize(item));
+                    }
+
+                    try {
+                        foreach (var message in BuildMqttMessages(item, deviceInfo)) {
+                            await _mqttClient.EnqueueAsync(message).ConfigureAwait(false);
+                        }
+                    }
+                    catch (Exception e) {
+                        LogMqttPublishError(e);
+                    }
                 }
             }
         }
