@@ -100,6 +100,37 @@ public async Task RunAzureEventHubPublisherAsync(
 ```
 
 
+# Publishing Samples to an HTTP Endpoint
+
+The [NRuuviTag.Http.Publisher](https://www.nuget.org/packages/NRuuviTag.Http.Publisher) NuGet package ([source](./src/NRuuviTag.Http.Publisher)) can be used to observe RuuviTag broadcasts and forward the samples to an HTTP endpoint:
+
+```csharp
+public async Task RunHttpPublisherAsync( 
+    IRuuviTagListener listener,
+    IHttpClientFactory httpClientFactory,
+    ILoggerFactory? loggerFactory = null,
+    CancellationToken cancellationToken = default
+) { 
+    var options = new HttpPublisherOptions() { 
+        Endpoint = "https://my-receiver.local",
+        Headers = new Dictionary<string, string>() { 
+            ["X-API-Key"] = "MY_API_KEY"
+        }
+    };
+    
+    await using var publisher = new HttpPublisher(
+        listener, 
+        options, 
+        httpClientFactory, 
+        loggerFactory?.CreateLogger<HttpPublisher>());
+    
+    await publisher.RunAsync(cancellationToken);
+}
+```
+
+In addition to specifying the endpoint URL and request headers, you can use the `HttpPublisherOptions` to control whether HTTP POST or PUT is used, and the maximum number of samples to send in a single request.
+
+
 # Command-Line Application
 
 `nruuvitag` is a command-line tool for [Windows](/src/NRuuviTag.Cli.Windows) and [Linux](/src/NRuuviTag.Cli.Linux) that can scan for nearby RuuviTags, and publish device readings to the console, or to an MQTT server or Azure Event Hub.
@@ -136,6 +167,12 @@ nruuvitag publish mqtt my-mqtt-service.local:1883 --client-id "MY_CLIENT_ID" --t
 # Publish readings from nearby devices to an Azure Event Hub in batches of up to 100 samples
 
 nruuvitag publish az "MY_CONNECTION_STRING" "MY_EVENT_HUB" --batch-size-limit 100
+```
+
+```
+# Publish readings from known devices to an HTTP endpoint
+
+nruuvitag publish http "https://my-receiver.local" --header "X-API-Key: MY_API_KEY" --known-devices
 ```
 
 

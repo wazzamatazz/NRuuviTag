@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -366,6 +365,9 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     partial void LogPublishError(Exception error);
 
 
+    /// <summary>
+    /// Holds pending samples to be published in the background.
+    /// </summary>
     private class BackgroundPublishQueue {
         
         private readonly BatchPublishDeviceBehaviour _publishBehaviour;
@@ -422,6 +424,9 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     }
     
 
+    /// <summary>
+    /// Holds pending samples for a specific device to be published in the background.
+    /// </summary>
     private class DeviceBackgroundPublishQueue {
 
         private readonly BatchPublishDeviceBehaviour _publishBehaviour;
