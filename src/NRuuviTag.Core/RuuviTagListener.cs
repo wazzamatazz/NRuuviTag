@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Nito.AsyncEx;
+
 namespace NRuuviTag;
 
 /// <summary>
@@ -20,6 +22,11 @@ public abstract class RuuviTagListener : IRuuviTagListener {
     ///   Used in metric tags.
     /// </remarks>
     private readonly string _listenerType;
+    
+    /// <summary>
+    /// Indicates whether the listener is actively listening.
+    /// </summary>
+    private readonly AsyncManualResetEvent _listeningSignal = new AsyncManualResetEvent();
 
     /// <summary>
     /// The counter for the number of observed samples.
@@ -38,6 +45,17 @@ public abstract class RuuviTagListener : IRuuviTagListener {
     }
 
 
+    /// <summary>
+    /// Waits until the listener has started listening for advertisements.
+    /// </summary>
+    /// <param name="cancellationToken">
+    ///   The cancellation token for the operation.
+    /// </param>
+    public async ValueTask WaitForListenStartedAsync(CancellationToken cancellationToken = default) {
+        await _listeningSignal.WaitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+
     /// <inheritdoc/>
     IAsyncEnumerable<RuuviTagSample> IRuuviTagListener.ListenAsync(CancellationToken cancellationToken) {
         return ((IRuuviTagListener) this).ListenAsync(null, cancellationToken);
@@ -46,19 +64,30 @@ public abstract class RuuviTagListener : IRuuviTagListener {
 
     /// <inheritdoc/>
     async IAsyncEnumerable<RuuviTagSample> IRuuviTagListener.ListenAsync(Func<string, bool>? filter, [EnumeratorCancellation] CancellationToken cancellationToken) {
-        await foreach (var item in ListenAsync(filter, cancellationToken).ConfigureAwait(false)) {
-            var instanceTagList = new TagList() {
-                { "listener.type", _listenerType },
-                { "hw.id", item.MacAddress },
-                { "hw.type", "ruuvitag" }
-            };
+        _listeningSignal.Set();
 
-            if (item is RuuviTagSampleExtended extended && !string.IsNullOrWhiteSpace(extended.DeviceId)) {
-                instanceTagList.Add("hw.name", extended.DeviceId);
+        try {
+            await foreach (var item in ListenAsync(filter, cancellationToken).ConfigureAwait(false)) {
+                var instanceTagList = new TagList() {
+                    {
+                        "listener.type", _listenerType
+                    }, {
+                        "hw.id", item.MacAddress
+                    }, {
+                        "hw.type", "ruuvitag"
+                    }
+                };
+
+                if (item is RuuviTagSampleExtended extended && !string.IsNullOrWhiteSpace(extended.DeviceId)) {
+                    instanceTagList.Add("hw.name", extended.DeviceId);
+                }
+
+                s_observedSamplesCounter.Add(1, instanceTagList);
+                yield return item;
             }
-
-            s_observedSamplesCounter.Add(1, instanceTagList);
-            yield return item;
+        }
+        finally {
+            _listeningSignal.Reset();
         }
     }
 
