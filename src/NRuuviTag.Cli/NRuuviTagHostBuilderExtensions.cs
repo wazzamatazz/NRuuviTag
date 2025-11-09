@@ -43,8 +43,6 @@ public static class NRuuviTagHostBuilderExtensions {
         ArgumentNullException.ThrowIfNull(args);
 
         builder.ConfigureServices((context, services) => {
-            services.AddHttpClient<NRuuviTag.Http.HttpPublisher>().AddStandardResilienceHandler();
-            
             services.AddOpenTelemetry()
                 .ConfigureResource(resource => resource.AddService<DeviceCollection>())
                 .AddOtlpExporter(context.Configuration)

@@ -44,7 +44,7 @@ public static class NRuuviTagServiceCollectionExtensions {
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddCoreRuuviTagServices(configuration);
-        services.AddTransient<IRuuviTagListener, TListener>();
+        services.AddScoped<IRuuviTagListener, TListener>();
 
         return services;
     }
@@ -84,7 +84,7 @@ public static class NRuuviTagServiceCollectionExtensions {
         ArgumentNullException.ThrowIfNull(factory);
 
         services.AddCoreRuuviTagServices(configuration);
-        services.AddTransient<IRuuviTagListener, TListener>(factory);
+        services.AddScoped<IRuuviTagListener, TListener>(factory);
 
         return services;
     }
@@ -106,6 +106,7 @@ public static class NRuuviTagServiceCollectionExtensions {
         services.Configure<DeviceCollection>(configuration.GetSection("Devices"));
 
         services.AddTransient<MqttFactory>();
+        services.AddHttpClient<NRuuviTag.Http.HttpPublisher>().AddStandardResilienceHandler();
 
         services.AddSpectreCommandApp(CommandUtilities.ConfigureCommandApp);
 
