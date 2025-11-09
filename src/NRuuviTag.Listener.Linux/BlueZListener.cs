@@ -75,6 +75,13 @@ public partial class BlueZListener : RuuviTagListener {
         // Registrations for devices that we are observing.
         var watchers = new Dictionary<string, IDisposable>(StringComparer.OrdinalIgnoreCase);
 
+        // Set BlueZ discovery filter to receive LE advertisements and to allow duplicates.
+        await adapter.SetDiscoveryFilterAsync(
+            new Dictionary<string, object>() {
+                ["Transport"] = "le",
+                ["DuplicateData"] = true
+            }).ConfigureAwait(false);
+        
         // Handler for when BlueZ detects a new device.
         adapter.DeviceFound += async (_, args) => {
             var disposeDevice = false;
