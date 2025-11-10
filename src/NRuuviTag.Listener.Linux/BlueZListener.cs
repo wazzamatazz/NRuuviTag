@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -226,6 +227,14 @@ public partial class BlueZListener : RuuviTagListener {
 
                 var timestamp = DateTimeOffset.Now;
 
+                if (_logger.IsEnabled(LogLevel.Trace)) {
+                    var sb = new StringBuilder("0x");
+                    foreach (var b in payload) {
+                        sb.Append(b.ToString("X2", CultureInfo.InvariantCulture));
+                    }
+                    LogRawDeviceData(properties.Address, timestamp, sb.ToString());
+                }
+                
                 if (!RuuviTagUtilities.TryParsePayload(payload, out var sample)) {
                     return;
                 }
@@ -259,5 +268,8 @@ public partial class BlueZListener : RuuviTagListener {
 
     [LoggerMessage(5, LogLevel.Trace, "Emitted sample for device {address} @ {timestamp}.")]
     partial void LogSampleEmitted(string address, DateTimeOffset timestamp);
+    
+    [LoggerMessage(6, LogLevel.Trace, "Raw device data from {address} @ {timestamp}: {byteString}.", SkipEnabledCheck = true)]
+    partial void LogRawDeviceData(string address, DateTimeOffset timestamp, string byteString);
 
 }
