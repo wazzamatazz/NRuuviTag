@@ -59,21 +59,9 @@ public class DeviceScanCommand : AsyncCommand<DeviceScanCommandSettings> {
 
         Dictionary<string, Device>? devices;
 
-        // Updates the set of known devices when _devices reports that the options have been
-        // updated.
-        void UpdateDevices(DeviceCollection? devicesFromConfig) {
-            lock (this) {
-                devices = devicesFromConfig?.ToDictionary(x => x.Value.MacAddress, x => new Device() {
-                    DeviceId = x.Key,
-                    MacAddress = x.Value.MacAddress,
-                    DisplayName = x.Value.DisplayName
-                });
-            }
-        }
-
         UpdateDevices(_devices.CurrentValue);
 
-        using (_devices.OnChange(newDevices => UpdateDevices(newDevices)))
+        using (_devices.OnChange(UpdateDevices))
         using (var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping)) {
             try {
                 var detectedMacAddresses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -104,6 +92,18 @@ public class DeviceScanCommand : AsyncCommand<DeviceScanCommandSettings> {
 
         Console.WriteLine();
         return 0;
+
+        // Updates the set of known devices when _devices reports that the options have been
+        // updated.
+        void UpdateDevices(DeviceCollection? devicesFromConfig) {
+            lock (this) {
+                devices = devicesFromConfig?.ToDictionary(x => x.Value.MacAddress, x => new Device() {
+                    DeviceId = x.Key,
+                    MacAddress = x.Value.MacAddress,
+                    DisplayName = x.Value.DisplayName
+                });
+            }
+        }
     }
 
 }
