@@ -2,11 +2,11 @@
 
 A collection of .NET libraries to simplify interacting with RuuviTag IoT sensors from [Ruuvi](https://www.ruuvi.com/).
 
-The repository contains a [core library](/src/NRuuviTag.Core) that defines common types, and listener implementations that observe the Bluetooth LE advertisements emitted by RuuviTag devices. Samples received from RuuviTags can be automatically published to an [MQTT server](#publishing-samples-to-mqtt) or to an [Azure Event Hub](#publishing-samples-to-azure-event-hubs).
+The repository contains a [core library](/src/NRuuviTag.Core) that defines common types, and listener implementations that observe the Bluetooth LE advertisements emitted by RuuviTag devices. Samples received from RuuviTags can be automatically published to an [MQTT server](#publishing-samples-to-mqtt), to an [Azure Event Hub](#publishing-samples-to-azure-event-hubs), or to an [HTTP endpoint](#publishing-samples-to-an-http-endpoint).
 
 The repository contains the following listener implementations:
 
-- [Windows](/src/NRuuviTag.Listener.Windows) (using the Windows 10 SDK)
+- [Windows](/src/NRuuviTag.Listener.Windows) (using the Windows SDK)
 - [Linux](/src/NRuuviTag.Listener.Linux) (using [Linux.Bluetooth](https://www.nuget.org/packages/Linux.Bluetooth/) to receive advertisements from BlueZ's D-Bus APIs)
 
 The `nruuvitag` [command-line tool](#command-line-application) can be used to as a turnkey solution to start receiving and publishing RuuviTag sensor data to an MQTT server or Azure Event Hub.
@@ -19,7 +19,7 @@ The `nruuvitag` [command-line tool](#command-line-application) can be used to as
 Usage is very straightforward. For example, to listen via the Windows SDK using the [NRuuviTag.Listener.Windows](https://www.nuget.org/packages/NRuuviTag.Listener.Windows) NuGet package ([source](/src/NRuuviTag.Listener.Windows)):
 
 ```csharp
-IRuuviTagListener client = new WindowsSdkListener();
+IRuuviTagListener client = new WindowsSdkListener(new WindowsSdkListenerOptions());
 
 await foreach (var sample in client.ListenAsync(cancellationToken)) {
     // sample is a RuuviTagSample object.
@@ -29,21 +29,11 @@ await foreach (var sample in client.ListenAsync(cancellationToken)) {
 To listen via BlueZ on Linux using the [NRuuviTag.Listener.Linux](https://www.nuget.org/packages/NRuuviTag.Listener.Linux) NuGet package ([source](/src/NRuuviTag.Listener.Linux)):
 
 ```csharp
-IRuuviTagListener client = new BlueZListener("hci0");
+IRuuviTagListener client = new BlueZListener(new BlueZListenerOptions() {
+    AdapterName = "hci0" // Optional, defaults to "hci0"
+});
 
 await foreach (var sample in client.ListenAsync(cancellationToken)) {
-    // sample is a RuuviTagSample object.
-}
-```
-
-To only observe specific RuuviTag devices using MAC address filtering:
-
-```csharp
-bool CanProcessMessage(string macAddress) {
-    return string.Equals(macAddress, "AB:CD:EF:01:23:45");
-}
-
-await foreach (var sample in client.ListenAsync(CanProcessMessage, cancellationToken)) {
     // sample is a RuuviTagSample object.
 }
 ```
@@ -170,9 +160,9 @@ nruuvitag publish az "MY_CONNECTION_STRING" "MY_EVENT_HUB" --batch-size-limit 10
 ```
 
 ```
-# Publish readings from known devices to an HTTP endpoint
+# Publish readings from known devices to an HTTP endpoint, including devices using the fallback data format 6
 
-nruuvitag publish http "https://my-receiver.local" --header "X-API-Key: MY_API_KEY" --known-devices
+nruuvitag publish http "https://my-receiver.local" --header "X-API-Key: MY_API_KEY" --known-devices --enable-data-format-6
 ```
 
 
