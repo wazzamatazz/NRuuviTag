@@ -130,8 +130,7 @@ public static partial class RuuviTagUtilities {
         }
 
         var delta = Math.Log(65_535 + 1) / 254;
-        var code = Math.Round(Math.Log(raw + 1) / delta);
-        return Math.Exp(code * delta) - 1;
+        return Math.Round(Math.Exp(raw * delta) - 1, 2);
     }
 
 
@@ -197,15 +196,11 @@ public static partial class RuuviTagUtilities {
 
 
     private static string? Get24BitMacAddressFromRawBytes(Span<byte> buffer, int offset) {
-        ReadOnlySpan<byte> outOfRange = [0xFF, 0xFF, 0xFF];
-
         // MAC address is always Big-endian, so no need to reverse the byte order if this is a
         // Little-endian system.
         var raw = GetRawInstrumentBytes(buffer, 3, offset, reverseIfLittleEndian: false);
         
-        return raw.SequenceEqual(outOfRange)
-            ? null
-            : ConvertMacAddressBytesToString(raw, 0);
+        return ConvertMacAddressBytesToString(raw, 0);
     }
     
 

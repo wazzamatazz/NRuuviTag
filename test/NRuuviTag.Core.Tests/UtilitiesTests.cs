@@ -26,7 +26,7 @@ public class UtilitiesTests {
     private const string DataFormat6Valid = "06170C5668C79E007000C90501D9FFCD004C884F";
 
     // See https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-6#case-maximum-values
-    private const string DataFormat6ValidMaximum = "067FFF9C40FFFE27109C40FAFAFEFFFF074C8F4F";
+    private const string DataFormat6ValidMaximum = "067FFF9C40FFFE27109C40FAFAFEFFFF074C884F";
     
     // See https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-6#case-minimum-values
     private const string DataFormat6ValidMinimum = "0680010000000000000000000000FF00004C884F";
@@ -116,27 +116,28 @@ public class UtilitiesTests {
             CO2 = 40000,
             VOC = 500,
             NOX = 500,
-            Calibrated = true,
+            Calibrated = false,
             Luminosity = 65535,
             MeasurementSequence = 255,
             MacAddress = "4C:88:4F"
         },
         [DataFormat6ValidMinimum] = new RuuviDataPayload {
             DataFormat = 6,
-            Temperature = 0163.835,
+            Temperature = -163.835,
             Pressure = 500,
             Humidity = 0,
             PM25 = 0,
             CO2 = 0,
             VOC = 0,
             NOX = 0,
-            Calibrated = false,
+            Calibrated = true,
             Luminosity = 0,
             MeasurementSequence = 0,
             MacAddress = "4C:88:4F"
         },
         [DataFormat6Invalid] = new RuuviDataPayload {
             DataFormat = 6,
+            Calibrated = false,
             MeasurementSequence = 255,
             MacAddress = "FF:FF:FF"
         },
