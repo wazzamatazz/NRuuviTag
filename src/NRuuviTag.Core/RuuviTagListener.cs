@@ -37,6 +37,11 @@ public abstract partial class RuuviTagListener : IRuuviTagListener {
     ///   Used in metric tags.
     /// </remarks>
     private readonly string _listenerType;
+    
+    /// <summary>
+    /// The device lookup service.
+    /// </summary>
+    private readonly IDeviceResolver _deviceResolver;
 
     /// <summary>
     /// The time provider to use for timestamps.
@@ -60,21 +65,6 @@ public abstract partial class RuuviTagListener : IRuuviTagListener {
         "listener.observed_samples",
         unit: "{samples}",
         description: "The number of observed samples from RuuviTag devices.");
-    
-    /// <summary>
-    /// The device lookup service.
-    /// </summary>
-    protected IDeviceResolver DeviceResolver { get; }
-    
-    /// <summary>
-    /// Specifies whether only samples from known devices should be processed.
-    /// </summary>
-    protected bool KnownDevicesOnly => _options.KnownDevicesOnly;
-    
-    /// <summary>
-    /// Specifies whether Data Format 6 advertisements should be ignored.
-    /// </summary>
-    protected bool EnableDataFormat6 => _options.EnableDataFormat6;
 
 
     /// <summary>
@@ -94,7 +84,7 @@ public abstract partial class RuuviTagListener : IRuuviTagListener {
     /// </param>
     protected RuuviTagListener(RuuviTagListenerOptions options, IDeviceResolver? deviceResolver = null, TimeProvider? timeProvider = null, ILogger<RuuviTagListener>? logger = null) {
         _options = options ?? throw new ArgumentNullException(nameof(options));
-        DeviceResolver = deviceResolver ?? new NullDeviceResolver();
+        _deviceResolver = deviceResolver ?? new NullDeviceResolver();
         _timeProvider = timeProvider ?? TimeProvider.System;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RuuviTagListener>.Instance;
         _listenerType = GetType().FullName!;
@@ -175,13 +165,13 @@ public abstract partial class RuuviTagListener : IRuuviTagListener {
             return;
         }
         
-        if (!EnableDataFormat6 && data[0] == Constants.DataFormat6) {
+        if (!_options.EnableDataFormat6 && data[0] == Constants.DataFormat6) {
             // Ignore data format 6 unless we're explicitly interested.
             return;
         }
 
-        var device = DeviceResolver.GetDeviceInformation(macAddress);
-        if (KnownDevicesOnly && device is null) {
+        var device = _deviceResolver.GetDeviceInformation(macAddress);
+        if (_options.KnownDevicesOnly && device is null) {
             // We're only interested in known devices, and this one is unknown.
             return;
         }
