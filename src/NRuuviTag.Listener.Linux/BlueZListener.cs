@@ -28,6 +28,11 @@ public partial class BlueZListener : RuuviTagListener {
     /// The Bluetooth adapter to monitor.
     /// </summary>
     private readonly string _adapterName;
+    
+    /// <summary>
+    /// The time provider.
+    /// </summary>
+    private readonly TimeProvider _timeProvider;
 
     /// <summary>
     /// The logger for the listener.
@@ -38,27 +43,29 @@ public partial class BlueZListener : RuuviTagListener {
     /// <summary>
     /// Creates a new <see cref="BlueZListener"/> object.
     /// </summary>
-    /// <param name="adapterName">
-    ///   The Bluetooth adapter to monitor.
+    /// <param name="options">
+    ///   The options for the listener.
+    /// </param>
+    /// <param name="deviceLookup">
+    ///   The device lookup service.
+    /// </param>
+    /// <param name="timeProvider">
+    ///   The time provider.
     /// </param>
     /// <param name="logger">
     ///   The logger for the listener.
     /// </param>
-    /// <exception cref="ArgumentException">
-    ///   <paramref name="adapterName"/> is <see langword="null"/> of white space.
-    /// </exception>
-    public BlueZListener(string adapterName = DefaultBluetoothAdapter, ILogger<BlueZListener>? logger = null) {
-        if (string.IsNullOrWhiteSpace(adapterName)) {
-            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, Resources.Error_AdapterNameIsRequired, DefaultBluetoothAdapter), nameof(adapterName));
-        }
-        _adapterName = adapterName;
+    public BlueZListener(BlueZListenerOptions options, IDeviceResolver? deviceLookup = null, TimeProvider? timeProvider = null, ILogger<BlueZListener>? logger = null) : base(options, deviceLookup) {
+        _adapterName = string.IsNullOrWhiteSpace(options?.AdapterName) 
+            ? DefaultBluetoothAdapter 
+            : options.AdapterName;
+        _timeProvider = timeProvider ?? TimeProvider.System;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<BlueZListener>.Instance;
     }
 
 
     /// <inheritdoc/>
     protected override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
-        Func<string, bool>? filter, 
         [EnumeratorCancellation]
         CancellationToken cancellationToken
     ) {
@@ -67,11 +74,9 @@ public partial class BlueZListener : RuuviTagListener {
             SingleWriter = false
         });
 
-        var running = true;
-
         // Get the adapter from BlueZ.
         using var adapter = await BlueZManager.GetAdapterAsync(_adapterName).ConfigureAwait(false);
-        using var @lock = new SemaphoreSlim(1, 1);
+        var @lock = new Nito.AsyncEx.AsyncLock();
             
         // Registrations for devices that we are observing.
         var watchers = new Dictionary<string, IDisposable>(StringComparer.OrdinalIgnoreCase);
@@ -88,7 +93,7 @@ public partial class BlueZListener : RuuviTagListener {
             var disposeDevice = false;
 
             try {
-                if (!running || cancellationToken.IsCancellationRequested) {
+                if (cancellationToken.IsCancellationRequested) {
                     disposeDevice = true;
                     return;
                 }
@@ -106,17 +111,18 @@ public partial class BlueZListener : RuuviTagListener {
                     return;
                 }
 
-                if (filter != null && !filter.Invoke(props.Address)) {
+                var device = DeviceResolver.GetDeviceInformation(props.Address);
+                if (device is null && KnownDevicesOnly) {
                     // We are not interested in this RuuviTag.
                     disposeDevice = true;
-                    LogDeviceIgnored(props.Address, "failed filter check");
+                    LogDeviceIgnored(props.Address, "device is not known and only known devices are allowed");
                     return;
                 }
 
                 LogDeviceFound(props.Address);
                     
                 // Watch for changes to this device.
-                if (!await AddDeviceWatcher(args.Device, props).ConfigureAwait(false)) {
+                if (!await AddDeviceWatcher(args.Device, props, @lock).ConfigureAwait(false)) {
                     disposeDevice = true;
                 }
             }
@@ -139,54 +145,44 @@ public partial class BlueZListener : RuuviTagListener {
         finally {
             // Stop scanning.
             await adapter.StopDiscoveryAsync().ConfigureAwait(false);
-            running = false;
             channel.Writer.TryComplete();
 
             // Dispose of the watcher registrations.
-            await @lock.WaitAsync(CancellationToken.None).ConfigureAwait(false);
-            try {
-                foreach (var item in watchers.Values) {
-                    item.Dispose();
-                }
-                watchers.Clear();
+            using var _ = await @lock.LockAsync(default).ConfigureAwait(false);
+            foreach (var item in watchers.Values) {
+                item.Dispose();
             }
-            finally {
-                @lock.Release();
-            }
+            watchers.Clear();
         }
 
         yield break;
 
         // Adds a watcher for the specified device so that we can emit new samples when the
         // device properties change.
-        async Task<bool> AddDeviceWatcher(global::Linux.Bluetooth.Device device, Device1Properties properties) {
-            if (!running || cancellationToken.IsCancellationRequested) {
+        async Task<bool> AddDeviceWatcher(global::Linux.Bluetooth.Device device, Device1Properties properties, Nito.AsyncEx.AsyncLock deviceLock) {
+            if (cancellationToken.IsCancellationRequested) {
                 return false;
             }
 
-            await @lock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try {
-                if (watchers.ContainsKey(properties.Address)) {
-                    return false;
-                }
-
-                // Emit initial scan result.
-                EmitDeviceProperties(properties);
-
-                watchers[properties.Address] = await device.WatchPropertiesAsync(changes => {
-                    UpdateDeviceProperties(properties, changes);
-                }).ConfigureAwait(false);
-
-                return true;
+            using var _ = await @deviceLock.LockAsync(cancellationToken).ConfigureAwait(false);
+            
+            if (watchers.ContainsKey(properties.Address)) {
+                return false;
             }
-            finally {
-                @lock.Release();
-            }
+
+            // Emit initial scan result.
+            EmitDeviceProperties(properties);
+
+            watchers[properties.Address] = await device.WatchPropertiesAsync(changes => {
+                UpdateDeviceProperties(properties, changes);
+            }).ConfigureAwait(false);
+
+            return true;
         }
 
             
         void UpdateDeviceProperties(Device1Properties properties, Tmds.DBus.PropertyChanges changes) {
-            if (!running || cancellationToken.IsCancellationRequested) {
+            if (cancellationToken.IsCancellationRequested) {
                 return;
             }
 
@@ -216,7 +212,7 @@ public partial class BlueZListener : RuuviTagListener {
         }
 
         void EmitDeviceProperties(Device1Properties properties) {
-            if (!running || cancellationToken.IsCancellationRequested) {
+            if (cancellationToken.IsCancellationRequested) {
                 return;
             }
 
@@ -225,7 +221,13 @@ public partial class BlueZListener : RuuviTagListener {
                     throw new InvalidOperationException("Device properties did not contain manufacturer data.");
                 }
 
-                var timestamp = DateTimeOffset.Now;
+                var timestamp = _timeProvider.GetUtcNow();
+                
+                var device = DeviceResolver.GetDeviceInformation(properties.Address);
+                if (device is null && KnownDevicesOnly) {
+                    // We are no longer interested in this device - it has probably been removed
+                    // from the list of known devices since we started scanning.
+                }
 
                 if (_logger.IsEnabled(LogLevel.Trace)) {
                     var sb = new StringBuilder("0x");
@@ -234,12 +236,28 @@ public partial class BlueZListener : RuuviTagListener {
                     }
                     LogRawDeviceData(properties.Address, timestamp, sb.ToString());
                 }
+
+                if (!EnableDataFormat6 && payload.Length > 0 && payload[0] == Constants.DataFormat6) {
+                    // Ignore data format 6 if configured to do so.
+                    return;
+                }
                 
                 if (!RuuviTagUtilities.TryParsePayload(payload, out var sample)) {
                     return;
                 }
-                    
-                if (channel!.Writer.TryWrite(new RuuviTagSample(timestamp, properties.RSSI, sample))) {
+                
+                // Create the full sample from the parsed payload.
+                var fullSample = new RuuviTagSample(device?.DeviceId, timestamp, properties.RSSI, sample) {
+                    MacAddress = sample.DataFormat switch {
+                        // If the payload uses data format 6 then the MAC address in the payload will
+                        // only contain the lower 3 bytes of the address. We will replace this with
+                        // the full MAC address from the advertisement.
+                        Constants.DataFormat6 => properties.Address,
+                        _ => sample.MacAddress
+                    }
+                };
+                
+                if (channel.Writer.TryWrite(fullSample)) {
                     LogSampleEmitted(properties.Address, timestamp);
                 }
             }

@@ -16,6 +16,11 @@ namespace NRuuviTag;
 public abstract class RuuviTagListener : IRuuviTagListener {
 
     /// <summary>
+    /// Listener options.
+    /// </summary>
+    private readonly RuuviTagListenerOptions _options;
+    
+    /// <summary>
     /// The type of the listener.
     /// </summary>
     /// <remarks>
@@ -35,12 +40,35 @@ public abstract class RuuviTagListener : IRuuviTagListener {
         "listener.observed_samples",
         unit: "{samples}",
         description: "The number of observed samples from RuuviTag devices.");
+    
+    /// <summary>
+    /// The device lookup service.
+    /// </summary>
+    protected IDeviceResolver DeviceResolver { get; }
+    
+    /// <summary>
+    /// Specifies whether only samples from known devices should be processed.
+    /// </summary>
+    protected bool KnownDevicesOnly => _options.KnownDevicesOnly;
+    
+    /// <summary>
+    /// Specifies whether Data Format 6 advertisements should be ignored.
+    /// </summary>
+    protected bool EnableDataFormat6 => _options.EnableDataFormat6;
 
 
     /// <summary>
     /// Creates a new <see cref="RuuviTagListener"/> instance.
     /// </summary>
-    protected RuuviTagListener() {
+    /// <param name="options">
+    ///   The listener options.
+    /// </param>
+    /// <param name="deviceResolver">
+    ///   The device lookup service.
+    /// </param>
+    protected RuuviTagListener(RuuviTagListenerOptions options, IDeviceResolver? deviceResolver = null) {
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        DeviceResolver = deviceResolver ?? new NullDeviceResolver();
         _listenerType = GetType().FullName!;
     }
 
@@ -57,31 +85,32 @@ public abstract class RuuviTagListener : IRuuviTagListener {
 
 
     /// <inheritdoc/>
-    IAsyncEnumerable<RuuviTagSample> IRuuviTagListener.ListenAsync(CancellationToken cancellationToken) {
-        return ((IRuuviTagListener) this).ListenAsync(null, cancellationToken);
-    }
-
-
-    /// <inheritdoc/>
-    async IAsyncEnumerable<RuuviTagSample> IRuuviTagListener.ListenAsync(Func<string, bool>? filter, [EnumeratorCancellation] CancellationToken cancellationToken) {
+    async IAsyncEnumerable<RuuviTagSample> IRuuviTagListener.ListenAsync([EnumeratorCancellation] CancellationToken cancellationToken) {
         _listeningSignal.Set();
 
         try {
-            await foreach (var item in ListenAsync(filter, cancellationToken).ConfigureAwait(false)) {
+            await foreach (var item in ListenAsync(cancellationToken).ConfigureAwait(false)) {
+                if (item is null) {
+                    continue;
+                }
+
+                // Ignore data format 6 if configured to do so.
+                if (!EnableDataFormat6 && item is { DataFormat: Constants.DataFormat6 }) {
+                    continue;
+                }
+                
                 var instanceTagList = new TagList() {
                     {
                         "listener.type", _listenerType
-                    }, {
+                    }, 
+                    {
                         "hw.id", item.MacAddress
-                    }, {
+                    }, 
+                    {
                         "hw.type", "ruuvitag"
                     }
                 };
-
-                if (item is RuuviTagSampleExtended extended && !string.IsNullOrWhiteSpace(extended.DeviceId)) {
-                    instanceTagList.Add("hw.name", extended.DeviceId);
-                }
-
+                
                 s_observedSamplesCounter.Add(1, instanceTagList);
                 yield return item;
             }
@@ -95,17 +124,17 @@ public abstract class RuuviTagListener : IRuuviTagListener {
     /// <summary>
     /// Listens for advertisements broadcast by Ruuvi devices until cancelled.
     /// </summary>
-    /// <param name="filter">
-    ///   An optional callback that can be used to limit the listener to specific Ruuvi MAC 
-    ///   addresses. The parameter passed to the callback is the MAC address of the Ruuvi 
-    ///   device that a broadcast was received from.
-    /// </param>
     /// <param name="cancellationToken">
     ///   A cancellation token that can be cancelled when the listener should stop.
     /// </param>
     /// <returns>
     ///   An <see cref="IAsyncEnumerable{T}"/> that will emit the received samples as they occur.
     /// </returns>
-    protected abstract IAsyncEnumerable<RuuviTagSample> ListenAsync(Func<string, bool>? filter, CancellationToken cancellationToken);
+    /// <remarks>
+    ///   Implementers should use <see cref="DeviceResolver"/> to retrieve device information for an
+    ///   advertisement. Unknown devices should be skipped if <see cref="KnownDevicesOnly"/> is
+    ///   <see langword="true"/>.
+    /// </remarks>
+    protected abstract IAsyncEnumerable<RuuviTagSample> ListenAsync(CancellationToken cancellationToken);
 
 }
