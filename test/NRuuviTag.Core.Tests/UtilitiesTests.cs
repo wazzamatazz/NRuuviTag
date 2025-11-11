@@ -21,7 +21,19 @@ public class UtilitiesTests {
 
     // See https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-5-rawv2#case-invalid-values
     private const string RawDataV2Invalid = "058000FFFFFFFF800080008000FFFFFFFFFFFFFFFFFFFFFF";
-        
+
+    // See https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-6#case-valid-data
+    private const string DataFormat6Valid = "06170C5668C79E007000C90501D9FFCD004C884F";
+
+    // See https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-6#case-maximum-values
+    private const string DataFormat6ValidMaximum = "067FFF9C40FFFE27109C40FAFAFEFFFF074C8F4F";
+    
+    // See https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-6#case-minimum-values
+    private const string DataFormat6ValidMinimum = "0680010000000000000000000000FF00004C884F";
+
+    // See https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-6#case-invalid-values
+    private const string DataFormat6Invalid = "068000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+    
     // https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-e1#case-valid-data
     private const string ExtendedDataV1Valid   = "E1170C5668C79E0065007004BD11CA00C90A0213E0AC000000DECDEE100000000000CBB8334C884F";
 
@@ -80,6 +92,53 @@ public class UtilitiesTests {
         },
         [RawDataV2Invalid] = new RuuviDataPayload {
             DataFormat = 5
+        },
+        [DataFormat6Valid] = new RuuviDataPayload {
+            DataFormat = 6,
+            Temperature = 29.5,
+            Pressure = 1011.02,
+            Humidity = 55.3,
+            PM25 = 11.2,
+            CO2 = 201,
+            VOC = 10,
+            NOX = 2,
+            Calibrated = true,
+            Luminosity = 13026.67,
+            MeasurementSequence = 205,
+            MacAddress = "4C:88:4F"
+        },
+        [DataFormat6ValidMaximum] = new RuuviDataPayload {
+            DataFormat = 6,
+            Temperature = 163.835,
+            Pressure = 1155.34,
+            Humidity = 100,
+            PM25 = 1000,
+            CO2 = 40000,
+            VOC = 500,
+            NOX = 500,
+            Calibrated = true,
+            Luminosity = 65535,
+            MeasurementSequence = 255,
+            MacAddress = "4C:88:4F"
+        },
+        [DataFormat6ValidMinimum] = new RuuviDataPayload {
+            DataFormat = 6,
+            Temperature = 0163.835,
+            Pressure = 500,
+            Humidity = 0,
+            PM25 = 0,
+            CO2 = 0,
+            VOC = 0,
+            NOX = 0,
+            Calibrated = false,
+            Luminosity = 0,
+            MeasurementSequence = 0,
+            MacAddress = "4C:88:4F"
+        },
+        [DataFormat6Invalid] = new RuuviDataPayload {
+            DataFormat = 6,
+            MeasurementSequence = 255,
+            MacAddress = "FF:FF:FF"
         },
         [ExtendedDataV1Valid] = new RuuviDataPayload {
             DataFormat = 0xE1,
@@ -144,6 +203,10 @@ public class UtilitiesTests {
     [DataRow(RawDataV2ValidMaximum)]
     [DataRow(RawDataV2ValidMinimum)]
     [DataRow(RawDataV2Invalid)]
+    [DataRow(DataFormat6Valid)]
+    [DataRow(DataFormat6ValidMaximum)]
+    [DataRow(DataFormat6ValidMinimum)]
+    [DataRow(DataFormat6Invalid)]
     [DataRow(ExtendedDataV1Valid)]
     [DataRow(ExtendedDataV1Maximum)]
     [DataRow(ExtendedDataV1Minimum)]
@@ -155,5 +218,5 @@ public class UtilitiesTests {
         // See notes for payload strings for expected values.
         Assert.AreEqual(s_expectedPayloads[payloadString], sample);
     }
-        
+    
 }
