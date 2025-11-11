@@ -1,10 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 
 using NRuuviTag.Cli;
-using NRuuviTag.Listener.Linux;
+using NRuuviTag.Cli.Linux;
 
-return await NRuuviTagHostBuilder.CreateHostBuilder(args, sp => ActivatorUtilities.CreateInstance<BlueZListener>(sp, BlueZListener.DefaultBluetoothAdapter))
+return await NRuuviTagHostBuilder.CreateHostBuilder<BlueZListenerFactory>(args)
     .UseSystemd()
     .BuildHostAndRunNRuuviTagAsync(args)
     .ConfigureAwait(false);

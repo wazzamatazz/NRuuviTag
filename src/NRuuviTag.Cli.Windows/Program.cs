@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Hosting;
 
 using NRuuviTag.Cli;
-using NRuuviTag.Listener.Windows;
+using NRuuviTag.Cli.Windows;
 
 return await NRuuviTagHostBuilder
-    .CreateHostBuilder<WindowsSdkListener>(args)
+    .CreateHostBuilder<WindowsSdkListenerFactory>(args)
     .BuildHostAndRunNRuuviTagAsync(args)
     .ConfigureAwait(false);
