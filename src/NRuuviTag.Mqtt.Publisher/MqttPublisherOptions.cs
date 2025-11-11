@@ -67,41 +67,4 @@ public class MqttPublisherOptions : RuuviTagPublisherOptions {
     [Required]
     public string TopicName { get; set; } = DefaultTopicName;
 
-    /// <summary>
-    /// A callback that is used to retrieve the device information to use for a given 
-    /// MAC address.
-    /// </summary>
-    /// <remarks>
-    ///   If <see cref="GetDeviceInfo"/> is <see langword="null"/>, a default <see cref="Device"/> 
-    ///   will be generated for the sample.
-    /// </remarks>
-    public Func<string, Device?>? GetDeviceInfo { get; set; }
-
-    /// <summary>
-    /// When <see langword="true"/>, only samples from known devices will be published. See 
-    /// remarks for details.
-    /// </summary>
-    /// <remarks>
-    ///   When <see cref="KnownDevicesOnly"/> is enabled, a sample will be discarded if 
-    ///   <see cref="GetDeviceInfo"/> is <see langword="null"/>, or if it returns <see langword="null"/> 
-    ///   for a given sample.
-    /// </remarks>
-    public bool KnownDevicesOnly { get; set; }
-
-    /// <summary>
-    /// A callback that is used to prepare a sample prior to publishing it to an MQTT topic or 
-    /// topics.
-    /// </summary>
-    /// <remarks>
-    /// 
-    /// <para>
-    ///   Use the <see cref="PrepareForPublish"/> callback to modify a <see cref="RuuviTagSampleExtended"/> 
-    ///   instance prior to it being published to the MQTT broker (e.g. to perform unit conversion). 
-    ///   Set any property on a sample to <see langword="null"/> to prevent that property from being
-    ///   published.
-    /// </para>
-    /// 
-    /// </remarks>
-    public Func<RuuviTagSampleExtended, RuuviTagSampleExtended>? PrepareForPublish { get; set; }
-
 }

@@ -25,6 +25,24 @@ public class RuuviTagPublisherOptions {
     ///   sample for each device.
     /// </remarks>
     public BatchPublishDeviceBehaviour PerDevicePublishBehaviour { get; set; } = BatchPublishDeviceBehaviour.AllSamples;
+    
+    /// <summary>
+    /// Transforms a sample before it is published.
+    /// </summary>
+    /// <remarks>
+    ///
+    /// <para>
+    ///   The <see cref="PrepareForPublish"/> callback can be used to transform samples prior to
+    ///   publishing, for example to perform unit conversions or to remove measurements that are
+    ///   not needed.
+    /// </para>
+    ///
+    /// <para>
+    ///   If the callback returns <see langword="null"/>, the sample will not be published.
+    /// </para>
+    /// 
+    /// </remarks>
+    public Func<RuuviTagSample, RuuviTagSample?>? PrepareForPublish { get; set; }
 
 }
 
