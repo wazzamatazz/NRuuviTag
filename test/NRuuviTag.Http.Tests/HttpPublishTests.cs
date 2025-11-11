@@ -27,7 +27,8 @@ public sealed class HttpPublishTests {
         });
         http.AddHttpMessageHandler(() => new CallbackHttpHandler(httpHandlerCallback));
         
-        builder.Services.AddSingleton<TestRuuviTagListener>();
+        builder.Services.AddSingleton<IDeviceResolver, NullDeviceResolver>();
+        builder.Services.AddSingleton(provider => ActivatorUtilities.CreateInstance<TestRuuviTagListener>(provider, new RuuviTagListenerOptions()));
         builder.Services.AddSingleton<IRuuviTagListener>(provider => provider.GetRequiredService<TestRuuviTagListener>());
         
         builder.Services.AddOptions<HttpPublisherOptions>().Configure(options => {

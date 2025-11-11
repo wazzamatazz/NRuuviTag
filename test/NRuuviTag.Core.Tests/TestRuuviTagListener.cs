@@ -18,14 +18,15 @@ public sealed class TestRuuviTagListener : RuuviTagListener {
     /// Active subscription channels.
     /// </summary>
     private readonly ConcurrentDictionary<Guid, Channel<RuuviTagSample>> _subscriptions = [];
-    
+
+
+    /// <inheritdoc />
+    public TestRuuviTagListener(RuuviTagListenerOptions options, IDeviceResolver deviceResolver) 
+        : base(options, deviceResolver) { }
+
 
     /// <inheritdoc/>
-    protected override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
-        Func<string, bool>? filter, 
-        [EnumeratorCancellation]
-        CancellationToken cancellationToken
-    ) {
+    protected override async Task RunAsync(CancellationToken cancellationToken) {
         var channelId = Guid.NewGuid();
         var channel = Channel.CreateUnbounded<RuuviTagSample>(new UnboundedChannelOptions() { 
             SingleReader = true,
@@ -40,11 +41,12 @@ public sealed class TestRuuviTagListener : RuuviTagListener {
                     continue;
                 }
 
-                if (filter != null && !filter.Invoke(item.MacAddress)) {
+                var device = DeviceResolver.GetDeviceInformation(item.MacAddress);
+                if (device is null && KnownDevicesOnly) {
                     continue;
                 }
 
-                yield return item;
+                EmitSample(item);
             }
         }
         finally {

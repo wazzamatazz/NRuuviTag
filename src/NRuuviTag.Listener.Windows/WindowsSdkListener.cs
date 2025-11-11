@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -16,13 +14,22 @@ namespace NRuuviTag.Listener.Windows;
 /// Bluetooth LE advertisements.
 /// </summary>
 public class WindowsSdkListener : RuuviTagListener {
+    
+    /// <summary>
+    /// Creates a new <see cref="WindowsSdkListener"/> instance.
+    /// </summary>
+    /// <param name="options">
+    ///   The listener options.
+    /// </param>
+    /// <param name="deviceLookup">
+    ///   The device lookup service.
+    /// </param>
+    public WindowsSdkListener(WindowsSdkListenerOptions options, IDeviceResolver? deviceLookup = null) 
+        : base(options, deviceLookup) {}
+    
 
     /// <inheritdoc/>
-    protected override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
-        Func<string, bool>? filter,
-        [EnumeratorCancellation]
-        CancellationToken cancellationToken
-    ) {
+    protected override async Task RunAsync( CancellationToken cancellationToken) {
         var channel = Channel.CreateUnbounded<BluetoothLEAdvertisementReceivedEventArgs>(new UnboundedChannelOptions() { 
             SingleReader = true,
             SingleWriter = false
@@ -35,8 +42,9 @@ public class WindowsSdkListener : RuuviTagListener {
         };
 
         watcher.AdvertisementFilter.Advertisement.ManufacturerData.Add(manufacturerDataFilter);
-        watcher.Received += (_, args) => { 
-            if (filter != null && !filter.Invoke(RuuviTagUtilities.ConvertMacAddressToString(args.BluetoothAddress))) {
+        watcher.Received += (_, args) => {
+            var device = DeviceResolver.GetDeviceInformation(RuuviTagUtilities.ConvertMacAddressToString(args.BluetoothAddress));
+            if (device is null && KnownDevicesOnly) {
                 return;
             }
 
@@ -49,6 +57,8 @@ public class WindowsSdkListener : RuuviTagListener {
 
             await foreach (var args in channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)) {
                 foreach (var manufacturerData in args.Advertisement.ManufacturerData) {
+                    var macAddress = RuuviTagUtilities.ConvertMacAddressToString(args.BluetoothAddress);
+                    
                     if (manufacturerData.Data.Length > buffer.Length) {
                         ArrayPool<byte>.Shared.Return(buffer);
                         buffer = ArrayPool<byte>.Shared.Rent((int) manufacturerData.Data.Length);
@@ -58,11 +68,7 @@ public class WindowsSdkListener : RuuviTagListener {
                         reader.ReadBytes(buffer);
                     }
 
-                    if (!RuuviTagUtilities.TryParsePayload(new Span<byte>(buffer, 0, (int) manufacturerData.Data.Length), out var sample)) {
-                        continue;
-                    }
-                        
-                    yield return new RuuviTagSample(args.Timestamp, args.RawSignalStrengthInDBm, sample);
+                    DataReceived(macAddress, args.RawSignalStrengthInDBm, new Span<byte>(buffer, 0, (int) manufacturerData.Data.Length));
                 }
             }
         }

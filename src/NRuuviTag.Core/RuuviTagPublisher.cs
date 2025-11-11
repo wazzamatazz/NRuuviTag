@@ -37,12 +37,7 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     /// The publisher options.
     /// </summary>
     private readonly RuuviTagPublisherOptions _options;
-
-    /// <summary>
-    /// An optional filter function to select which devices to publish samples for.
-    /// </summary>
-    private readonly Func<string, bool>? _deviceFilter;
-
+    
     /// <summary>
     /// Indicates if a call to <see cref="RunAsync"/> is currently ongoing.
     /// </summary>
@@ -73,10 +68,6 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     /// <param name="options">
     ///   The publisher options.
     /// </param>
-    /// <param name="deviceFilter">
-    ///   An optional filter function to select which devices to publish samples for based on the
-    ///   MAC address of the device.
-    /// </param>
     /// <param name="logger">
     ///   The <see cref="ILogger"/> for the agent.
     /// </param>
@@ -86,35 +77,14 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
     protected RuuviTagPublisher(
         IRuuviTagListener listener, 
         RuuviTagPublisherOptions options,
-        Func<string, bool>? deviceFilter = null,
         ILogger<RuuviTagPublisher>? logger = null
     ) {
         _listener = listener ?? throw new ArgumentNullException(nameof(listener));
         _options = options ?? throw new ArgumentNullException(nameof(options));
-        _deviceFilter = deviceFilter;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RuuviTagPublisher>.Instance;
     }
     
-    
-    /// <summary>
-    /// Builds a filter delegate compatible with the <see cref="RuuviTagPublisher"/> constructor
-    /// that can restrict listening to broadcasts from only known devices.
-    /// </summary>
-    /// <param name="callback">
-    ///   A delegate that can be used to retrieve device information for a given MAC address.
-    /// </param>
-    /// <returns>
-    ///   The filter delegate.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    ///   <paramref name="callback"/> is <see langword="null"/>.
-    /// </exception>
-    protected static Func<string, bool> CreateKnownDevicesFilterDelegate(Func<string, Device?> callback) {
-        ArgumentNullException.ThrowIfNull(callback);
-        return addr => callback.Invoke(addr) is not null;
-    }
-    
-    
+
     /// <summary>
     /// Waits until the publisher is running.
     /// </summary>
@@ -221,21 +191,25 @@ public abstract partial class RuuviTagPublisher : IAsyncDisposable {
 
         try {
             // Start the listener
-            await foreach (var item in _listener.ListenAsync(_deviceFilter, cancellationToken).ConfigureAwait(false)) {
-                if (string.IsNullOrWhiteSpace(item.MacAddress)) {
+            await foreach (var item in _listener.ListenAsync(cancellationToken).ConfigureAwait(false)) {
+                var sample = _options.PrepareForPublish is not null
+                    ? _options.PrepareForPublish(item)
+                    : item;
+
+                if (string.IsNullOrWhiteSpace(sample?.MacAddress)) {
                     continue;
                 }
 
                 if (useBackgroundPublish) {
                     // Add messages to pending publish list.
-                    await pendingPublish!.EnqueueAsync(item, cancellationToken).ConfigureAwait(false);
+                    await pendingPublish!.EnqueueAsync(sample, cancellationToken).ConfigureAwait(false);
                 }
                 else {
                     // Publish immediately.
-                    await PublishAsync(publishChannel, item, cancellationToken).ConfigureAwait(false);
+                    await PublishAsync(publishChannel, sample, cancellationToken).ConfigureAwait(false);
                 }
 
-                SampleReceived?.Invoke(item);
+                SampleReceived?.Invoke(sample);
             }
         }
         catch (OperationCanceledException) {

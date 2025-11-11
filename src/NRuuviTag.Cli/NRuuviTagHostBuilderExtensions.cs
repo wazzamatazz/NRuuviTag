@@ -12,6 +12,7 @@ using OpenTelemetry.Resources;
 
 using Spectre.Console.Cli;
 
+// ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.Hosting;
 
 /// <summary>

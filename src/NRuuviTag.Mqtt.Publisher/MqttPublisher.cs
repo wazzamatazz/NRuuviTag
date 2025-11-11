@@ -88,7 +88,7 @@ public partial class MqttPublisher : RuuviTagPublisher {
     ///   <paramref name="options"/> fails validation.
     /// </exception>
     public MqttPublisher(IRuuviTagListener listener, MqttPublisherOptions options, MqttFactory factory, ILoggerFactory? loggerFactory = null)
-        : base(listener, options, BuildFilterDelegate(options!), loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
+        : base(listener, options, loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         Validator.ValidateObject(options, new ValidationContext(options), true);
 
@@ -190,34 +190,8 @@ public partial class MqttPublisher : RuuviTagPublisher {
         _mqttClient.ConnectedAsync += OnConnectedAsync;
         _mqttClient.DisconnectedAsync += OnDisconnectedAsync;
     }
-
-
-    /// <summary>
-    /// Builds a filter delegate that can restrict listening to broadcasts from only known 
-    /// devices if required.
-    /// </summary>
-    /// <param name="options">
-    ///   The options.
-    /// </param>
-    /// <returns>
-    ///   The filter delegate.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    ///   <paramref name="options"/> is <see langword="null"/>.
-    /// </exception>
-    private static Func<string, bool> BuildFilterDelegate(MqttPublisherOptions options) {
-        ArgumentNullException.ThrowIfNull(options);
-
-        if (!options.KnownDevicesOnly) {
-            return _ => true;
-        }
-        
-        return options.GetDeviceInfo is null
-            ? _ => false
-            : CreateKnownDevicesFilterDelegate(options.GetDeviceInfo);
-    }
-
-
+    
+    
     /// <summary>
     /// Tests if the specified hostname string represents a websocket URL.
     /// </summary>
@@ -335,36 +309,7 @@ public partial class MqttPublisher : RuuviTagPublisher {
         ArgumentNullException.ThrowIfNull(macAddress);
         return string.Join("", SHA256.HashData(Encoding.UTF8.GetBytes(macAddress)).Select(x => x.ToString("X2")));
     }
-
-
-    /// <summary>
-    /// Gets the device information for the specified sample.
-    /// </summary>
-    /// <param name="sample">
-    ///   The sample.
-    /// </param>
-    /// <returns>
-    ///   The device information.
-    /// </returns>
-    private Device GetDeviceInfo(RuuviDataPayload sample) {
-        if (string.IsNullOrWhiteSpace(sample?.MacAddress)) {
-            return new Device() { DeviceId = UnknownDeviceId };
-        }
-
-        var deviceInfo = _options.GetDeviceInfo?.Invoke(sample.MacAddress!);
-        if (string.IsNullOrWhiteSpace(deviceInfo?.DeviceId)) {
-            return _options.KnownDevicesOnly
-                ? new Device() { DeviceId = UnknownDeviceId, MacAddress = sample.MacAddress }
-                : new Device() {
-                    DeviceId = GetDefaultDeviceId(sample.MacAddress!),
-                    DisplayName = deviceInfo?.DisplayName,
-                    MacAddress = sample.MacAddress
-                };
-        }
-
-        return deviceInfo;
-    }
-
+    
 
     /// <summary>
     /// Gets the MQTT topic name that the specified <paramref name="sample"/> will be 
@@ -383,38 +328,11 @@ public partial class MqttPublisher : RuuviTagPublisher {
     ///   If the publishing mode for the bridge is <see cref="PublishType.TopicPerMeasurement"/>, 
     ///   the value returned by this method is the topic prefix to use.
     /// </remarks>
-    public string GetTopicNameForSample(RuuviDataPayload sample) {
-        ArgumentNullException.ThrowIfNull(sample);
-
-        return GetTopicNameForSample(sample, GetDeviceInfo(sample));
-    }
-
-
-    /// <summary>
-    /// Gets the MQTT topic name that the specified <paramref name="sample"/> will be 
-    /// published to.
-    /// </summary>
-    /// <param name="sample">
-    ///   The sample.
-    /// </param>
-    /// <param name="deviceInfo">
-    ///   The device information for the sample.
-    /// </param>
-    /// <returns>
-    ///   The topic name for the sample.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    ///   <paramref name="sample"/> is <see langword="null"/>.
-    /// </exception>
-    /// <remarks>
-    ///   If the publishing mode for the bridge is <see cref="PublishType.TopicPerMeasurement"/>, 
-    ///   the value returned by this method is the topic prefix to use.
-    /// </remarks>
-    private string GetTopicNameForSample(RuuviDataPayload sample, Device deviceInfo) {
+    public string GetTopicNameForSample(RuuviTagSample sample) {
         ArgumentNullException.ThrowIfNull(sample);
 
         return _topicTemplate.Contains("{deviceId}") 
-            ? _topicTemplate.Replace("{deviceId}", deviceInfo.DeviceId)
+            ? _topicTemplate.Replace("{deviceId}", sample.DeviceId ?? UnknownDeviceId)
             // Publish channel does not contain any device ID placeholders, so just return it
             // as-is.
             : _topicTemplate;
@@ -469,120 +387,87 @@ public partial class MqttPublisher : RuuviTagPublisher {
     /// </exception>
     public IEnumerable<MqttApplicationMessage> BuildMqttMessages(RuuviTagSample sample) {
         ArgumentNullException.ThrowIfNull(sample);
-
-        return BuildMqttMessages(sample, GetDeviceInfo(sample));
-    }
-
-
-    /// <summary>
-    /// Builds the MQTT messages that should be published to the broker for a given 
-    /// <see cref="RuuviDataPayload"/>.
-    /// </summary>
-    /// <param name="sample">
-    ///   The <see cref="RuuviDataPayload"/> to be published.
-    /// </param>
-    /// <param name="deviceInfo">
-    ///   The device ID for the sample.
-    /// </param>
-    /// <returns>
-    ///   An <see cref="IEnumerable{MqttApplicationMessage}"/> that contains the messages to 
-    ///   publish to the broker.
-    /// </returns>
-    /// <remarks>
-    ///   The number of messages returned depends on the <see cref="MqttPublisherOptions.PublishType"/> 
-    ///   setting for the bridge.
-    /// </remarks>
-    /// <exception cref="ArgumentNullException">
-    ///   <paramref name="sample"/> is <see langword="null"/>.
-    /// </exception>
-    private IEnumerable<MqttApplicationMessage> BuildMqttMessages(RuuviTagSample sample, Device deviceInfo) {
-        ArgumentNullException.ThrowIfNull(sample);
-
-        var sampleWithDisplayName = new RuuviTagSampleExtended(deviceInfo.DeviceId, deviceInfo.DisplayName, sample);
-        var topic = GetTopicNameForSample(sampleWithDisplayName, deviceInfo);
-
-        sampleWithDisplayName = _options.PrepareForPublish is null
-            ? sampleWithDisplayName
-            : _options.PrepareForPublish.Invoke(sampleWithDisplayName);
+        
+        var topic = GetTopicNameForSample(sample);
 
         if (_options.PublishType == PublishType.SingleTopic) {
             // Single topic publish.
-            yield return BuildMqttMessage(topic, sampleWithDisplayName);
+            yield return BuildMqttMessage(topic, sample);
             yield break;
         }
 
         // Topic per measurement.
 
-        if (sampleWithDisplayName.AccelerationX is { } accelerationX) {
+        if (sample.AccelerationX is { } accelerationX) {
             yield return BuildMqttMessage(topic + "/acceleration-x", accelerationX);
         }
-        if (sampleWithDisplayName.AccelerationY is { } accelerationY) {
+        if (sample.AccelerationY is { } accelerationY) {
             yield return BuildMqttMessage(topic + "/acceleration-y", accelerationY);
         }
-        if (sampleWithDisplayName.AccelerationZ is { } accelerationZ) {
+        if (sample.AccelerationZ is { } accelerationZ) {
             yield return BuildMqttMessage(topic + "/acceleration-z", accelerationZ);
         }
-        if (sampleWithDisplayName.BatteryVoltage is { } batteryVoltage) {
+        if (sample.BatteryVoltage is { } batteryVoltage) {
             yield return BuildMqttMessage(topic + "/battery-voltage", batteryVoltage);
         }
-        if (sampleWithDisplayName.Calibrated is { } calibrated) {
+        if (sample.Calibrated is { } calibrated) {
             yield return BuildMqttMessage(topic + "/calibrated", calibrated);
         }
-        if (sampleWithDisplayName.CO2 is { } co2) {
+        if (sample.CO2 is { } co2) {
             yield return BuildMqttMessage(topic + "/co2", co2);
         }
-        if (sampleWithDisplayName.DataFormat is { } dataFormat) {
+        if (sample.DataFormat is { } dataFormat) {
             yield return BuildMqttMessage(topic + "/data-format", dataFormat);
         }
-        if (sampleWithDisplayName.DisplayName is { } displayName) {
-            yield return BuildMqttMessage(topic + "/display-name", displayName);
+        if (sample.DeviceId is { } deviceId) {
+            yield return BuildMqttMessage(topic + "/device-id", deviceId);
         }
-        if (sampleWithDisplayName.Humidity is { } humidity) {
+        if (sample.Humidity is { } humidity) {
             yield return BuildMqttMessage(topic + "/humidity", humidity);
         }
-        if (sampleWithDisplayName.Luminosity is { } luminosity) {
+        if (sample.Luminosity is { } luminosity) {
             yield return BuildMqttMessage(topic + "/luminosity", luminosity);
         }
-        if (sampleWithDisplayName.MacAddress is { } macAddress) {
+        if (sample.MacAddress is { } macAddress) {
             yield return BuildMqttMessage(topic + "/mac-address", macAddress);
         }
-        if (sampleWithDisplayName.MeasurementSequence is { } measurementSequence) {
+        if (sample.MeasurementSequence is { } measurementSequence) {
             yield return BuildMqttMessage(topic + "/measurement-sequence", measurementSequence);
         }
-        if (sampleWithDisplayName.MovementCounter is { } movementCounter) {
+        if (sample.MovementCounter is { } movementCounter) {
             yield return BuildMqttMessage(topic + "/movement-counter", movementCounter);
         }
-        if (sampleWithDisplayName.NOX is { } nox) {
+        if (sample.NOX is { } nox) {
             yield return BuildMqttMessage(topic + "/nox", nox);
         }
-        if (sampleWithDisplayName.PM10 is { } pm10) {
+        if (sample.PM10 is { } pm10) {
             yield return BuildMqttMessage(topic + "/pm-1.0", pm10);
         }
-        if (sampleWithDisplayName.PM25 is { } pm25) {
+        if (sample.PM25 is { } pm25) {
             yield return BuildMqttMessage(topic + "/pm-2.5", pm25);
         }
-        if (sampleWithDisplayName.PM40 is { } pm40) {
+        if (sample.PM40 is { } pm40) {
             yield return BuildMqttMessage(topic + "/pm-4.0", pm40);
         }
-        if (sampleWithDisplayName.PM100 is { } pm100) {
+        if (sample.PM100 is { } pm100) {
             yield return BuildMqttMessage(topic + "/pm-10.0", pm100);
         }
-        if (sampleWithDisplayName.Pressure is { } pressure) {
+        if (sample.Pressure is { } pressure) {
             yield return BuildMqttMessage(topic + "/pressure", pressure);
         }
-        if (sampleWithDisplayName.SignalStrength is { } signalStrength) {
+        if (sample.SignalStrength is { } signalStrength) {
             yield return BuildMqttMessage(topic + "/signal-strength", signalStrength);
         }
-        if (sampleWithDisplayName.Temperature is { } temperature) {
+        if (sample.Temperature is { } temperature) {
             yield return BuildMqttMessage(topic + "/temperature", temperature);
         }
-        if (sampleWithDisplayName.Timestamp is { } timestamp) {
+        if (sample.Timestamp is { } timestamp) {
             yield return BuildMqttMessage(topic + "/timestamp", timestamp.UtcDateTime);
         }
-        if (sampleWithDisplayName.TxPower is { } txPower) {
+        if (sample.TxPower is { } txPower) {
             yield return BuildMqttMessage(topic + "/tx-power", txPower);
         }
-        if (sampleWithDisplayName.VOC is { } voc) {
+        if (sample.VOC is { } voc) {
             yield return BuildMqttMessage(topic + "/voc", voc);
         }
     }
@@ -596,19 +481,10 @@ public partial class MqttPublisher : RuuviTagPublisher {
         try {
             while (await samples.WaitToReadAsync(cancellationToken).ConfigureAwait(false)) {
                 while (samples.TryRead(out var item)) {
-                    var deviceInfo = GetDeviceInfo(item);
-                    if (_options.KnownDevicesOnly && string.Equals(deviceInfo.DeviceId, UnknownDeviceId, StringComparison.OrdinalIgnoreCase)) {
-                        // Unknown device.
-                        LogSkippingUnknownDeviceSample(item.MacAddress!);
-                        continue;
-                    }
-
-                    if (_logger.IsEnabled(LogLevel.Trace)) {
-                        LogDeviceSample(deviceInfo.DeviceId!, deviceInfo.DisplayName, JsonSerializer.Serialize(item));
-                    }
+                    LogDeviceSample(item.DeviceId, item);
 
                     try {
-                        foreach (var message in BuildMqttMessages(item, deviceInfo)) {
+                        foreach (var message in BuildMqttMessages(item)) {
                             await _mqttClient.EnqueueAsync(message).ConfigureAwait(false);
                         }
                     }
@@ -647,8 +523,8 @@ public partial class MqttPublisher : RuuviTagPublisher {
     [LoggerMessage(5, LogLevel.Trace, "Skipping sample from device with unknown MAC address: {macAddress}")]
     partial void LogSkippingUnknownDeviceSample(string macAddress);
 
-    [LoggerMessage(6, LogLevel.Trace, "Observed sample from device {deviceId} ('{displayName}'): {sampleJson}", SkipEnabledCheck = true)]
-    partial void LogDeviceSample(string deviceId, string? displayName, string sampleJson);
+    [LoggerMessage(6, LogLevel.Trace, "Observed sample from device {deviceId}: {sample}")]
+    partial void LogDeviceSample(string? deviceId, RuuviTagSample sample);
 
     [LoggerMessage(7, LogLevel.Error, "Error publishing message to MQTT broker.")]
     partial void LogMqttPublishError(Exception error);

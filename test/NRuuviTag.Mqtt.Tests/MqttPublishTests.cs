@@ -64,9 +64,14 @@ public class MqttPublishTests {
     }
 
 
+    private static TestRuuviTagListener CreateListener() {
+        return new TestRuuviTagListener(new RuuviTagListenerOptions(), new NullDeviceResolver());
+    }
+    
+
     [TestMethod]
     public async Task ShouldPublishSampleToSingleTopic() {
-        var listener = new TestRuuviTagListener();
+        var listener = CreateListener();
 
         var bridge = new MqttPublisher(listener, new MqttPublisherOptions() { 
             Hostname = "localhost:" + Port,
@@ -81,7 +86,7 @@ public class MqttPublishTests {
         var now = DateTimeOffset.Now;
         var signalStrength = -79;
 
-        var sample = new RuuviTagSample(now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
+        var sample = new RuuviTagSample(TestContext.TestName, now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
         var expectedTopicName = bridge.GetTopicNameForSample(sample);
 
         var tcs = new TaskCompletionSource<MqttApplicationMessage?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -130,7 +135,7 @@ public class MqttPublishTests {
 
     [TestMethod]
     public async Task SingleTopicPublishShouldExcludeSpecifiedMeasurements() {
-        var listener = new TestRuuviTagListener();
+        var listener = CreateListener();
 
         var bridge = new MqttPublisher(listener, new MqttPublisherOptions() {
             Hostname = "localhost:" + Port,
@@ -146,7 +151,7 @@ public class MqttPublishTests {
         var now = DateTimeOffset.Now;
         var signalStrength = -79;
 
-        var sample = new RuuviTagSample(now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
+        var sample = new RuuviTagSample(TestContext.TestName, now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
         var expectedTopicName = bridge.GetTopicNameForSample(sample);
 
         var tcs = new TaskCompletionSource<MqttApplicationMessage?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -195,7 +200,7 @@ public class MqttPublishTests {
 
     [TestMethod]
     public async Task ShouldPublishSampleToMultipleTopics() {
-        var listener = new TestRuuviTagListener();
+        var listener = CreateListener();
 
         var bridge = new MqttPublisher(listener, new MqttPublisherOptions() {
             Hostname = "localhost:" + Port,
@@ -209,10 +214,10 @@ public class MqttPublishTests {
 
         var now = DateTimeOffset.Now;
         var signalStrength = -79;
-        var sample = new RuuviTagSample(now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
+        var sample = new RuuviTagSample(TestContext.TestName, now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
             
         var expectedTopicPrefix = bridge.GetTopicNameForSample(sample);
-        const int expectedMessageCount = 14;
+        const int expectedMessageCount = 15;
 
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var receivedMessages = new List<MqttApplicationMessage>();
@@ -272,6 +277,11 @@ public class MqttPublishTests {
                     case "/data-format":
                         sampleFromMqtt = sampleFromMqtt with {
                             DataFormat = JsonSerializer.Deserialize<byte>(json)
+                        };
+                        break;
+                    case "/device-id":
+                        sampleFromMqtt = sampleFromMqtt with {
+                            DeviceId = JsonSerializer.Deserialize<string>(json)
                         };
                         break;
                     case "/humidity":
@@ -350,7 +360,7 @@ public class MqttPublishTests {
 
     [TestMethod]
     public async Task MultipleTopicPublishShouldExcludeSpecifiedMeasurements() {
-        var listener = new TestRuuviTagListener();
+        var listener = CreateListener();
 
         var bridge = new MqttPublisher(listener, new MqttPublisherOptions() {
             Hostname = "localhost:" + Port,
@@ -360,15 +370,15 @@ public class MqttPublishTests {
             TlsOptions = new MqttPublisherTlsOptions() {
                 UseTls = false
             },
-            PrepareForPublish = s => s with { AccelerationX = null, MacAddress = null }
+            PrepareForPublish = s => s with { AccelerationX = null, AccelerationY = null }
         }, new MqttFactory(), s_loggerFactory);
 
         var now = DateTimeOffset.Now;
         var signalStrength = -79;
-        var sample = new RuuviTagSample(now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
+        var sample = new RuuviTagSample(TestContext.TestName, now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
             
         var expectedTopicPrefix = bridge.GetTopicNameForSample(sample);
-        const int expectedMessageCount = 12;
+        const int expectedMessageCount = 13;
 
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var receivedMessages = new List<MqttApplicationMessage>();
@@ -429,6 +439,11 @@ public class MqttPublishTests {
                             DataFormat = JsonSerializer.Deserialize<byte>(json)
                         };
                         break;
+                    case "/device-id":
+                        sampleFromMqtt = sampleFromMqtt with {
+                            DeviceId = JsonSerializer.Deserialize<string>(json)
+                        };
+                        break;
                     case "/humidity":
                         sampleFromMqtt = sampleFromMqtt with {
                             Humidity = JsonSerializer.Deserialize<double>(json)
@@ -480,7 +495,7 @@ public class MqttPublishTests {
                 }
             }
 
-            Assert.AreEqual(sample with { AccelerationX = null, MacAddress = null }, sampleFromMqtt);
+            Assert.AreEqual(sample with { AccelerationX = null, AccelerationY = null }, sampleFromMqtt);
         }
         finally {
             MessageReceived -= OnMessageReceived;

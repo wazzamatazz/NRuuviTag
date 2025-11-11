@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace NRuuviTag.Cli;
@@ -14,14 +15,27 @@ public class DeviceCollection : Dictionary<string, DeviceCollectionEntry> {
     /// <see cref="Device"/> objects.
     /// </summary>
     /// <returns>
-    ///   An <see cref="IEnumerable{Device}"/> describing the devices.
+    ///   An <see cref="IReadOnlyList{Device}"/> describing the devices.
     /// </returns>
-    public IEnumerable<Device> GetDevices() {
-        return this.Select(x => new Device() {
+    public IReadOnlyList<Device> GetDevices() {
+        return [..this.Select(x => new Device() {
             DeviceId = x.Key,
             DisplayName = x.Value.DisplayName,
             MacAddress = x.Value.MacAddress
-        }).ToArray();
+        })];
+    }
+
+
+    public Device? GetDevice(string macAddress) {
+        var entry = this.FirstOrDefault(x => MacAddressComparer.Default.Equals(x.Value.MacAddress, macAddress));
+        if (entry.Key is null) {
+            return null;
+        }
+        return new Device() {
+            DeviceId = entry.Key,
+            DisplayName = entry.Value.DisplayName,
+            MacAddress = entry.Value.MacAddress
+        };
     }
     
 }

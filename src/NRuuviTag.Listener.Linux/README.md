@@ -10,7 +10,9 @@ More detailed documentation can be found on [GitHub](https://github.com/wazzamat
 Use the `BlueZListener` class to listen for Ruuvi sensor data on a Linux system with BlueZ installed:
 
 ```csharp
-IRuuviTagListener client = new BlueZListener("hci0");
+IRuuviTagListener client = new BlueZListener(new BlueZListenerOptions() {
+    AdapterName = "hci0" // Optional, defaults to "hci0"
+});
 
 await foreach (var sample in client.ListenAsync(cancellationToken)) {
     // sample is a RuuviTagSample object.

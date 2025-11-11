@@ -1,16 +1,13 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 using NRuuviTag.Http;
 
@@ -21,14 +18,9 @@ namespace NRuuviTag.Cli.Commands;
 public class PublishHttpCommand : AsyncCommand<PublishHttpCommand.Settings> {
     
     /// <summary>
-    /// The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
+    /// The <see cref="IRuuviTagListenerFactory"/> for creating listeners with.
     /// </summary>
-    private readonly IRuuviTagListener _listener;
-    
-    /// <summary>
-    /// The known RuuviTag devices.
-    /// </summary>
-    private readonly IOptionsMonitor<DeviceCollection> _devices;
+    private readonly IRuuviTagListenerFactory _listenerFactory;
     
     /// <summary>
     /// The <see cref="IHttpClientFactory"/> to use for creating HTTP clients.
@@ -49,14 +41,11 @@ public class PublishHttpCommand : AsyncCommand<PublishHttpCommand.Settings> {
     /// <summary>
     /// Creates a new <see cref="PublishMqttCommand"/> object.
     /// </summary>
-    /// <param name="listener">
+    /// <param name="listenerFactory">
     ///   The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
     /// </param>
     /// <param name="httpClientFactory">
     ///   The <see cref="IHttpClientFactory"/> to use for creating HTTP clients.
-    /// </param>
-    /// <param name="devices">
-    ///   The known RuuviTag devices.
     /// </param>
     /// <param name="appLifetime">
     ///   The <see cref="IHostApplicationLifetime"/> for the .NET host application.
@@ -65,15 +54,13 @@ public class PublishHttpCommand : AsyncCommand<PublishHttpCommand.Settings> {
     ///   The <see cref="ILoggerFactory"/> for the application.
     /// </param>
     public PublishHttpCommand(
-        IRuuviTagListener listener, 
+        IRuuviTagListenerFactory listenerFactory, 
         IHttpClientFactory httpClientFactory,
-        IOptionsMonitor<DeviceCollection> devices, 
         IHostApplicationLifetime appLifetime, 
         ILoggerFactory loggerFactory
     ) {
-        _listener = listener;
+        _listenerFactory = listenerFactory;
         _httpClientFactory = httpClientFactory;
-        _devices = devices;
         _loggerFactory = loggerFactory;
         _appLifetime = appLifetime;
     }
@@ -86,8 +73,10 @@ public class PublishHttpCommand : AsyncCommand<PublishHttpCommand.Settings> {
             catch (OperationCanceledException) { }
         }
         
-        IEnumerable<Device> devices = null!;
-        UpdateDevices(_devices.CurrentValue);
+        var listener = _listenerFactory.CreateListener(options => {
+            options.KnownDevicesOnly = settings.KnownDevicesOnly;
+            options.EnableDataFormat6 = settings.EnableDataFormat6;
+        });
         
         var headers = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
         if (settings.Headers is { Length: > 0 }) {
@@ -110,36 +99,22 @@ public class PublishHttpCommand : AsyncCommand<PublishHttpCommand.Settings> {
             Headers = headers.ToImmutable(),
             PublishInterval = TimeSpan.FromSeconds(settings.PublishInterval),
             PerDevicePublishBehaviour = settings.PublishBehaviour,
-            MaximumBatchSize = settings.MaximumBatchSize,
-            KnownDevicesOnly = settings.KnownDevicesOnly,
-            GetDeviceInfo = addr => {
-                lock (this) {
-                    return devices.FirstOrDefault(x => MacAddressComparer.Instance.Equals(addr, x.MacAddress));
-                }
-            }
+            MaximumBatchSize = settings.MaximumBatchSize
         };
 
-        await using var publisher = new HttpPublisher(_listener, publisherOptions, _httpClientFactory, _loggerFactory.CreateLogger<HttpPublisher>());
+        await using var publisher = new HttpPublisher(listener, publisherOptions, _httpClientFactory, _loggerFactory.CreateLogger<HttpPublisher>());
 
-        using (_devices.OnChange(UpdateDevices))
-        using (var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping)) {
-            try {
-                await publisher.RunAsync(ctSource.Token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (ctSource.IsCancellationRequested) { }
+        using var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping);
+        try {
+            await publisher.RunAsync(ctSource.Token).ConfigureAwait(false);
         }
-        
+        catch (OperationCanceledException) when (ctSource.IsCancellationRequested) { }
+
         return 0;
-
-        void UpdateDevices(DeviceCollection? devicesFromConfig) {
-            lock (this) {
-                devices = devicesFromConfig?.GetDevices() ?? [];
-            }
-        }
     }
 
 
-    public class Settings : CommandSettings {
+    public class Settings : PublishCommandSettings {
 
         [CommandArgument(0, "<ENDPOINT>")]
         [Description("The HTTP endpoint to publish samples to.")]
@@ -155,25 +130,11 @@ public class PublishHttpCommand : AsyncCommand<PublishHttpCommand.Settings> {
         [Description("Specifies a header to include in HTTP requests to the publish endpoint, in the format 'Name: Value'. This option can be specified multiple times to include multiple headers.")]
         public string[] Headers { get; set; } = default!;
         
-        [CommandOption("--publish-interval <INTERVAL>")]
-        [Description("The publish to use, in seconds. When a publish interval is specified, the '--publish-behaviour' setting controls if all observed samples for a device are included in the next publish, or if only the most-recent reading for each device are included. If a publish inteval is not specified, samples will be published to the MQTT server as soon as they are observed.")]
-        public int PublishInterval { get; set; }
-    
-        [CommandOption("--publish-behaviour <BEHAVIOUR>")]
-        [Description("The per-device publish behaviour to use when a non-zero publish interval is specified. Possible values are: " + nameof(BatchPublishDeviceBehaviour.AllSamples) + " (default), " + nameof(BatchPublishDeviceBehaviour.LatestSampleOnly))]
-        [DefaultValue(BatchPublishDeviceBehaviour.AllSamples)]
-        public BatchPublishDeviceBehaviour PublishBehaviour { get; set; }
-        
         [CommandOption("--batch-size-limit <SIZE>")]
         [Description("The maximum number of samples to include in a single batch when publishing to the HTTP endpoint.")]
         [DefaultValue(50)]
         [Range(1, 10_000)]
         public int MaximumBatchSize { get; set; } = 50;
-        
-        [CommandOption("--known-devices")]
-        [Description("Specifies if only samples from pre-registered devices should be published to the HTTP endpoint.")]
-        public bool KnownDevicesOnly { get; set; }
-
     }
     
 }

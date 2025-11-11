@@ -36,37 +36,11 @@ public partial class HttpPublisher : RuuviTagPublisher {
     ///   The logger for the publisher.
     /// </param>
     /// <remarks></remarks>
-    public HttpPublisher(IRuuviTagListener listener, HttpPublisherOptions options, IHttpClientFactory httpClientFactory, ILogger<HttpPublisher>? logger = null) : base(listener, options, BuildFilterDelegate(options), logger) {
+    public HttpPublisher(IRuuviTagListener listener, HttpPublisherOptions options, IHttpClientFactory httpClientFactory, ILogger<HttpPublisher>? logger = null) : base(listener, options, logger) {
         _httpClientFactory = httpClientFactory;
         _options = options;
         _useHttpPut = HttpMethod.Put.Method.Equals(_options.HttpMethod, StringComparison.OrdinalIgnoreCase);
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<HttpPublisher>.Instance;
-    }
-    
-    
-    /// <summary>
-    /// Builds a filter delegate that can restrict listening to broadcasts from only known 
-    /// devices if required.
-    /// </summary>
-    /// <param name="options">
-    ///   The options.
-    /// </param>
-    /// <returns>
-    ///   The filter delegate.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    ///   <paramref name="options"/> is <see langword="null"/>.
-    /// </exception>
-    private static Func<string, bool> BuildFilterDelegate(HttpPublisherOptions options) {
-        ArgumentNullException.ThrowIfNull(options);
-
-        if (!options.KnownDevicesOnly) {
-            return _ => true;
-        }
-
-        return options.GetDeviceInfo is null
-            ? _ => false
-            : CreateKnownDevicesFilterDelegate(options.GetDeviceInfo);
     }
 
 

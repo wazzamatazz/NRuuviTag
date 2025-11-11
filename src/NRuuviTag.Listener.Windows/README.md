@@ -10,7 +10,7 @@ More detailed documentation can be found on [GitHub](https://github.com/wazzamat
 Use the `WindowsSdkListener` class to listen for Ruuvi sensor data on a Windows system using the Windows SDK:
 
 ```csharp
-IRuuviTagListener client = new WindowsSdkListener();
+IRuuviTagListener client = new WindowsSdkListener(new WindowsSdkListenerOptions());
 
 await foreach (var sample in client.ListenAsync(cancellationToken)) {
     // sample is a RuuviTagSample object.

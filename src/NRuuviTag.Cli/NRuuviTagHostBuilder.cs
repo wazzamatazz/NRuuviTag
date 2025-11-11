@@ -14,8 +14,8 @@ public static class NRuuviTagHostBuilder {
     /// <summary>
     /// Creates a new <see cref="IHostBuilder"/> instance for running the NRuuviTag command app.
     /// </summary>
-    /// <typeparam name="TListener">
-    ///   The type of <see cref="RuuviTagListener"/> to use.
+    /// <typeparam name="TListenerFactory">
+    ///   The factory for creating the <see cref="IRuuviTagListener"/> for the app.
     /// </typeparam>
     /// <param name="args">
     ///   The command-line arguments.
@@ -23,9 +23,9 @@ public static class NRuuviTagHostBuilder {
     /// <returns>
     ///   A new <see cref="IHostBuilder"/> instance.
     /// </returns>
-    public static IHostBuilder CreateHostBuilder<TListener>(string[]? args) where TListener : RuuviTagListener {
+    public static IHostBuilder CreateHostBuilder<TListenerFactory>(string[]? args) where TListenerFactory : class, IRuuviTagListenerFactory {
         return CreateHostBuilderCore(args, (hostContext, services) => {
-            services.AddRuuviTagCommandApp<TListener>(hostContext.Configuration);
+            services.AddRuuviTagCommandApp<TListenerFactory>(hostContext.Configuration);
         });
     }
 
@@ -33,21 +33,21 @@ public static class NRuuviTagHostBuilder {
     /// <summary>
     /// Creates a new <see cref="IHostBuilder"/> instance for running the NRuuviTag command app.
     /// </summary>
-    /// <typeparam name="TListener">
-    ///   The type of <see cref="RuuviTagListener"/> to use.
+    /// <typeparam name="TListenerFactory">
+    ///   The factory for creating the <see cref="IRuuviTagListener"/> for the app.
     /// </typeparam>
     /// <param name="args">
     ///   The command-line arguments.
     /// </param>
-    /// <param name="listenerInstance">
+    /// <param name="factory">
     ///   The listener instance to use.
     /// </param>
     /// <returns>
     ///   A new <see cref="IHostBuilder"/> instance.
     /// </returns>
-    public static IHostBuilder CreateHostBuilder<TListener>(string[]? args, TListener listenerInstance) where TListener : RuuviTagListener {
-        ArgumentNullException.ThrowIfNull(listenerInstance);
-        return CreateHostBuilder(args, sp => listenerInstance);
+    public static IHostBuilder CreateHostBuilder<TListenerFactory>(string[]? args, TListenerFactory factory) where TListenerFactory : class, IRuuviTagListenerFactory {
+        ArgumentNullException.ThrowIfNull(factory);
+        return CreateHostBuilder(args, _ => factory);
     }
 
 
@@ -55,22 +55,22 @@ public static class NRuuviTagHostBuilder {
     /// <summary>
     /// Creates a new <see cref="IHostBuilder"/> instance for running the NRuuviTag command app.
     /// </summary>
-    /// <typeparam name="TListener">
-    ///   The type of <see cref="RuuviTagListener"/> to use.
+    /// <typeparam name="TListenerFactory">
+    ///   The factory for creating the <see cref="IRuuviTagListener"/> for the app.
     /// </typeparam>
     /// <param name="args">
     ///   The command-line arguments.
     /// </param>
-    /// <param name="listenerFactory">
+    /// <param name="factory">
     ///   The listener factory to use.
     /// </param>
     /// <returns>
     ///   A new <see cref="IHostBuilder"/> instance.
     /// </returns>
-    public static IHostBuilder CreateHostBuilder<TListener>(string[]? args, Func<IServiceProvider, TListener> listenerFactory) where TListener : RuuviTagListener {
-        ArgumentNullException.ThrowIfNull(listenerFactory);
+    public static IHostBuilder CreateHostBuilder<TListenerFactory>(string[]? args, Func<IServiceProvider, TListenerFactory> factory) where TListenerFactory : class, IRuuviTagListenerFactory {
+        ArgumentNullException.ThrowIfNull(factory);
         return CreateHostBuilderCore(args, (hostContext, services) => {
-            services.AddRuuviTagCommandApp(hostContext.Configuration, sp => listenerFactory.Invoke(sp));
+            services.AddRuuviTagCommandApp(hostContext.Configuration, factory.Invoke);
         });
     }
 

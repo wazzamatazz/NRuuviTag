@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Threading;
@@ -23,18 +22,6 @@ public partial class AzureEventHubPublisher : RuuviTagPublisher {
     /// Logging.
     /// </summary>
     private readonly ILogger<AzureEventHubPublisher> _logger;
-
-    /// <summary>
-    /// A delegate that retrieves the device information for a sample based on the MAC address 
-    /// of the device.
-    /// </summary>
-    private readonly Func<string, Device?>? _getDeviceInfo;
-
-    /// <summary>
-    /// A delegate that can be used to make final modifications to a sample prior to 
-    /// publishing it to the event hub.
-    /// </summary>
-    private readonly Func<RuuviTagSampleExtended, RuuviTagSampleExtended>? _prepareForPublish;
 
     /// <summary>
     /// Event hub connection string.
@@ -89,7 +76,7 @@ public partial class AzureEventHubPublisher : RuuviTagPublisher {
     ///   <paramref name="options"/> fails validation.
     /// </exception>
     public AzureEventHubPublisher(IRuuviTagListener listener, AzureEventHubPublisherOptions options, ILoggerFactory? loggerFactory = null) 
-        : base(listener, options, BuildFilterDelegate(options), loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
+        : base(listener, options, loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
         ArgumentNullException.ThrowIfNull(options);
         Validator.ValidateObject(options, new ValidationContext(options), true);
 
@@ -98,34 +85,6 @@ public partial class AzureEventHubPublisher : RuuviTagPublisher {
         _eventHubName = options.EventHubName;
         _maximumBatchSize = options.MaximumBatchSize;
         _maximumBatchAge = options.MaximumBatchAge;
-        _getDeviceInfo = options.GetDeviceInfo;
-        _prepareForPublish = options.PrepareForPublish;
-    }
-
-
-    /// <summary>
-    /// Builds a filter delegate that can restrict listening to broadcasts from only known 
-    /// devices if required.
-    /// </summary>
-    /// <param name="options">
-    ///   The options.
-    /// </param>
-    /// <returns>
-    ///   The filter delegate.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    ///   <paramref name="options"/> is <see langword="null"/>.
-    /// </exception>
-    private static Func<string, bool> BuildFilterDelegate(AzureEventHubPublisherOptions options) {
-        ArgumentNullException.ThrowIfNull(options);
-
-        if (!options.KnownDevicesOnly) {
-            return _ => true;
-        }
-
-        return options.GetDeviceInfo is null
-            ? _ => false
-            : CreateKnownDevicesFilterDelegate(options.GetDeviceInfo);
     }
 
 
@@ -141,16 +100,7 @@ public partial class AzureEventHubPublisher : RuuviTagPublisher {
         try {
             while (await samples.WaitToReadAsync(cancellationToken).ConfigureAwait(false)) {
                 while (samples.TryRead(out var item)) {
-                    var device = _getDeviceInfo?.Invoke(item.MacAddress!);
-
-                    var sample = device is null
-                        ? new RuuviTagSampleExtended(null, null, item)
-                        : new RuuviTagSampleExtended(device.DeviceId, device.DisplayName, item);
-                    
-                    if (_prepareForPublish is not null) {
-                        sample = _prepareForPublish.Invoke(sample);
-                    }
-                    var eventData = new EventData(JsonSerializer.SerializeToUtf8Bytes(sample, _jsonOptions)) {
+                    var eventData = new EventData(JsonSerializer.SerializeToUtf8Bytes(item, _jsonOptions)) {
                         Properties = {
                             ["Content-Type"] = "application/json"
                         }
