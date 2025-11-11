@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Text.Json;
 using System.Threading;
-using System.Threading.Tasks;
 
 using Microsoft.Extensions.Options;
 
@@ -14,7 +10,7 @@ namespace NRuuviTag.Cli.Commands;
 /// <summary>
 /// <see cref="CommandApp"/> command for listing known RuuviTag devices.
 /// </summary>
-public class DeviceListCommand : Command<DeviceListCommandSettings> {
+public class DeviceListCommand : Command<DeviceListCommand.Settings> {
 
     /// <summary>
     /// The known devices.
@@ -34,18 +30,18 @@ public class DeviceListCommand : Command<DeviceListCommandSettings> {
 
 
     /// <inheritdoc/>
-    public override int Execute(CommandContext context, DeviceListCommandSettings settings, CancellationToken cancellationToken) {
+    public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken) {
         Console.WriteLine();
         CommandUtilities.PrintDevicesToConsole(_devices);
         Console.WriteLine();
             
         return 0;
     }
+    
+    
+    /// <summary>
+    /// Settings for <see cref="DeviceListCommand"/>.
+    /// </summary>
+    public class Settings : CommandSettings { }
 
 }
-
-
-/// <summary>
-/// Settings for <see cref="DeviceListCommand"/>.
-/// </summary>
-public class DeviceListCommandSettings : CommandSettings { }

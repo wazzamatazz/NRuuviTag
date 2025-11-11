@@ -16,7 +16,7 @@ namespace NRuuviTag.Cli.Commands;
 /// <summary>
 /// <see cref="CommandApp"/> command for registering a known RuuviTag device.
 /// </summary>
-public class DeviceRemoveCommand : AsyncCommand<DeviceRemoveCommandSettings> {
+public class DeviceRemoveCommand : AsyncCommand<DeviceRemoveCommand.Settings> {
 
     /// <summary>
     /// The known devices.
@@ -36,7 +36,7 @@ public class DeviceRemoveCommand : AsyncCommand<DeviceRemoveCommandSettings> {
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, DeviceRemoveCommandSettings settings, CancellationToken cancellationToken) {
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
         if (_devices == null || _devices.Count == 0) {
             // No devices defined
             Console.WriteLine(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_DeviceNotFound, settings.Device));
@@ -89,16 +89,17 @@ public class DeviceRemoveCommand : AsyncCommand<DeviceRemoveCommandSettings> {
 
         return 0;
     }
-}
+    
+    
+    /// <summary>
+    /// Settings for <see cref="DeviceRemoveCommand"/>.
+    /// </summary>
+    public class Settings : CommandSettings {
 
+        [CommandArgument(0, "<DEVICE>")]
+        [Description("The identifier, display name, or MAC address of the device to remove.")]
+        public string Device { get; set; } = default!;
 
-/// <summary>
-/// Settings for <see cref="DeviceRemoveCommand"/>.
-/// </summary>
-public class DeviceRemoveCommandSettings : CommandSettings {
-
-    [CommandArgument(0, "<DEVICE>")]
-    [Description("The identifier, display name, or MAC address of the device to remove.")]
-    public string Device { get; set; } = default!;
-
+    }
+    
 }

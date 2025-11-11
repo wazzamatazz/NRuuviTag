@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 using NRuuviTag.AzureEventHubs;
 
@@ -19,17 +16,12 @@ namespace NRuuviTag.Cli.Commands;
 /// <see cref="CommandApp"/> command for listening to RuuviTag broadcasts and publishing the
 /// samples to an Azure Event Hub.
 /// </summary>
-public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubCommandSettings> {
+public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubCommand.Settings> {
 
     /// <summary>
-    /// The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
+    /// The <see cref="IRuuviTagListenerFactory"/> to create listeners with.
     /// </summary>
-    private readonly IRuuviTagListener _listener;
-
-    /// <summary>
-    /// The known RuuviTag devices.
-    /// </summary>
-    private readonly IOptionsMonitor<DeviceCollection> _devices;
+    private readonly IRuuviTagListenerFactory _listenerFactory;
 
     /// <summary>
     /// The <see cref="IHostApplicationLifetime"/> for the .NET host application.
@@ -45,11 +37,8 @@ public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubComm
     /// <summary>
     /// Creates a new <see cref="PublishMqttCommand"/> object.
     /// </summary>
-    /// <param name="listener">
+    /// <param name="listenerFactory">
     ///   The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
-    /// </param>
-    /// <param name="devices">
-    ///   The known RuuviTag devices.
     /// </param>
     /// <param name="appLifetime">
     ///   The <see cref="IHostApplicationLifetime"/> for the .NET host application.
@@ -58,100 +47,73 @@ public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubComm
     ///   The <see cref="ILoggerFactory"/> for the application.
     /// </param>
     public PublishAzureEventHubCommand(
-        IRuuviTagListener listener,
-        IOptionsMonitor<DeviceCollection> devices,
+        IRuuviTagListenerFactory listenerFactory,
         IHostApplicationLifetime appLifetime,
         ILoggerFactory loggerFactory
     ) {
-        _listener = listener;
-        _devices = devices;
+        _listenerFactory = listenerFactory;
         _loggerFactory = loggerFactory;
         _appLifetime = appLifetime;
     }
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, PublishAzureEventHubCommandSettings settings, CancellationToken cancellationToken) {
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
         if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
             try { await Task.Delay(Timeout.InfiniteTimeSpan, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
             catch (OperationCanceledException) when (_appLifetime.ApplicationStarted.IsCancellationRequested) { }
         }
 
-        IEnumerable<Device> devices = null!;
-
-        UpdateDevices(_devices.CurrentValue);
-
+        var listener = _listenerFactory.CreateListener(options => {
+            options.KnownDevicesOnly = settings.KnownDevicesOnly;
+            options.EnableDataFormat6 = !settings.EnableDataFormat6;
+        });
+        
         var publisherOptions = new AzureEventHubPublisherOptions() {
             ConnectionString = settings.ConnectionString!,
             EventHubName = settings.EventHubName!,
             PublishInterval = TimeSpan.FromSeconds(settings.PublishInterval),
             PerDevicePublishBehaviour = settings.PublishBehaviour,
             MaximumBatchSize = settings.MaximumBatchSize,
-            MaximumBatchAge = settings.MaximumBatchAge,
-            KnownDevicesOnly = settings.KnownDevicesOnly,
-            GetDeviceInfo = addr => {
-                lock (this) {
-                    return devices.FirstOrDefault(x => MacAddressComparer.Instance.Equals(addr, x.MacAddress));
-                }
-            }
+            MaximumBatchAge = settings.MaximumBatchAge
         };
 
-        await using var publisher = new AzureEventHubPublisher(_listener, publisherOptions, _loggerFactory);
+        await using var publisher = new AzureEventHubPublisher(listener, publisherOptions, _loggerFactory);
 
-        using (_devices.OnChange(UpdateDevices))
-        using (var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping)) {
-            try {
-                await publisher.RunAsync(ctSource.Token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (ctSource.IsCancellationRequested) { }
+        using var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping);
+        try {
+            await publisher.RunAsync(ctSource.Token).ConfigureAwait(false);
         }
+        catch (OperationCanceledException) when (ctSource.IsCancellationRequested) { }
 
         return 0;
-
-        void UpdateDevices(DeviceCollection? devicesFromConfig) {
-            lock (this) {
-                devices = devicesFromConfig?.GetDevices() ?? [];
-            }
-        }
     }
 
-}
-
-
-/// <summary>
-/// Settings for <see cref="PublishMqttCommand"/>.
-/// </summary>
-public class PublishAzureEventHubCommandSettings : CommandSettings {
-
-    [CommandArgument(0, "<CONNECTION_STRING>")]
-    [Description("The Azure Event Hub connection string.")]
-    public string? ConnectionString { get; set; }
-
-    [CommandArgument(1, "<EVENT_HUB_NAME>")]
-    [Description("The Event Hub name.")]
-    public string? EventHubName { get; set; }
-
-    [CommandOption("--publish-internal <INTERVAL>")]
-    [Description("Limits the RuuviTag sample rate to the specified number of seconds. When a publish interval is specified, the '--publish-behaviour' setting controls if all observed samples for a device are included in the next publish, or if only the most-recent reading for each device are included. If a publish inteval is not specified, samples will be published to the Event Hub server as soon as they are observed.")]
-    public int PublishInterval { get; set; }
     
-    [CommandOption("--publish-behaviour <BEHAVIOUR>")]
-    [Description("The per-device publish behaviour to use when a non-zero publish interval is specified. Possible values are: " + nameof(BatchPublishDeviceBehaviour.AllSamples) + " (default), " + nameof(BatchPublishDeviceBehaviour.LatestSampleOnly))]
-    [DefaultValue(BatchPublishDeviceBehaviour.AllSamples)]
-    public BatchPublishDeviceBehaviour PublishBehaviour { get; set; }
+    /// <summary>
+    /// Settings for <see cref="PublishMqttCommand"/>.
+    /// </summary>
+    public class Settings : PublishCommandSettings {
 
-    [CommandOption("--batch-size-limit <LIMIT>")]
-    [DefaultValue(50)]
-    [Description("Sets the maximum number of samples that can be added to an Event Hub data batch before the batch will be published to the hub.")]
-    public int MaximumBatchSize { get; set; }
+        [CommandArgument(0, "<CONNECTION_STRING>")]
+        [Description("The Azure Event Hub connection string.")]
+        public string? ConnectionString { get; set; }
 
-    [CommandOption("--batch-age-limit <LIMIT>")]
-    [DefaultValue(60)]
-    [Description("Sets the maximum age of an Event Hub data batch (in seconds) before the batch will be published to the hub. The age is measured from the time that the first sample is added to the batch.")]
-    public int MaximumBatchAge { get; set; }
+        [CommandArgument(1, "<EVENT_HUB_NAME>")]
+        [Description("The Event Hub name.")]
+        public string? EventHubName { get; set; }
 
-    [CommandOption("--known-devices")]
-    [Description("Specifies if only samples from pre-registered devices should be published to the event hub.")]
-    public bool KnownDevicesOnly { get; set; }
+        [CommandOption("--batch-size-limit <LIMIT>")]
+        [DefaultValue(50)]
+        [Description("Sets the maximum number of samples that can be added to an Event Hub data batch before the batch will be published to the hub.")]
+        public int MaximumBatchSize { get; set; }
 
+        [CommandOption("--batch-age-limit <LIMIT>")]
+        [DefaultValue(60)]
+        [Description("Sets the maximum age of an Event Hub data batch (in seconds) before the batch will be published to the hub. The age is measured from the time that the first sample is added to the batch.")]
+        public int MaximumBatchAge { get; set; }
+
+    }
+    
 }
+

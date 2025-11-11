@@ -12,12 +12,12 @@ using Spectre.Console.Cli;
 
 namespace NRuuviTag.Cli.Commands;
 
-public class DeviceScanCommand : AsyncCommand<DeviceScanCommandSettings> {
+public class DeviceScanCommand : AsyncCommand<DeviceScanCommand.Settings> {
 
     /// <summary>
-    /// The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
+    /// The <see cref="IRuuviTagListenerFactory"/> to create listeners with.
     /// </summary>
-    private readonly IRuuviTagListener _listener;
+    private readonly IRuuviTagListenerFactory _listenerFactory;
 
     /// <summary>
     /// The known RuuviTag devices.
@@ -33,8 +33,8 @@ public class DeviceScanCommand : AsyncCommand<DeviceScanCommandSettings> {
     /// <summary>
     /// Creates a new <see cref="DeviceScanCommand"/> object.
     /// </summary>
-    /// <param name="listener">
-    ///   The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
+    /// <param name="listenerFactory">
+    ///   The <see cref="IRuuviTagListenerFactory"/> to create listeners with.
     /// </param>
     /// <param name="devices">
     ///   The known RuuviTag devices.
@@ -42,15 +42,15 @@ public class DeviceScanCommand : AsyncCommand<DeviceScanCommandSettings> {
     /// <param name="appLifetime">
     ///   The <see cref="IHostApplicationLifetime"/> for the .NET host application.
     /// </param>
-    public DeviceScanCommand(IRuuviTagListener listener, IOptionsMonitor<DeviceCollection> devices, IHostApplicationLifetime appLifetime) {
-        _listener = listener;
+    public DeviceScanCommand(IRuuviTagListenerFactory listenerFactory, IOptionsMonitor<DeviceCollection> devices, IHostApplicationLifetime appLifetime) {
+        _listenerFactory = listenerFactory;
         _devices = devices;
         _appLifetime = appLifetime;
     }
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, DeviceScanCommandSettings settings, CancellationToken cancellationToken) {
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
         // Wait until the host application has started if required.
         if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
             try { await Task.Delay(-1, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
@@ -69,20 +69,26 @@ public class DeviceScanCommand : AsyncCommand<DeviceScanCommandSettings> {
                 Console.WriteLine(Resources.LogMessage_StartingDeviceScan);
                 Console.WriteLine();
 
-                await foreach (var sample in _listener.ListenAsync(ctSource.Token).ConfigureAwait(false)) {
+                var listener = _listenerFactory.CreateListener(options => {
+                    options.EnableDataFormat6 = settings.EnableDataFormat6;
+                });
+                
+                await foreach (var sample in listener.ListenAsync(ctSource.Token).ConfigureAwait(false)) {
                     if (string.IsNullOrWhiteSpace(sample?.MacAddress)) {
                         continue;
                     }
 
-                    if (detectedMacAddresses.Add(sample.MacAddress!)) {
-                        // This is the first time we've observed this device during this scan.
-                        lock (this) {
-                            if (devices != null && devices.TryGetValue(sample.MacAddress!, out var deviceInfo)) {
-                                Console.WriteLine(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_DeviceScanResultKnown, sample.MacAddress, deviceInfo.DisplayName, deviceInfo.DeviceId));
-                            }
-                            else {
-                                Console.WriteLine(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_DeviceScanResultUnknown, sample.MacAddress));
-                            }
+                    if (!detectedMacAddresses.Add(sample.MacAddress!)) {
+                        continue;
+                    }
+
+                    // This is the first time we've observed this device during this scan.
+                    lock (this) {
+                        if (devices != null && devices.TryGetValue(sample.MacAddress!, out var deviceInfo)) {
+                            Console.WriteLine(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_DeviceScanResultKnown, sample.MacAddress, deviceInfo.DisplayName, deviceInfo.DeviceId));
+                        }
+                        else {
+                            Console.WriteLine(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_DeviceScanResultUnknown, sample.MacAddress));
                         }
                     }
                 }
@@ -105,11 +111,11 @@ public class DeviceScanCommand : AsyncCommand<DeviceScanCommandSettings> {
             }
         }
     }
+    
+    
+    /// <summary>
+    /// Settings for <see cref="DeviceScanCommand"/>.
+    /// </summary>
+    public class Settings : ListenerCommandSettings { }
 
 }
-
-
-/// <summary>
-/// Settings for <see cref="DeviceScanCommand"/>.
-/// </summary>
-public class DeviceScanCommandSettings : CommandSettings { }

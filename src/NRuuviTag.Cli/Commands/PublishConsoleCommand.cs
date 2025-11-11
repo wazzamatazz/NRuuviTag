@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 
 using Spectre.Console.Cli;
 
@@ -16,17 +13,12 @@ namespace NRuuviTag.Cli.Commands;
 /// <see cref="CommandApp"/> command for listening to RuuviTag broadcasts without forwarding 
 /// them to an MQTT broker.
 /// </summary>
-public class PublishConsoleCommand : AsyncCommand<PublishConsoleCommandSettings> {
+public class PublishConsoleCommand : AsyncCommand<PublishConsoleCommand.Settings> {
 
     /// <summary>
-    /// The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
+    /// The <see cref="IRuuviTagListenerFactory"/> to create listeners with.
     /// </summary>
-    private readonly IRuuviTagListener _listener;
-
-    /// <summary>
-    /// The known RuuviTag devices.
-    /// </summary>
-    private readonly IOptionsMonitor<DeviceCollection> _devices;
+    private readonly IRuuviTagListenerFactory _listenerFactory;
 
     /// <summary>
     /// The <see cref="IHostApplicationLifetime"/> for the .NET host application.
@@ -37,62 +29,33 @@ public class PublishConsoleCommand : AsyncCommand<PublishConsoleCommandSettings>
     /// <summary>
     /// Creates a new <see cref="PublishConsoleCommand"/> object.
     /// </summary>
-    /// <param name="listener">
-    ///   The <see cref="IRuuviTagListener"/> to listen to broadcasts with.
-    /// </param>
-    /// <param name="devices">
-    ///   The known RuuviTag devices.
+    /// <param name="listenerFactory">
+    ///   The <see cref="IRuuviTagListenerFactory"/> to create listeners with.
     /// </param>
     /// <param name="appLifetime">
     ///   The <see cref="IHostApplicationLifetime"/> for the .NET host application.
     /// </param>
-    public PublishConsoleCommand(IRuuviTagListener listener, IOptionsMonitor<DeviceCollection> devices, IHostApplicationLifetime appLifetime) {
-        _listener = listener;
-        _devices = devices;
+    public PublishConsoleCommand(IRuuviTagListenerFactory listenerFactory, IHostApplicationLifetime appLifetime) {
+        _listenerFactory = listenerFactory;
         _appLifetime = appLifetime;
     }
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, PublishConsoleCommandSettings settings, CancellationToken cancellationToken) {
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
         // Wait until the host application has started if required.
         if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
             try { await Task.Delay(-1, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
             catch (OperationCanceledException) { }
         }
+        
+        var listener = _listenerFactory.CreateListener(options => {
+            options.KnownDevicesOnly = settings.KnownDevicesOnly;
+            options.EnableDataFormat6 = !settings.EnableDataFormat6;
+        });
 
-        IEnumerable<Device> devices = Array.Empty<Device>();
-
-        void UpdateDevices(DeviceCollection? devicesFromConfig) {
-            lock (this) {
-                devices = devicesFromConfig?.GetDevices() ?? Array.Empty<Device>();
-            }
-        }
-
-        UpdateDevices(_devices.CurrentValue);
-
-        // Tests if a sample from the specified MAC address should be displayed.
-        bool CanProcessSample(string macAddress) {
-            if (!settings.KnownDevicesOnly) {
-                return true;
-            }
-
-            lock (this) {
-                return devices?.Any(x => MacAddressComparer.Instance.Equals(macAddress, x.MacAddress)) ?? false;
-            }
-        }
-
-        Device? GetDeviceInfo(string macAddress) {
-            lock (this) {
-                return devices.FirstOrDefault(x => MacAddressComparer.Instance.Equals(macAddress, x.MacAddress));
-            }
-        }
-
-        UpdateDevices(_devices.CurrentValue);
-
-        var publisher = new ConsoleJsonPublisher(_listener, CanProcessSample, GetDeviceInfo);
-
-        using (_devices.OnChange(newDevices => UpdateDevices(newDevices)))
+        var publisher = new ConsoleJsonPublisher(listener);
+        
         using (var ctSource = CancellationTokenSource.CreateLinkedTokenSource(_appLifetime.ApplicationStopped, _appLifetime.ApplicationStopping)) {
             try {
                 await publisher.RunAsync(ctSource.Token).ConfigureAwait(false);
@@ -103,16 +66,17 @@ public class PublishConsoleCommand : AsyncCommand<PublishConsoleCommandSettings>
         Console.WriteLine();
         return 0;
     }
-}
+    
+    
+    /// <summary>
+    /// Settings for <see cref="PublishConsoleCommand"/>.
+    /// </summary>
+    public class Settings : ListenerCommandSettings {
 
+        [CommandOption("--known-devices")]
+        [Description("Specifies if only samples from pre-registered devices should be observed.")]
+        public bool KnownDevicesOnly { get; set; }
 
-/// <summary>
-/// Settings for <see cref="PublishConsoleCommand"/>.
-/// </summary>
-public class PublishConsoleCommandSettings : CommandSettings {
-
-    [CommandOption("--known-devices")]
-    [Description("Specifies if only samples from pre-registered devices should be observed.")]
-    public bool KnownDevicesOnly { get; set; }
-
+    }
+    
 }
