@@ -20,7 +20,7 @@ public class Worker : BackgroundService {
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         try {
-            IRuuviTagListener client = new WindowsSdkListener();
+            IRuuviTagListener client = new WindowsSdkListener(new WindowsSdkListenerOptions());
             var jsonOptions = new JsonSerializerOptions() {
                 WriteIndented = true
             };
