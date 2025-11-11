@@ -118,8 +118,23 @@ public static partial class RuuviTagUtilities {
             ? null
             : Math.Round(raw * 0.01, 2);
     }
-    
-    
+
+
+    /// <summary>
+    /// Extrapolates luminosity from a single byte using a logarithmic scale (Data Format 6).
+    /// </summary>
+    private static double? Get8BitLuminosityFromRawBytes(Span<byte> buffer, int offset) {
+        var raw = buffer[offset];
+        if (raw == byte.MaxValue) {
+            return null;
+        }
+
+        var delta = Math.Log(65_535 + 1) / 254;
+        var code = Math.Round(Math.Log(raw + 1) / delta);
+        return Math.Exp(code * delta) - 1;
+    }
+
+
     private static (double? BatteryVoltage, double? TxPower) GetPowerInfoFromRawBytes(Span<byte> buffer, int offset) {
         var raw = BitConverter.ToUInt16(GetRawInstrumentBytes(buffer, 2, offset));
         var voltageRaw = raw / 32; // 11 most-significant bits are voltage
@@ -142,6 +157,11 @@ public static partial class RuuviTagUtilities {
         return raw == byte.MaxValue
             ? null
             : raw;
+    }
+    
+    
+    private static byte? Get8BitMeasurementSequenceFromRawBytes(Span<byte> buffer, int offset) {
+        return buffer[offset];
     }
     
     
@@ -169,6 +189,19 @@ public static partial class RuuviTagUtilities {
         // MAC address is always Big-endian, so no need to reverse the byte order if this is a
         // Little-endian system.
         var raw = GetRawInstrumentBytes(buffer, 6, offset, reverseIfLittleEndian: false);
+        
+        return raw.SequenceEqual(outOfRange)
+            ? null
+            : ConvertMacAddressBytesToString(raw, 0);
+    }
+
+
+    private static string? Get24BitMacAddressFromRawBytes(Span<byte> buffer, int offset) {
+        ReadOnlySpan<byte> outOfRange = [0xFF, 0xFF, 0xFF];
+
+        // MAC address is always Big-endian, so no need to reverse the byte order if this is a
+        // Little-endian system.
+        var raw = GetRawInstrumentBytes(buffer, 3, offset, reverseIfLittleEndian: false);
         
         return raw.SequenceEqual(outOfRange)
             ? null
@@ -234,6 +267,73 @@ public static partial class RuuviTagUtilities {
             BatteryVoltage = batteryVoltage,
             TxPower = txPower,
             MovementCounter = movementCounter,
+            MeasurementSequence = measurementSequence,
+            MacAddress = macAddress
+        };
+    }
+    
+    
+    /// <summary>
+    /// Creates a new <see cref="RuuviDataPayload"/> from a <paramref name="payload"/> that uses 
+    /// Ruuvi's data format 6.
+    /// </summary>
+    /// <param name="payload">
+    ///   The 20-byte payload received from the device.
+    /// </param>
+    /// <returns>
+    ///   A new <see cref="RuuviDataPayload"/> object.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="payload"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    ///   <paramref name="payload"/> is less than 20 bytes in length.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    ///   <paramref name="payload"/> does not contain format 6 data.
+    /// </exception>
+    /// <remarks>
+    ///   See https://docs.ruuvi.com/communication/bluetooth-advertisements for more 
+    ///   information about available data formats.
+    /// </remarks>
+    /// <seealso cref="Constants.DataFormat6"/>
+    public static RuuviDataPayload ParseDataFormat6Payload(Span<byte> payload) {
+        if (payload.Length < 20) {
+            throw new ArgumentException(Resources.Error_UnexpectedPayloadLength, nameof(payload));
+        }
+
+        if (payload[0] != Constants.DataFormat6) {
+            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, Resources.Error_UnexpectedDataFormat, Constants.DataFormat6, payload[0]), nameof(payload));
+        }
+        
+        Span<byte> buffer = stackalloc byte[20];
+        payload[..20].CopyTo(buffer);
+        
+        var temperature = GetTemperatureFromFromRawBytes(buffer, 1);
+        var humidity = GetHumidityFromRawBytes(buffer, 3);
+        var pressure = GetPressureFromRawBytes(buffer, 5);
+        var pm25 = GetPMFromRawBytes(buffer, 7);
+        var co2 = GetCO2FromRawBytes(buffer, 9);
+        var calibrated = (buffer[16] & 0b_0000_0001) == 0;
+        var vocIndex = GetVOCNOXIndexFromRawBytes(buffer, 11, 16, 0b_0100_0000);
+        var noxIndex = GetVOCNOXIndexFromRawBytes(buffer, 12, 16, 0b_1000_0000);
+        var luminosity = Get8BitLuminosityFromRawBytes(buffer, 13);
+        // 14: reserved
+        var measurementSequence = Get8BitMeasurementSequenceFromRawBytes(buffer, 15);
+        // 16: flags
+        var macAddress = Get24BitMacAddressFromRawBytes(buffer, 17);
+
+        return new RuuviDataPayload() {
+            DataFormat = Constants.DataFormat6,
+            Calibrated = calibrated,
+            Temperature = temperature,
+            Humidity = humidity,
+            Pressure = pressure,
+            PM25 = pm25,
+            CO2 = co2,
+            VOC = vocIndex,
+            NOX = noxIndex,
+            Luminosity = luminosity,
             MeasurementSequence = measurementSequence,
             MacAddress = macAddress
         };
@@ -332,6 +432,7 @@ public static partial class RuuviTagUtilities {
     ///   about available data formats.
     /// </remarks>
     /// <seealso cref="Constants.DataFormatRawV2"/>
+    /// <seealso cref="Constants.DataFormat6"/>
     /// <seealso cref="Constants.DataFormatExtendedV1"/>
     public static RuuviDataPayload ParsePayload(Span<byte> payload) {
         if (payload.Length == 0) {
@@ -341,6 +442,7 @@ public static partial class RuuviTagUtilities {
         
         return payload[0] switch {
             Constants.DataFormatRawV2 => ParseRawV2Payload(payload),
+            Constants.DataFormat6 => ParseDataFormat6Payload(payload),
             Constants.DataFormatExtendedV1 => ParseExtendedV1Payload(payload),
             _ => throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, Resources.Error_UnknownDataFormat, payload[0]), nameof(payload))
         };
@@ -365,6 +467,7 @@ public static partial class RuuviTagUtilities {
     ///   about available data formats.
     /// </remarks>
     /// <seealso cref="Constants.DataFormatRawV2"/>
+    /// <seealso cref="Constants.DataFormat6"/>
     /// <seealso cref="Constants.DataFormatExtendedV1"/>
     public static bool TryParsePayload(Span<byte> payload, [NotNullWhen(true)] out RuuviDataPayload? sample) {
         sample = null;
@@ -376,6 +479,7 @@ public static partial class RuuviTagUtilities {
         var dataFormat = payload[0];
         var isKnownFormat = dataFormat switch {
             Constants.DataFormatRawV2 => true,
+            Constants.DataFormat6 => true,
             Constants.DataFormatExtendedV1 => true,
             _ => false
         };
@@ -436,17 +540,18 @@ public static partial class RuuviTagUtilities {
     /// <returns>
     ///   The string representation of the MAC address.
     /// </returns>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   The byte sequence is less than 6 bytes long starting from the provided <paramref name="offset"/>.
-    /// </exception>
     /// <remarks>
     ///   The <paramref name="bytes"/> are assumed to already be in Big-endian order.
     /// </remarks>
     private static string ConvertMacAddressBytesToString(Span<byte> bytes, int offset) {
-        const int macAddressLength = 6;
-
-        if (offset + macAddressLength > bytes.Length) {
-            throw new ArgumentOutOfRangeException(nameof(bytes), string.Format(CultureInfo.CurrentCulture, Resources.Error_IncorrectMacAddressSequenceLength, macAddressLength));
+        const int maxMacAddressLength = 6;
+        var macAddressLength = bytes.Length - offset;
+        if (macAddressLength > maxMacAddressLength) {
+            macAddressLength = maxMacAddressLength;
+        }
+        
+        if (macAddressLength <= 0) {
+            return string.Empty;
         }
 
         var sb = new StringBuilder();
@@ -480,11 +585,9 @@ public static partial class RuuviTagUtilities {
     ///   <c>00:00:12:34:56:78:9A:BC</c> can be specified as <c>12:34:56:78:9A:BC</c>.
     /// </remarks>
     public static ulong ConvertMacAddressToUInt64(string address) {
-        if (!TryConvertMacAddressToUInt64(address, out var numericAddress)) {
-            throw new ArgumentOutOfRangeException(nameof(address));
-        }
-
-        return numericAddress;
+        return !TryConvertMacAddressToUInt64(address, out var numericAddress) 
+            ? throw new ArgumentOutOfRangeException(nameof(address)) 
+            : numericAddress;
     }
 
 

@@ -9,9 +9,9 @@ namespace NRuuviTag;
 public sealed class MacAddressComparer : IEqualityComparer<string> {
 
     /// <summary>
-    /// The <see cref="MacAddressComparer"/> instance.
+    /// The default <see cref="MacAddressComparer"/> instance.
     /// </summary>
-    public static MacAddressComparer Instance { get; } = new MacAddressComparer();
+    public static MacAddressComparer Default { get; } = new MacAddressComparer();
 
 
     /// <summary>
@@ -22,11 +22,11 @@ public sealed class MacAddressComparer : IEqualityComparer<string> {
 
     /// <inheritdoc/>
     public bool Equals(string? x, string? y) {
-        if (x == null && y == null) {
+        if (x is null && y is null) {
             return true;
         }
 
-        if (x == null || y == null) {
+        if (x is null || y is null) {
             return false;
         }
 
@@ -48,9 +48,7 @@ public sealed class MacAddressComparer : IEqualityComparer<string> {
 
     /// <inheritdoc/>
     public int GetHashCode(string obj) {
-        if (obj == null) {
-            throw new ArgumentNullException(nameof(obj));
-        }
+        ArgumentNullException.ThrowIfNull(obj);
         return RuuviTagUtilities.TryConvertMacAddressToUInt64(obj, out var address)
             ? address.GetHashCode()
             : obj.GetHashCode();
