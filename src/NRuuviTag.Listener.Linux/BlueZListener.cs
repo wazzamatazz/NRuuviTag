@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 
 using Linux.Bluetooth;
@@ -28,11 +24,6 @@ public partial class BlueZListener : RuuviTagListener {
     /// The Bluetooth adapter to monitor.
     /// </summary>
     private readonly string _adapterName;
-    
-    /// <summary>
-    /// The time provider.
-    /// </summary>
-    private readonly TimeProvider _timeProvider;
 
     /// <summary>
     /// The logger for the listener.
@@ -55,25 +46,16 @@ public partial class BlueZListener : RuuviTagListener {
     /// <param name="logger">
     ///   The logger for the listener.
     /// </param>
-    public BlueZListener(BlueZListenerOptions options, IDeviceResolver? deviceLookup = null, TimeProvider? timeProvider = null, ILogger<BlueZListener>? logger = null) : base(options, deviceLookup) {
+    public BlueZListener(BlueZListenerOptions options, IDeviceResolver? deviceLookup = null, TimeProvider? timeProvider = null, ILogger<BlueZListener>? logger = null) : base(options, deviceLookup, timeProvider, logger) {
         _adapterName = string.IsNullOrWhiteSpace(options?.AdapterName) 
             ? DefaultBluetoothAdapter 
             : options.AdapterName;
-        _timeProvider = timeProvider ?? TimeProvider.System;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<BlueZListener>.Instance;
     }
 
 
     /// <inheritdoc/>
-    protected override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
-        [EnumeratorCancellation]
-        CancellationToken cancellationToken
-    ) {
-        var channel = Channel.CreateUnbounded<RuuviTagSample>(new UnboundedChannelOptions() {
-            SingleReader = true,
-            SingleWriter = false
-        });
-
+    protected override async Task RunAsync(CancellationToken cancellationToken) {
         // Get the adapter from BlueZ.
         using var adapter = await BlueZManager.GetAdapterAsync(_adapterName).ConfigureAwait(false);
         var @lock = new Nito.AsyncEx.AsyncLock();
@@ -137,15 +119,12 @@ public partial class BlueZListener : RuuviTagListener {
             // Start scanning.
             LogListenerStarting(_adapterName);
             await adapter.StartDiscoveryAsync().ConfigureAwait(false);
-            // Emit samples as they are published to the channel.
-            await foreach (var item in channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)) {
-                yield return item;
-            }
+            // Wait until cancelled.
+            await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
         }
         finally {
             // Stop scanning.
             await adapter.StopDiscoveryAsync().ConfigureAwait(false);
-            channel.Writer.TryComplete();
 
             // Dispose of the watcher registrations.
             using var _ = await @lock.LockAsync(default).ConfigureAwait(false);
@@ -155,7 +134,7 @@ public partial class BlueZListener : RuuviTagListener {
             watchers.Clear();
         }
 
-        yield break;
+        return;
 
         // Adds a watcher for the specified device so that we can emit new samples when the
         // device properties change.
@@ -221,45 +200,7 @@ public partial class BlueZListener : RuuviTagListener {
                     throw new InvalidOperationException("Device properties did not contain manufacturer data.");
                 }
 
-                var timestamp = _timeProvider.GetUtcNow();
-                
-                var device = DeviceResolver.GetDeviceInformation(properties.Address);
-                if (device is null && KnownDevicesOnly) {
-                    // We are no longer interested in this device - it has probably been removed
-                    // from the list of known devices since we started scanning.
-                }
-
-                if (_logger.IsEnabled(LogLevel.Trace)) {
-                    var sb = new StringBuilder("0x");
-                    foreach (var b in payload) {
-                        sb.Append(b.ToString("X2", CultureInfo.InvariantCulture));
-                    }
-                    LogRawDeviceData(properties.Address, timestamp, sb.ToString());
-                }
-
-                if (!EnableDataFormat6 && payload.Length > 0 && payload[0] == Constants.DataFormat6) {
-                    // Ignore data format 6 if configured to do so.
-                    return;
-                }
-                
-                if (!RuuviTagUtilities.TryParsePayload(payload, out var sample)) {
-                    return;
-                }
-                
-                // Create the full sample from the parsed payload.
-                var fullSample = new RuuviTagSample(device?.DeviceId, timestamp, properties.RSSI, sample) {
-                    MacAddress = sample.DataFormat switch {
-                        // If the payload uses data format 6 then the MAC address in the payload will
-                        // only contain the lower 3 bytes of the address. We will replace this with
-                        // the full MAC address from the advertisement.
-                        Constants.DataFormat6 => properties.Address,
-                        _ => sample.MacAddress
-                    }
-                };
-                
-                if (channel.Writer.TryWrite(fullSample)) {
-                    LogSampleEmitted(properties.Address, timestamp);
-                }
+                DataReceived(properties.Address, properties.RSSI, payload);
             }
             catch (Exception error) {
                 LogInvalidManufacturerData(properties.Address, error);
@@ -268,26 +209,19 @@ public partial class BlueZListener : RuuviTagListener {
     }
 
 
-    [LoggerMessage(1, LogLevel.Debug, "Starting listener using Bluetooth device {adapterName}.")]
+    [LoggerMessage(11, LogLevel.Debug, "Starting listener using Bluetooth device {adapterName}.")]
     partial void LogListenerStarting(string adapterName);
 
 
-    [LoggerMessage(2, LogLevel.Debug, "Found device {address}.")]
+    [LoggerMessage(12, LogLevel.Debug, "Found device {address}.")]
     partial void LogDeviceFound(string address);
 
 
-    [LoggerMessage(3, LogLevel.Trace, "Ignoring device {address}: {reason}.")]
+    [LoggerMessage(13, LogLevel.Trace, "Ignoring device {address}: {reason}.")]
     partial void LogDeviceIgnored(string address, string reason);
 
 
-    [LoggerMessage(4, LogLevel.Warning, "Invalid manufacturer data received for device {address}.")]
+    [LoggerMessage(14, LogLevel.Warning, "Invalid manufacturer data received for device {address}.")]
     partial void LogInvalidManufacturerData(string address, Exception error);
-
-
-    [LoggerMessage(5, LogLevel.Trace, "Emitted sample for device {address} @ {timestamp}.")]
-    partial void LogSampleEmitted(string address, DateTimeOffset timestamp);
-    
-    [LoggerMessage(6, LogLevel.Trace, "Raw device data from {address} @ {timestamp}: {byteString}.", SkipEnabledCheck = true)]
-    partial void LogRawDeviceData(string address, DateTimeOffset timestamp, string byteString);
 
 }

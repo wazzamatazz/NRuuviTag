@@ -26,10 +26,7 @@ public sealed class TestRuuviTagListener : RuuviTagListener {
 
 
     /// <inheritdoc/>
-    protected override async IAsyncEnumerable<RuuviTagSample> ListenAsync(
-        [EnumeratorCancellation]
-        CancellationToken cancellationToken
-    ) {
+    protected override async Task RunAsync(CancellationToken cancellationToken) {
         var channelId = Guid.NewGuid();
         var channel = Channel.CreateUnbounded<RuuviTagSample>(new UnboundedChannelOptions() { 
             SingleReader = true,
@@ -49,7 +46,7 @@ public sealed class TestRuuviTagListener : RuuviTagListener {
                     continue;
                 }
 
-                yield return item;
+                EmitSample(item);
             }
         }
         finally {
