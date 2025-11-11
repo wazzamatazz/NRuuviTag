@@ -51,7 +51,7 @@ public class PublishConsoleCommand : AsyncCommand<PublishConsoleCommand.Settings
         
         var listener = _listenerFactory.CreateListener(options => {
             options.KnownDevicesOnly = settings.KnownDevicesOnly;
-            options.EnableDataFormat6 = !settings.EnableDataFormat6;
+            options.EnableDataFormat6 = settings.EnableDataFormat6;
         });
 
         var publisher = new ConsoleJsonPublisher(listener);

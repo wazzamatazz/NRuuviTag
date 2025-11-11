@@ -66,7 +66,7 @@ public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubComm
 
         var listener = _listenerFactory.CreateListener(options => {
             options.KnownDevicesOnly = settings.KnownDevicesOnly;
-            options.EnableDataFormat6 = !settings.EnableDataFormat6;
+            options.EnableDataFormat6 = settings.EnableDataFormat6;
         });
         
         var publisherOptions = new AzureEventHubPublisherOptions() {
