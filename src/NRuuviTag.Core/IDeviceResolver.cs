@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 namespace NRuuviTag;
 
 /// <summary>
-/// <see cref="IDeviceLookup"/> allows looking up Ruuvi device information based on MAC address.
+/// <see cref="IDeviceResolver"/> allows looking up Ruuvi device information based on MAC address.
 /// </summary>
-public interface IDeviceLookup {
+public interface IDeviceResolver {
 
     /// <summary>
     /// Gets the device information for the specified MAC address.
