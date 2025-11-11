@@ -25,7 +25,7 @@ public static class NRuuviTagHostBuilder {
     /// </returns>
     public static IHostBuilder CreateHostBuilder<TListenerFactory>(string[]? args) where TListenerFactory : class, IRuuviTagListenerFactory {
         return CreateHostBuilderCore(args, (hostContext, services) => {
-            services.AddRuuviTagCommandApp<IRuuviTagListenerFactory>(hostContext.Configuration);
+            services.AddRuuviTagCommandApp<TListenerFactory>(hostContext.Configuration);
         });
     }
 
