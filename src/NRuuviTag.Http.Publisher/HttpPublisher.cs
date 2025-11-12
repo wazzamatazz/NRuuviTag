@@ -84,7 +84,7 @@ public partial class HttpPublisher : RuuviTagPublisher {
 
         try {
             if (_useHttpPut) {
-                await http.PutAsJsonAsync(_options.Endpoint, samples, cancellationToken).ConfigureAwait(false);
+                await http.PutAsJsonAsync(_options.Endpoint, samples, RuuviJsonSerializerContext.Default.IReadOnlyListRuuviTagSample, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
