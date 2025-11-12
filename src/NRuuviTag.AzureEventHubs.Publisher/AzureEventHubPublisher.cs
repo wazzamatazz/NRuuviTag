@@ -43,16 +43,6 @@ public partial class AzureEventHubPublisher : RuuviTagPublisher {
     /// </summary>
     private readonly int _maximumBatchAge;
 
-    /// <summary>
-    /// JSON serializer options for serializing message payloads.
-    /// </summary>
-    private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions() {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        // If and properties on a sample are set to null, we won't include them in the
-        // serialized object we send to the event hub.
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-    };
-
 
     /// <summary>
     /// Creates a new <see cref="AzureEventHubPublisher"/> object.
@@ -100,7 +90,7 @@ public partial class AzureEventHubPublisher : RuuviTagPublisher {
         try {
             while (await samples.WaitToReadAsync(cancellationToken).ConfigureAwait(false)) {
                 while (samples.TryRead(out var item)) {
-                    var eventData = new EventData(JsonSerializer.SerializeToUtf8Bytes(item, _jsonOptions)) {
+                    var eventData = new EventData(JsonSerializer.SerializeToUtf8Bytes(item, RuuviJsonSerializerContext.Default.RuuviTagSample)) {
                         Properties = {
                             ["Content-Type"] = "application/json"
                         }

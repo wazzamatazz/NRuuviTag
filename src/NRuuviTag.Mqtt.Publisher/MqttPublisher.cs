@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Channels;
@@ -53,15 +54,7 @@ public partial class MqttPublisher : RuuviTagPublisher {
     /// The template for the MQTT topic that messages will be published to.
     /// </summary>
     private readonly string _topicTemplate;
-
-    /// <summary>
-    /// JSON serializer options for serializing message payloads.
-    /// </summary>
-    private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions() { 
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-    };
-
+    
 
     /// <summary>
     /// Creates a new <see cref="MqttPublisher"/> object.
@@ -351,13 +344,16 @@ public partial class MqttPublisher : RuuviTagPublisher {
     /// <param name="payload">
     ///   The payload for the message. The payload will be serialized to JSON.
     /// </param>
+    /// <param name="jsonTypeInfo">
+    ///   The <see cref="JsonTypeInfo{T}"/> to use when serializing the payload.
+    /// </param>
     /// <returns>
     ///   A new <see cref="MqttApplicationMessage"/> object.
     /// </returns>
-    private MqttApplicationMessage BuildMqttMessage<T>(string topic, T payload) {
+    private MqttApplicationMessage BuildMqttMessage<T>(string topic, T payload, JsonTypeInfo<T> jsonTypeInfo) {
         var builder = new MqttApplicationMessageBuilder()
             .WithTopic(topic)
-            .WithPayload(JsonSerializer.SerializeToUtf8Bytes(payload, _jsonOptions));
+            .WithPayload(JsonSerializer.SerializeToUtf8Bytes(payload, jsonTypeInfo));
 
         if (_mqttClient.Options.ClientOptions.ProtocolVersion >= MQTTnet.Formatter.MqttProtocolVersion.V500) {
             builder = builder.WithContentType("application/json");
@@ -392,83 +388,83 @@ public partial class MqttPublisher : RuuviTagPublisher {
 
         if (_options.PublishType == PublishType.SingleTopic) {
             // Single topic publish.
-            yield return BuildMqttMessage(topic, sample);
+            yield return BuildMqttMessage(topic, sample, RuuviJsonSerializerContext.Default.RuuviTagSample);
             yield break;
         }
 
         // Topic per measurement.
 
         if (sample.AccelerationX is { } accelerationX) {
-            yield return BuildMqttMessage(topic + "/acceleration-x", accelerationX);
+            yield return BuildMqttMessage(topic + "/acceleration-x", accelerationX, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.AccelerationY is { } accelerationY) {
-            yield return BuildMqttMessage(topic + "/acceleration-y", accelerationY);
+            yield return BuildMqttMessage(topic + "/acceleration-y", accelerationY, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.AccelerationZ is { } accelerationZ) {
-            yield return BuildMqttMessage(topic + "/acceleration-z", accelerationZ);
+            yield return BuildMqttMessage(topic + "/acceleration-z", accelerationZ, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.BatteryVoltage is { } batteryVoltage) {
-            yield return BuildMqttMessage(topic + "/battery-voltage", batteryVoltage);
+            yield return BuildMqttMessage(topic + "/battery-voltage", batteryVoltage, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.Calibrated is { } calibrated) {
-            yield return BuildMqttMessage(topic + "/calibrated", calibrated);
+            yield return BuildMqttMessage(topic + "/calibrated", calibrated, RuuviJsonSerializerContext.Default.Boolean);
         }
         if (sample.CO2 is { } co2) {
-            yield return BuildMqttMessage(topic + "/co2", co2);
+            yield return BuildMqttMessage(topic + "/co2", co2, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.DataFormat is { } dataFormat) {
-            yield return BuildMqttMessage(topic + "/data-format", dataFormat);
+            yield return BuildMqttMessage(topic + "/data-format", dataFormat, RuuviJsonSerializerContext.Default.Byte);
         }
         if (sample.DeviceId is { } deviceId) {
-            yield return BuildMqttMessage(topic + "/device-id", deviceId);
+            yield return BuildMqttMessage(topic + "/device-id", deviceId, RuuviJsonSerializerContext.Default.String);
         }
         if (sample.Humidity is { } humidity) {
-            yield return BuildMqttMessage(topic + "/humidity", humidity);
+            yield return BuildMqttMessage(topic + "/humidity", humidity, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.Luminosity is { } luminosity) {
-            yield return BuildMqttMessage(topic + "/luminosity", luminosity);
+            yield return BuildMqttMessage(topic + "/luminosity", luminosity, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.MacAddress is { } macAddress) {
-            yield return BuildMqttMessage(topic + "/mac-address", macAddress);
+            yield return BuildMqttMessage(topic + "/mac-address", macAddress, RuuviJsonSerializerContext.Default.String);
         }
         if (sample.MeasurementSequence is { } measurementSequence) {
-            yield return BuildMqttMessage(topic + "/measurement-sequence", measurementSequence);
+            yield return BuildMqttMessage(topic + "/measurement-sequence", measurementSequence, RuuviJsonSerializerContext.Default.UInt32);
         }
         if (sample.MovementCounter is { } movementCounter) {
-            yield return BuildMqttMessage(topic + "/movement-counter", movementCounter);
+            yield return BuildMqttMessage(topic + "/movement-counter", movementCounter, RuuviJsonSerializerContext.Default.Byte);
         }
         if (sample.NOX is { } nox) {
-            yield return BuildMqttMessage(topic + "/nox", nox);
+            yield return BuildMqttMessage(topic + "/nox", nox, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.PM10 is { } pm10) {
-            yield return BuildMqttMessage(topic + "/pm-1.0", pm10);
+            yield return BuildMqttMessage(topic + "/pm-1.0", pm10, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.PM25 is { } pm25) {
-            yield return BuildMqttMessage(topic + "/pm-2.5", pm25);
+            yield return BuildMqttMessage(topic + "/pm-2.5", pm25, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.PM40 is { } pm40) {
-            yield return BuildMqttMessage(topic + "/pm-4.0", pm40);
+            yield return BuildMqttMessage(topic + "/pm-4.0", pm40, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.PM100 is { } pm100) {
-            yield return BuildMqttMessage(topic + "/pm-10.0", pm100);
+            yield return BuildMqttMessage(topic + "/pm-10.0", pm100, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.Pressure is { } pressure) {
-            yield return BuildMqttMessage(topic + "/pressure", pressure);
+            yield return BuildMqttMessage(topic + "/pressure", pressure, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.SignalStrength is { } signalStrength) {
-            yield return BuildMqttMessage(topic + "/signal-strength", signalStrength);
+            yield return BuildMqttMessage(topic + "/signal-strength", signalStrength, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.Temperature is { } temperature) {
-            yield return BuildMqttMessage(topic + "/temperature", temperature);
+            yield return BuildMqttMessage(topic + "/temperature", temperature, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.Timestamp is { } timestamp) {
-            yield return BuildMqttMessage(topic + "/timestamp", timestamp.UtcDateTime);
+            yield return BuildMqttMessage(topic + "/timestamp", timestamp.UtcDateTime, RuuviJsonSerializerContext.Default.DateTime);
         }
         if (sample.TxPower is { } txPower) {
-            yield return BuildMqttMessage(topic + "/tx-power", txPower);
+            yield return BuildMqttMessage(topic + "/tx-power", txPower, RuuviJsonSerializerContext.Default.Double);
         }
         if (sample.VOC is { } voc) {
-            yield return BuildMqttMessage(topic + "/voc", voc);
+            yield return BuildMqttMessage(topic + "/voc", voc, RuuviJsonSerializerContext.Default.Double);
         }
     }
 
