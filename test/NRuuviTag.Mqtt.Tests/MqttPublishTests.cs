@@ -120,9 +120,7 @@ public class MqttPublishTests {
             Assert.IsNotNull(msg);
 
             var json = msg.ConvertPayloadToString();
-            var sampleFromMqtt = JsonSerializer.Deserialize<RuuviTagSample>(json, new JsonSerializerOptions() { 
-                PropertyNameCaseInsensitive = true 
-            });
+            var sampleFromMqtt = JsonSerializer.Deserialize<RuuviTagSample>(json, RuuviJsonSerializerContext.Default.RuuviTagSample);
 
             Assert.IsNotNull(sampleFromMqtt);
             Assert.AreEqual(sample, sampleFromMqtt);
@@ -185,9 +183,7 @@ public class MqttPublishTests {
             Assert.IsNotNull(msg);
 
             var json = msg.ConvertPayloadToString();
-            var sampleFromMqtt = JsonSerializer.Deserialize<RuuviTagSample>(json, new JsonSerializerOptions() {
-                PropertyNameCaseInsensitive = true
-            });
+            var sampleFromMqtt = JsonSerializer.Deserialize<RuuviTagSample>(json, RuuviJsonSerializerContext.Default.RuuviTagSample);
 
             Assert.IsNotNull(sampleFromMqtt);
             Assert.AreEqual(sample with { AccelerationX = null }, sampleFromMqtt);
