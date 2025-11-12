@@ -27,7 +27,7 @@
     <PackageVersion Include="MQTTnet.Extensions.ManagedClient" Version="4.3.7.1207" />
     <PackageVersion Include="MSTest" Version="4.0.2" />
     <PackageVersion Include="Nito.AsyncEx.Coordination" Version="5.1.2" />
-    <PackageVersion Include="OpenTelemetry.Api" Version="1.13.1" />
+    <PackageVersion Include="OpenTelemetry.Api" Version="1.14.0" />
     <PackageVersion Include="Spectre.Console.Cli" Version="0.53.0" />
     <PackageVersion Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageVersion Include="Tmds.DBus" Version="0.21.2" />
