@@ -1,0 +1,47 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+  categories:
+
+    - title: ":warning: Breaking Changes"
+      labels:
+        - breaking-change
+
+    - title: CLI Tool
+      labels:
+        - "cli:general"
+        - "cli:linux"
+        - "cli:windows"
+
+    - title: Container Image
+      labels:
+        - "container-image"
+
+    - title: "Linux Listener"
+      labels:
+        - "listener:linux"
+
+    - title: "Windows Listener"
+      labels:
+        - "listener:windows"
+
+    - title: Azure Event Hubs Publisher
+      labels:
+        - "publisher:azure-event-hubs"
+
+    - title: HTTP Publisher
+      labels:
+        - "publisher:http"
+
+    - title: MQTT Publisher
+      labels:
+        - "publisher:mqtt"
+
+    - title: Documentation
+      labels:
+        - "documentation"
+
+    - title: Miscellaneous Changes
+      labels:
+        - "*" 
