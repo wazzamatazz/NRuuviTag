@@ -82,10 +82,7 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommand.Settings> {
             catch (OperationCanceledException) { }
         }
         
-        var listener = _listenerFactory.CreateListener(options => {
-            options.KnownDevicesOnly = settings.KnownDevicesOnly;
-            options.EnableDataFormat6 = settings.EnableDataFormat6;
-        });
+        var listener = _listenerFactory.CreateListener(settings.Bind);
 
         var version = MqttProtocolVersion.Unknown;
         if (Enum.TryParse<MqttProtocolVersion>(settings.ProtocolVersion, out var vEnum)) {

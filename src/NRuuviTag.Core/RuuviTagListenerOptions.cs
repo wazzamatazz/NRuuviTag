@@ -34,5 +34,10 @@ public class RuuviTagListenerOptions {
     /// 
     /// </remarks>
     public bool EnableDataFormat6 { get; set; }
+    
+    /// <summary>
+    /// Specifies if duplicate advertisements are allowed.
+    /// </summary>
+    public bool AllowDuplicateAdvertisements { get; set; }
 
 }

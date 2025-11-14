@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -64,10 +65,9 @@ public partial class BlueZListener : RuuviTagListener {
     protected override async Task RunAsync(CancellationToken cancellationToken) {
         // Get the adapter from BlueZ.
         using var adapter = await BlueZManager.GetAdapterAsync(_adapterName).ConfigureAwait(false);
-        var @lock = new Nito.AsyncEx.AsyncLock();
             
         // Registrations for devices that we are observing.
-        var watchers = new Dictionary<string, IDisposable>(StringComparer.OrdinalIgnoreCase);
+        var watchers = new ConcurrentDictionary<string, IDisposable>(StringComparer.OrdinalIgnoreCase);
 
         // Set BlueZ discovery filter to receive LE advertisements and to allow duplicates.
         await adapter.SetDiscoveryFilterAsync(
@@ -92,6 +92,12 @@ public partial class BlueZListener : RuuviTagListener {
                     return;
                 }
 
+                if (watchers.ContainsKey(props.Address)) {
+                    // We are already watching this device.
+                    disposeDevice = true;
+                    return;
+                }
+
                 if (props.ManufacturerData == null || !props.ManufacturerData.ContainsKey(Constants.ManufacturerId)) {
                     // This is not a Ruuvi device.
                     LogDeviceIgnored(props.Address, "not a Ruuvi device");
@@ -110,7 +116,7 @@ public partial class BlueZListener : RuuviTagListener {
                 LogDeviceFound(props.Address);
                     
                 // Watch for changes to this device.
-                if (!await AddDeviceWatcher(args.Device, props, @lock).ConfigureAwait(false)) {
+                if (!await AddDeviceWatcher(args.Device, props).ConfigureAwait(false)) {
                     disposeDevice = true;
                 }
             }
@@ -138,7 +144,6 @@ public partial class BlueZListener : RuuviTagListener {
             }
 
             // Dispose of the watcher registrations.
-            using var _ = await @lock.LockAsync(default).ConfigureAwait(false);
             foreach (var item in watchers.Values) {
                 item.Dispose();
             }
@@ -149,12 +154,10 @@ public partial class BlueZListener : RuuviTagListener {
 
         // Adds a watcher for the specified device so that we can emit new samples when the
         // device properties change.
-        async Task<bool> AddDeviceWatcher(global::Linux.Bluetooth.Device device, Device1Properties properties, Nito.AsyncEx.AsyncLock deviceLock) {
+        async Task<bool> AddDeviceWatcher(global::Linux.Bluetooth.Device device, Device1Properties properties) {
             if (cancellationToken.IsCancellationRequested) {
                 return false;
             }
-
-            using var _ = await @deviceLock.LockAsync(cancellationToken).ConfigureAwait(false);
             
             if (watchers.ContainsKey(properties.Address)) {
                 return false;

@@ -64,10 +64,7 @@ public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubComm
             catch (OperationCanceledException) when (_appLifetime.ApplicationStarted.IsCancellationRequested) { }
         }
 
-        var listener = _listenerFactory.CreateListener(options => {
-            options.KnownDevicesOnly = settings.KnownDevicesOnly;
-            options.EnableDataFormat6 = settings.EnableDataFormat6;
-        });
+        var listener = _listenerFactory.CreateListener(settings.Bind);
         
         var publisherOptions = new AzureEventHubPublisherOptions() {
             ConnectionString = settings.ConnectionString!,

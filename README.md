@@ -14,6 +14,7 @@ The `nruuvitag` [command-line tool](#command-line-application) can be used to as
 
 # Example Usage
 
+> [!TIP]
 > See the [samples](/samples) folder for more detailed examples of usage.
 
 Usage is very straightforward. For example, to listen via the Windows SDK using the [NRuuviTag.Listener.Windows](https://www.nuget.org/packages/NRuuviTag.Listener.Windows) NuGet package ([source](/src/NRuuviTag.Listener.Windows)):
@@ -125,50 +126,56 @@ In addition to specifying the endpoint URL and request headers, you can use the 
 
 `nruuvitag` is a command-line tool for [Windows](/src/NRuuviTag.Cli.Windows) and [Linux](/src/NRuuviTag.Cli.Linux) that can scan for nearby RuuviTags, and publish device readings to the console, or to an MQTT server or Azure Event Hub.
 
+> [!TIP]
 > Add `--help` to any command to view help.
 
 Examples:
 
-```
+```sh
 # Scan for nearby devices
-
 nruuvitag devices scan
 ```
 
-```
+```sh
 # Write sensor readings from all nearby devices to the console
-
 nruuvitag publish console
 ```
 
-```
+```sh
 # Add a device to the known devices list
-
-nruuvitag devices add "AB:CD:EF:01:23:45" --id "bedroom-1" --name "Master Bedroom"
+nruuvitag devices add \
+  "AB:CD:EF:01:23:45" \
+  --id "bedroom-1" \
+  --name "Master Bedroom"
 ```
 
-```
+```sh
 # Publish readings from known devices to an MQTT server
-
-nruuvitag publish mqtt my-mqtt-service.local:1883 --client-id "MY_CLIENT_ID" --topic "{clientId}/my-ruuvi-tags/{deviceId}" --known-devices
+nruuvitag publish mqtt \
+  my-mqtt-service.local:1883 \
+  --client-id "MY_CLIENT_ID" \
+  --topic "{clientId}/my-ruuvi-tags/{deviceId}" \
+  --known-devices
 ```
 
-```
-# Publish readings from nearby devices to an Azure Event Hub in batches of up to 100 samples
-
-nruuvitag publish az "MY_CONNECTION_STRING" "MY_EVENT_HUB" --batch-size-limit 100
-```
-
-```
-# Publish readings from known devices to an HTTP endpoint, including devices using the fallback data format 6
-
-nruuvitag publish http "https://my-receiver.local" --header "X-API-Key: MY_API_KEY" --known-devices --enable-data-format-6
+```sh
+# Publish readings from nearby devices to an Azure Event Hub in batches of
+# up to 100 samples
+nruuvitag publish az \
+  "MY_CONNECTION_STRING" \
+  "MY_EVENT_HUB" \
+  --batch-size-limit 100
 ```
 
-
-# Linux Service
-
-The command-line application can be run as a Linux service using systemd. See [here](/docs/LinuxSystemdService.md) for details.
+```sh
+# Publish readings from known devices to an HTTP endpoint, including 
+# devices using the fallback data format 6
+nruuvitag publish http \
+  "https://my-receiver.local" \
+  --header "X-API-Key: MY_API_KEY" \
+  --known-devices \
+  --enable-data-format-6
+```
 
 
 # Linux Container Image
@@ -183,9 +190,9 @@ Then, run the container image as follows:
 
 ```sh
 docker run -it --rm \
-    -v /var/run/dbus:/var/run/dbus \
-    -v $HOME/.nruuvitag:/root/.nruuvitag \
-    ghcr.io/wazzamatazz/nruuvitag:latest
+  -v /var/run/dbus:/var/run/dbus \
+  -v $HOME/.nruuvitag:/root/.nruuvitag \
+  ghcr.io/wazzamatazz/nruuvitag:latest
 ```
 
 > [!WARNING]
@@ -222,6 +229,11 @@ nruuvitag devices list
 ```
 
 See [here](/docs/Docker.md) for details about how to build the image. 
+
+
+# Linux Service
+
+The command-line application can be run as a Linux service using systemd. See [here](/docs/LinuxSystemdService.md) for details.
 
 
 # Building the Solution
