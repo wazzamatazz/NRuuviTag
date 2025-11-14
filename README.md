@@ -190,9 +190,9 @@ Then, run the container image as follows:
 
 ```sh
 docker run -it --rm \
-    -v /var/run/dbus:/var/run/dbus \
-    -v $HOME/.nruuvitag:/root/.nruuvitag \
-    ghcr.io/wazzamatazz/nruuvitag:latest
+  -v /var/run/dbus:/var/run/dbus \
+  -v $HOME/.nruuvitag:/root/.nruuvitag \
+  ghcr.io/wazzamatazz/nruuvitag:latest
 ```
 
 > [!WARNING]
