@@ -21,6 +21,11 @@ public partial class BlueZListener : RuuviTagListener {
     public const string DefaultBluetoothAdapter = "hci0";
 
     /// <summary>
+    /// The listener options.
+    /// </summary>
+    private readonly BlueZListenerOptions _options;
+    
+    /// <summary>
     /// The Bluetooth adapter to monitor.
     /// </summary>
     private readonly string _adapterName;
@@ -47,9 +52,10 @@ public partial class BlueZListener : RuuviTagListener {
     ///   The logger for the listener.
     /// </param>
     public BlueZListener(BlueZListenerOptions options, IDeviceResolver? deviceLookup = null, TimeProvider? timeProvider = null, ILogger<BlueZListener>? logger = null) : base(options, deviceLookup, timeProvider, logger) {
-        _adapterName = string.IsNullOrWhiteSpace(options?.AdapterName) 
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _adapterName = string.IsNullOrWhiteSpace(_options.AdapterName) 
             ? DefaultBluetoothAdapter 
-            : options.AdapterName;
+            : _options.AdapterName;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<BlueZListener>.Instance;
     }
 
@@ -67,7 +73,7 @@ public partial class BlueZListener : RuuviTagListener {
         await adapter.SetDiscoveryFilterAsync(
             new Dictionary<string, object>() {
                 ["Transport"] = "le",
-                ["DuplicateData"] = true
+                ["DuplicateData"] = _options.AllowDuplicateAdvertisements
             }).ConfigureAwait(false);
         
         // Handler for when BlueZ detects a new device.
@@ -124,7 +130,12 @@ public partial class BlueZListener : RuuviTagListener {
         }
         finally {
             // Stop scanning.
-            await adapter.StopDiscoveryAsync().ConfigureAwait(false);
+            try {
+                await adapter.StopDiscoveryAsync().ConfigureAwait(false);
+            }
+            catch {
+                // Ignore errors during stop.
+            }
 
             // Dispose of the watcher registrations.
             using var _ = await @lock.LockAsync(default).ConfigureAwait(false);
