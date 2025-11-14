@@ -69,9 +69,7 @@ public class DeviceScanCommand : AsyncCommand<DeviceScanCommand.Settings> {
                 Console.WriteLine(Resources.LogMessage_StartingDeviceScan);
                 Console.WriteLine();
 
-                var listener = _listenerFactory.CreateListener(options => {
-                    options.EnableDataFormat6 = settings.EnableDataFormat6;
-                });
+                var listener = _listenerFactory.CreateListener(settings.Bind);
                 
                 await foreach (var sample in listener.ListenAsync(ctSource.Token).ConfigureAwait(false)) {
                     if (string.IsNullOrWhiteSpace(sample?.MacAddress)) {

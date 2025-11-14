@@ -49,10 +49,7 @@ public class PublishConsoleCommand : AsyncCommand<PublishConsoleCommand.Settings
             catch (OperationCanceledException) { }
         }
         
-        var listener = _listenerFactory.CreateListener(options => {
-            options.KnownDevicesOnly = settings.KnownDevicesOnly;
-            options.EnableDataFormat6 = settings.EnableDataFormat6;
-        });
+        var listener = _listenerFactory.CreateListener(settings.Bind);
 
         var publisher = new ConsoleJsonPublisher(listener);
         

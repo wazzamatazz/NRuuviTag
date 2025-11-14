@@ -73,10 +73,7 @@ public class PublishHttpCommand : AsyncCommand<PublishHttpCommand.Settings> {
             catch (OperationCanceledException) { }
         }
         
-        var listener = _listenerFactory.CreateListener(options => {
-            options.KnownDevicesOnly = settings.KnownDevicesOnly;
-            options.EnableDataFormat6 = settings.EnableDataFormat6;
-        });
+        var listener = _listenerFactory.CreateListener(settings.Bind);
         
         var headers = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
         if (settings.Headers is { Length: > 0 }) {
