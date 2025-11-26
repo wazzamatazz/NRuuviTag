@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NRuuviTag.AzureEventHubs.Publisher\NRuuviTag.AzureEventHubs.Publisher.csproj" />
+    <ProjectReference Include="..\NRuuviTag.Publisher.AzureEventHubs\NRuuviTag.Publisher.AzureEventHubs.csproj" />
     <ProjectReference Include="..\NRuuviTag.Publisher.Http\NRuuviTag.Publisher.Http.csproj" />
     <ProjectReference Include="..\NRuuviTag.Publisher.Mqtt\NRuuviTag.Publisher.Mqtt.csproj" />
     <ProjectReference Include="..\NRuuviTag.OpenTelemetry\NRuuviTag.OpenTelemetry.csproj" />
