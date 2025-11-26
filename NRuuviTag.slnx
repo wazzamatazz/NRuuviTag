@@ -32,8 +32,8 @@
     <Project Path="src/NRuuviTag.Listener.Windows/NRuuviTag.Listener.Windows.csproj" />
     <Project Path="src/NRuuviTag.OpenTelemetry/NRuuviTag.OpenTelemetry.csproj" />
     <Project Path="src\NRuuviTag.AzureEventHubs.Publisher\NRuuviTag.AzureEventHubs.Publisher.csproj" />
-    <Project Path="src\NRuuviTag.Mqtt.Publisher\NRuuviTag.Mqtt.Publisher.csproj" />
     <Project Path="src\NRuuviTag.Publisher.Http\NRuuviTag.Publisher.Http.csproj" Type="C#" />
+    <Project Path="src\NRuuviTag.Publisher.Mqtt\NRuuviTag.Publisher.Mqtt.csproj" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/NRuuviTag.Core.Tests/NRuuviTag.Core.Tests.csproj" />
