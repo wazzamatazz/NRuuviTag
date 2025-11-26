@@ -132,10 +132,9 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommand.Settings> {
     /// </summary>
     public class Settings : PublishCommandSettings {
 
-        [CommandArgument(0, "[HOSTNAME_OR_URL]")]
-        [DefaultValue("localhost")]
+        [CommandArgument(0, "<HOSTNAME_OR_URL>")]
         [Description("The hostname, IP address, or URL for the MQTT broker (e.g. 'my-broker.local:21883', 'ws://mybroker.local:8080/mqtt'). The port number is only required when connecting on a non-default port. When specifying a URL, the '--use-tls' flag is implied if the 'https' or 'wss' scheme is specified in the URL.")]
-        public string? Hostname { get; set; }
+        public string Hostname { get; set; } = default!;
 
         [CommandOption("--client-id <CLIENT_ID>")]
         [Description("The MQTT client ID to use. If not specified, a client ID will be generated.")]
