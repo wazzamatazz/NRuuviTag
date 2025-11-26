@@ -12,7 +12,7 @@
   <PropertyGroup>
     <ContainerRepository>wazzamatazz/nruuvitag</ContainerRepository>
     <ContainerImageTags Condition=" '$(IsPrereleaseVersion)' != 'true' ">latest;$(MajorVersion)</ContainerImageTags>
-    <ContainerImageTags Condition=" '$(IsPrereleaseVersion)' == 'true' ">$(MajorVersion)-preview</ContainerImageTags>
+    <ContainerImageTags Condition=" '$(IsPrereleaseVersion)' == 'true' ">preview;$(MajorVersion)-preview</ContainerImageTags>
     <!-- Container uses root so that it can access the Bluetooth adapter -->
     <ContainerUser>root</ContainerUser>
     <PrivateRepositoryUrl>$(PackageProjectUrl)</PrivateRepositoryUrl>
