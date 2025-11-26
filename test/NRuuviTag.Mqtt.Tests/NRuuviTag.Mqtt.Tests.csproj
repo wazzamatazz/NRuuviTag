@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\NRuuviTag.Mqtt.Publisher\NRuuviTag.Mqtt.Publisher.csproj" />
+    <ProjectReference Include="..\..\src\NRuuviTag.Publisher.Mqtt\NRuuviTag.Publisher.Mqtt.csproj" />
   </ItemGroup>
 
 </Project>

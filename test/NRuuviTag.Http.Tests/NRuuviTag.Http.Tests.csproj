@@ -19,7 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\NRuuviTag.Http.Publisher\NRuuviTag.Http.Publisher.csproj" />
+      <ProjectReference Include="..\..\src\NRuuviTag.Publisher.Http\NRuuviTag.Publisher.Http.csproj" />
     </ItemGroup>
 
     <ItemGroup>

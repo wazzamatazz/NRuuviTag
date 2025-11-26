@@ -42,7 +42,7 @@ await foreach (var sample in client.ListenAsync(cancellationToken)) {
 
 # Publishing Samples to MQTT
 
-The [NRuuviTag.Mqtt.Publisher](https://www.nuget.org/packages/NRuuviTag.Mqtt.Publisher) NuGet package ([source](./src/NRuuviTag.Mqtt.Publisher)) can be used to observe RuuviTag broadcasts and forward the samples to an MQTT server:
+The [NRuuviTag.Publisher.Mqtt](https://www.nuget.org/packages/NRuuviTag.Publisher.Mqtt) NuGet package ([source](./src/NRuuviTag.Publisher.Mqtt)) can be used to observe RuuviTag broadcasts and forward the samples to an MQTT server:
 
 ```csharp
 public async Task RunMqttPublisherAsync(
@@ -68,7 +68,7 @@ public async Task RunMqttPublisherAsync(
 
 # Publishing Samples to Azure Event Hubs
 
-The [NRuuviTag.AzureEventHubs.Publisher](https://www.nuget.org/packages/NRuuviTag.AzureEventHubs.Publisher) NuGet package ([source](./src/NRuuviTag.AzureEventHubs.Publisher)) can be used to observe RuuviTag broadcasts and forward the samples to an Azure Event Hub:
+The [NRuuviTag.Publisher.AzureEventHubs](https://www.nuget.org/packages/NRuuviTag.Publisher.AzureEventHubs) NuGet package ([source](./src/NRuuviTag.Publisher.AzureEventHubs)) can be used to observe RuuviTag broadcasts and forward the samples to an Azure Event Hub:
 
 ```csharp
 public async Task RunAzureEventHubPublisherAsync(
@@ -93,7 +93,7 @@ public async Task RunAzureEventHubPublisherAsync(
 
 # Publishing Samples to an HTTP Endpoint
 
-The [NRuuviTag.Http.Publisher](https://www.nuget.org/packages/NRuuviTag.Http.Publisher) NuGet package ([source](./src/NRuuviTag.Http.Publisher)) can be used to observe RuuviTag broadcasts and forward the samples to an HTTP endpoint:
+The [NRuuviTag.Publisher.Http](https://www.nuget.org/packages/NRuuviTag.Publisher.Http) NuGet package ([source](./src/NRuuviTag.Publisher.Http)) can be used to observe RuuviTag broadcasts and forward the samples to an HTTP endpoint:
 
 ```csharp
 public async Task RunHttpPublisherAsync( 
