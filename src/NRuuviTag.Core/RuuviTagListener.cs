@@ -72,9 +72,9 @@ public abstract partial class RuuviTagListener : IRuuviTagListener {
     protected bool KnownDevicesOnly => _options.KnownDevicesOnly;
     
     /// <summary>
-    /// Specifies whether Data Format 6 advertisements should be ignored.
+    /// Specifies whether extended advertisement formats should be enabled.
     /// </summary>
-    protected bool EnableDataFormat6 => _options.EnableDataFormat6;
+    protected bool EnableExtendedAdvertisementFormats => _options.EnableExtendedAdvertisementFormats;
 
 
     /// <summary>
@@ -175,8 +175,8 @@ public abstract partial class RuuviTagListener : IRuuviTagListener {
             return;
         }
         
-        if (!EnableDataFormat6 && data[0] == Constants.DataFormat6) {
-            // Ignore data format 6 unless we're explicitly interested.
+        if (!EnableExtendedAdvertisementFormats && data[0] == Constants.DataFormatExtendedV1) {
+            // Ignore data format E1 unless we've enabled extended advertisement formats.
             return;
         }
 
