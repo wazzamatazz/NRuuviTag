@@ -32,14 +32,14 @@
     <Project Path="src/NRuuviTag.Listener.Windows/NRuuviTag.Listener.Windows.csproj" />
     <Project Path="src/NRuuviTag.OpenTelemetry/NRuuviTag.OpenTelemetry.csproj" />
     <Project Path="src\NRuuviTag.AzureEventHubs.Publisher\NRuuviTag.AzureEventHubs.Publisher.csproj" />
-    <Project Path="src\NRuuviTag.Http.Publisher\NRuuviTag.Http.Publisher.csproj" Type="Classic C#" />
     <Project Path="src\NRuuviTag.Mqtt.Publisher\NRuuviTag.Mqtt.Publisher.csproj" />
+    <Project Path="src\NRuuviTag.Publisher.Http\NRuuviTag.Publisher.Http.csproj" Type="C#" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/NRuuviTag.Core.Tests/NRuuviTag.Core.Tests.csproj" />
     <Project Path="test/NRuuviTag.Mqtt.Tests/NRuuviTag.Mqtt.Tests.csproj" />
-    <Project Path="test\NRuuviTag.Benchmarks\NRuuviTag.Benchmarks.csproj" Type="Classic C#" />
-    <Project Path="test\NRuuviTag.Http.Tests\NRuuviTag.Http.Tests.csproj" Type="Classic C#" />
+    <Project Path="test\NRuuviTag.Benchmarks\NRuuviTag.Benchmarks.csproj" Type="C#" />
+    <Project Path="test\NRuuviTag.Http.Tests\NRuuviTag.Http.Tests.csproj" Type="C#" />
     <File Path="test/Directory.Build.props" />
   </Folder>
 </Solution>
