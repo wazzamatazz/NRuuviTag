@@ -169,12 +169,12 @@ nruuvitag publish az \
 
 ```sh
 # Publish readings from known devices to an HTTP endpoint, including 
-# devices using the fallback data format 6
+# devices using the extended advertising data format E1
 nruuvitag publish http \
   "https://my-receiver.local" \
   --header "X-API-Key: MY_API_KEY" \
   --known-devices \
-  --enable-data-format-6
+  --extended-advertisements
 ```
 
 

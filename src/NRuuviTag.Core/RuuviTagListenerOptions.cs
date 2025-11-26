@@ -13,27 +13,27 @@ public class RuuviTagListenerOptions {
     ///   whether a device is known.
     /// </remarks>
     public bool KnownDevicesOnly { get; set; }
-
+    
     /// <summary>
-    /// When <see langword="false"/>, Data Format 6 advertisements will be ignored.
+    /// When <see langword="true"/>, formats that use extended advertisements will be enabled, and
+    /// fallback formats will be ignored.
     /// </summary>
     /// <remarks>
     ///
     /// <para>
-    ///   Ruuvi devices that use the Extended v1 data format (such as Ruuvi Air) also emit
-    ///   advertisements using Data Format 6 as a fallback for Bluetooth receivers that do not
-    ///   support Bluetooth 5.0 extended advertisements. If the receiver supports receiving
-    ///   extended advertisements, Data Format 6 advertisements should be ignored.
+    ///   Enable this option if your Bluetooth receiver supports Bluetooth 5.0 extended
+    ///   advertisements to ensure that the most complete data format is used.
     /// </para>
     ///
     /// <para>
-    ///   The default value of <see cref="EnableDataFormat6"/> is <see langword="false"/>. Set the
-    ///   property to <see langword="true"/> on systems that do not support receiving extended
-    ///   advertisements.
+    ///   Data format E1 (used by Ruuvi Air) is an example of an extended advertisement data
+    ///   format. When <see cref="EnableExtendedAdvertisementFormats"/> is <see langword="true"/>,
+    ///   Data Format E1 advertisements will be processed, and the fallback Data Format 6
+    ///   advertisements will be ignored.
     /// </para>
     /// 
     /// </remarks>
-    public bool EnableDataFormat6 { get; set; }
+    public bool EnableExtendedAdvertisementFormats { get; set; }
     
     /// <summary>
     /// Specifies if duplicate advertisements are allowed.
