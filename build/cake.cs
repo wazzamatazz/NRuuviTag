@@ -1,4 +1,8 @@
 #:sdk Cake.Sdk@6.0.0
+#:package Cake.MinVer
+
+InstallTool("dotnet:https://api.nuget.org/v3/index.json?package=minver-cli&version=6.0.0");
+InstallTool("dotnet:https://api.nuget.org/v3/index.json?package=CycloneDX&version=5.5.0");
 
 var target = Argument("target", "Test");
 
@@ -10,15 +14,22 @@ Setup<BuildData>(context => {
     var ciBuild = !BuildSystem.IsLocalBuild || HasArgument("ci");
     var buildCounter = Argument("build-counter", 0);
     
+    var version = MinVer(settings => settings
+        .WithTagPrefix("v")
+        .WithVerbosity(MinVerVerbosity.Info)
+    );
+    
     Environment.SetEnvironmentVariable("ContinuousIntegrationBuild", ciBuild ? "true" : "false");
+    Environment.SetEnvironmentVariable("MinVerVersionOverride", version);
     Environment.SetEnvironmentVariable("CAKE_BUILD_COUNTER", buildCounter.ToString());
     
-    return new BuildData(
+    var data = new BuildData(
         new ProjectData(
             "NRuuviTag.slnx",
             ContainerProjects: ["src/NRuuviTag.Cli.Linux/NRuuviTag.Cli.Linux.csproj"]),
-        IsContinuousIntegrationBuild: ciBuild,
+        BuildVersion: version,
         BuildCounter: buildCounter,
+        IsContinuousIntegrationBuild: ciBuild,
         Configuration: Argument("configuration", "Release"),
         Clean: HasArgument("clean"),
         SkipTests: HasArgument("no-tests") || HasArgument("skip-tests"),
@@ -28,6 +39,12 @@ Setup<BuildData>(context => {
                 Argument("github-username", ""),
                 Argument("github-token", ""))
             : null);
+    
+    Information(System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions {
+        WriteIndented = true
+    }));
+    
+    return data;
 }); 
 
 Task("Clean")
@@ -77,10 +94,9 @@ Task("Pack")
             });
     });
 
-Task("Publish")
+Task("PublishExe")
     .IsDependentOn("Test")
     .DoesForEach<BuildData, FilePath>(GetFiles("**/*.*proj"), (data, projectFile) => {
-        // Publish using publish profiles
         var projectDir = projectFile.GetDirectory();
         foreach (var publishProfileFile in GetFiles(projectDir.FullPath + "/**/*.pubxml")) {
             var buildSettings = new DotNetPublishSettings {
@@ -92,13 +108,13 @@ Task("Publish")
                 projectFile.FullPath, 
                 buildSettings);
         }
-        
-        // Publish as container
-        if (data.Projects.ContainerProjects is null or { Count: 0 }) {
-            return;
-        }
+    });
 
-        var isContainerProject = data.Projects.ContainerProjects.Any(x => {
+Task("PublishContainer")
+    .WithCriteria<BuildData>(data => data.Projects.ContainerProjects is { Count: > 0 })
+    .IsDependentOn("Test")
+    .DoesForEach<BuildData, FilePath>(GetFiles("**/*.*proj"), (data, projectFile) => {
+        var isContainerProject = data.Projects.ContainerProjects!.Any(x => {
             var containerProjectFile = MakeAbsolute(File(x));
             return containerProjectFile.Equals(projectFile);
         });
@@ -120,6 +136,11 @@ Task("Publish")
             projectFile.FullPath, 
             containerBuildSettings);
     });
+
+Task("Publish")
+    .IsDependentOn("PublishExe")
+    .IsDependentOn("PublishContainer")
+    .Does(() => { });
 
 Task("BillOfMaterials")
     .IsDependentOn("Clean")
@@ -177,14 +198,15 @@ RunTarget(target);
 //////////////////////////////////////////////////////////////////////
 
 public record BuildData(
-    ProjectData Projects,
-    bool IsContinuousIntegrationBuild = false,
+    [property: System.Text.Json.Serialization.JsonIgnore] ProjectData Projects,
+    string BuildVersion,
     int BuildCounter = 0,
+    bool IsContinuousIntegrationBuild = false,
     string Configuration = "Release",
     bool Clean = false,
     bool SkipTests = false,
     string? ContainerRegistry = null,
-    GitHubCredentials? GitHubCredentials = null);
+    [property: System.Text.Json.Serialization.JsonIgnore] GitHubCredentials? GitHubCredentials = null);
 
 
 public record ProjectData(
