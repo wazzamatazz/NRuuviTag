@@ -8,15 +8,6 @@
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     <UserSecretsId>ef771434-9cd9-4037-b363-b7ca31975c30</UserSecretsId>
   </PropertyGroup>
-
-  <PropertyGroup>
-    <ContainerRepository>wazzamatazz/nruuvitag</ContainerRepository>
-    <ContainerImageTags Condition=" '$(IsPrereleaseVersion)' != 'true' ">latest;$(MajorVersion)</ContainerImageTags>
-    <ContainerImageTags Condition=" '$(IsPrereleaseVersion)' == 'true' ">preview;$(MajorVersion)-preview</ContainerImageTags>
-    <!-- Container uses root so that it can access the Bluetooth adapter -->
-    <ContainerUser>root</ContainerUser>
-    <PrivateRepositoryUrl>$(PackageProjectUrl)</PrivateRepositoryUrl>
-  </PropertyGroup>
   
   <ItemGroup>
     <None Remove="nruuvitag.service" />
@@ -36,4 +27,17 @@
     <ProjectReference Include="..\NRuuviTag.Cli\NRuuviTag.Cli.csproj" />
     <ProjectReference Include="..\NRuuviTag.Listener.Linux\NRuuviTag.Listener.Linux.csproj" />
   </ItemGroup>
+  
+  <!-- Configure container-related properties after MinVer has run so that we can access its output properties. -->
+  <Target Name="ConfigureContainer" AfterTargets="MinVer" BeforeTargets="PublishContainer">
+    <PropertyGroup>
+      <ContainerRepository>wazzamatazz/nruuvitag</ContainerRepository>
+      <ContainerImageTags Condition=" '$(MinVerPreRelease)' == '' ">latest;$(MinVerMajor)</ContainerImageTags>
+      <ContainerImageTags Condition=" '$(MinVerPreRelease)' != '' ">preview;$(MinVerMajor)-preview</ContainerImageTags>
+      <!-- Container uses root so that it can access the Bluetooth adapter -->
+      <ContainerUser>root</ContainerUser>
+      <PrivateRepositoryUrl>$(PackageProjectUrl)</PrivateRepositoryUrl>
+    </PropertyGroup>
+  </Target>
+  
 </Project>
