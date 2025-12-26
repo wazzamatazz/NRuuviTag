@@ -1,12 +1,12 @@
 <Solution>
   <Folder Name="/build/">
     <File Path="build/version.json" />
+    <File Path="build\cake.cs" />
   </Folder>
   <Folder Name="/common/">
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
-    <File Path="build.cake" />
     <File Path="build.ps1" />
     <File Path="build.sh" />
     <File Path="Directory.Build.props" />
@@ -32,14 +32,14 @@
     <Project Path="src/NRuuviTag.Listener.Windows/NRuuviTag.Listener.Windows.csproj" />
     <Project Path="src/NRuuviTag.OpenTelemetry/NRuuviTag.OpenTelemetry.csproj" />
     <Project Path="src\NRuuviTag.Publisher.AzureEventHubs\NRuuviTag.Publisher.AzureEventHubs.csproj" />
-    <Project Path="src\NRuuviTag.Publisher.Http\NRuuviTag.Publisher.Http.csproj" Type="C#" />
+    <Project Path="src\NRuuviTag.Publisher.Http\NRuuviTag.Publisher.Http.csproj" />
     <Project Path="src\NRuuviTag.Publisher.Mqtt\NRuuviTag.Publisher.Mqtt.csproj" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/NRuuviTag.Core.Tests/NRuuviTag.Core.Tests.csproj" />
     <Project Path="test/NRuuviTag.Mqtt.Tests/NRuuviTag.Mqtt.Tests.csproj" />
-    <Project Path="test\NRuuviTag.Benchmarks\NRuuviTag.Benchmarks.csproj" Type="C#" />
-    <Project Path="test\NRuuviTag.Http.Tests\NRuuviTag.Http.Tests.csproj" Type="C#" />
+    <Project Path="test\NRuuviTag.Benchmarks\NRuuviTag.Benchmarks.csproj" />
+    <Project Path="test\NRuuviTag.Http.Tests\NRuuviTag.Http.Tests.csproj" />
     <File Path="test/Directory.Build.props" />
   </Folder>
 </Solution>

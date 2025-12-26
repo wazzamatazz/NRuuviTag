@@ -23,4 +23,11 @@
   <!-- Extension point to allow Continuous Integration systems to inject their own configuration. -->
   <Import Project="CI.targets" Condition="Exists('CI.targets')" />
 
+  <Target Name="SetFileVersion" AfterTargets="MinVer">
+    <PropertyGroup>
+      <CAKE_BUILD_COUNTER Condition="'$(CAKE_BUILD_COUNTER)' == ''">0</CAKE_BUILD_COUNTER>
+      <FileVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).$(CAKE_BUILD_COUNTER)</FileVersion>
+    </PropertyGroup>
+  </Target>
+
 </Project>

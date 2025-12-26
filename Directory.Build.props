@@ -20,13 +20,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- 
-    IMPORTANT: 
-    This version will always be overridden by the version specified in build\version.json when 
-    building via build.ps1 or build.sh. It is defined here to allow Visual Studio to build with 
-    the solution with the correct version number.
-    -->
-    <Version>5.0.0</Version>
+    <MinVerMinimumMajorMinor>5.0</MinVerMinimumMajorMinor>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerDefaultPreReleaseIdentifiers>pre.0</MinVerDefaultPreReleaseIdentifiers>
   </PropertyGroup>
 
   <PropertyGroup>
