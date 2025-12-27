@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 using Jaahas.CertificateUtilities;
@@ -32,9 +33,9 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommand.Settings> {
     private readonly IRuuviTagListenerFactory _listenerFactory;
 
     /// <summary>
-    /// The <see cref="MqttFactory"/> that is used to create an MQTT client.
+    /// The <see cref="MqttClientFactory"/> that is used to create an MQTT client.
     /// </summary>
-    private readonly MqttFactory _mqttFactory;
+    private readonly MqttClientFactory _mqttFactory;
 
     /// <summary>
     /// The <see cref="IHostApplicationLifetime"/> for the .NET host application.
@@ -64,7 +65,7 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommand.Settings> {
     /// </param>
     public PublishMqttCommand(
         IRuuviTagListenerFactory listenerFactory, 
-        MqttFactory mqttFactory,  
+        MqttClientFactory mqttFactory,  
         IHostApplicationLifetime appLifetime, 
         ILoggerFactory loggerFactory
     ) {
@@ -112,6 +113,10 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommand.Settings> {
                 AllowUntrustedCertificates = settings.AllowUntrustedCertificates,
                 IgnoreCertificateChainErrors = settings.IgnoreCertificateChainErrors,
                 ClientCertificates = settings.GetClientCertificates()
+            },
+            ClientOptions = new ManagedMqttClientOptions() {
+                QueueSize = settings.MessageQueueSize,
+                QueueFullMode = settings.MessageQueueFullMode
             }
         };
 
@@ -186,6 +191,16 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommand.Settings> {
         [CommandOption("--client-certificate-password <PASSWORD>")]
         [Description("The password for the PFX file specified by the '--client-certificate' setting, or for the private key file specified by the '--client-certificate-key' setting.")]
         public string? ClientCertificatePassword { get; set; }
+        
+        [CommandOption("--queue-size <SIZE>")]
+        [Description("The capacity of the internal message queue used for buffering outgoing MQTT messages.")]
+        [DefaultValue(1000)]
+        public int MessageQueueSize { get; set; }
+        
+        [CommandOption("--queue-full-mode <MODE>")]
+        [Description("The behavior when the internal message queue is full. Possible values are: DropOldest (drops the oldest message in the queue; default) DropNewest (drops the newest message in the queue), DropWrite (drops the incoming message), Wait (wait until space is available).")]
+        [DefaultValue(BoundedChannelFullMode.DropOldest)]
+        public BoundedChannelFullMode MessageQueueFullMode { get; set; } = BoundedChannelFullMode.DropOldest;
 
 
         public override ValidationResult Validate() {

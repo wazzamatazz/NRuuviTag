@@ -26,10 +26,12 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.1" />
     <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" />
-    <PackageVersion Include="MQTTnet.Extensions.ManagedClient" Version="4.3.7.1207" />
+    <PackageVersion Include="MQTTnet" Version="5.0.1.1416" />
+    <PackageVersion Include="MQTTnet.Server" Version="5.0.1.1416" />
     <PackageVersion Include="MSTest" Version="4.0.2" />
     <PackageVersion Include="Nito.AsyncEx.Coordination" Version="5.1.2" />
     <PackageVersion Include="OpenTelemetry.Api" Version="1.14.0" />
+    <PackageVersion Include="Polly.Core" Version="8.6.5" />
     <PackageVersion Include="Spectre.Console.Cli" Version="0.53.1" />
     <PackageVersion Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageVersion Include="Tmds.DBus" Version="0.22.0" />

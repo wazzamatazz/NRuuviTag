@@ -14,8 +14,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 using MQTTnet;
-using MQTTnet.Client;
-using MQTTnet.Extensions.ManagedClient;
 
 namespace NRuuviTag.Mqtt;
 
@@ -36,14 +34,9 @@ public partial class MqttPublisher : RuuviTagPublisher {
     private readonly ILogger<MqttPublisher> _logger;
 
     /// <summary>
-    /// MQTT client.
-    /// </summary>
-    private readonly IManagedMqttClient _mqttClient;
-
-    /// <summary>
     /// MQTT client options.
     /// </summary>
-    private readonly ManagedMqttClientOptions _mqttClientOptions;
+    private readonly MqttClientOptions _mqttClientOptions;
 
     /// <summary>
     /// MQTT bridge options.
@@ -55,6 +48,11 @@ public partial class MqttPublisher : RuuviTagPublisher {
     /// </summary>
     private readonly string _topicTemplate;
     
+    /// <summary>
+    /// The MQTT client for the publisher.
+    /// </summary>
+    public ManagedMqttClient MqttClient { get; }
+    
 
     /// <summary>
     /// Creates a new <see cref="MqttPublisher"/> object.
@@ -62,7 +60,7 @@ public partial class MqttPublisher : RuuviTagPublisher {
     /// <param name="listener">
     ///   The <see cref="IRuuviTagListener"/> to observe for sensor readings.
     /// </param>
-    /// <param name="options">
+    /// <param name="publisherOptions">
     ///   Publisher options.
     /// </param>
     /// <param name="factory">
@@ -75,17 +73,18 @@ public partial class MqttPublisher : RuuviTagPublisher {
     ///   <paramref name="listener"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="options"/> is <see langword="null"/>.
+    ///   <paramref name="publisherOptions"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ValidationException">
-    ///   <paramref name="options"/> fails validation.
+    ///   <paramref name="publisherOptions"/> fails validation.
     /// </exception>
-    public MqttPublisher(IRuuviTagListener listener, MqttPublisherOptions options, MqttFactory factory, ILoggerFactory? loggerFactory = null)
-        : base(listener, options, loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
-        _options = options ?? throw new ArgumentNullException(nameof(options));
-        Validator.ValidateObject(options, new ValidationContext(options), true);
-
-        _logger = loggerFactory?.CreateLogger<MqttPublisher>() ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttPublisher>.Instance;
+    public MqttPublisher(IRuuviTagListener listener, MqttPublisherOptions publisherOptions, MqttClientFactory factory, ILoggerFactory? loggerFactory = null)
+        : base(listener, publisherOptions, loggerFactory?.CreateLogger<RuuviTagPublisher>()) {
+        _options = publisherOptions ?? throw new ArgumentNullException(nameof(publisherOptions));
+        Validator.ValidateObject(publisherOptions, new ValidationContext(publisherOptions), true);
+        
+        loggerFactory ??= Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance;
+        _logger = loggerFactory.CreateLogger<MqttPublisher>();
 
         // If no client ID was specified, we'll generate one.
         var clientId = string.IsNullOrWhiteSpace(_options.ClientId) 
@@ -174,14 +173,12 @@ public partial class MqttPublisher : RuuviTagPublisher {
         }
 
         // Build MQTT client options.
-        var managedClientOptionsBuilder = new ManagedMqttClientOptionsBuilder()
-            .WithClientOptions(clientOptionsBuilder.Build());
-        _mqttClientOptions = managedClientOptionsBuilder.Build();
+        _mqttClientOptions = clientOptionsBuilder.Build();
 
         // Build MQTT client.
-        _mqttClient = factory.CreateManagedMqttClient();
-        _mqttClient.ConnectedAsync += OnConnectedAsync;
-        _mqttClient.DisconnectedAsync += OnDisconnectedAsync;
+        MqttClient = new ManagedMqttClient(factory.CreateMqttClient(), _options.ClientOptions ?? new ManagedMqttClientOptions(), loggerFactory.CreateLogger<ManagedMqttClient>());
+        MqttClient.ConnectedAsync += OnConnectedAsync;
+        MqttClient.DisconnectedAsync += OnDisconnectedAsync;
     }
     
     
@@ -259,7 +256,7 @@ public partial class MqttPublisher : RuuviTagPublisher {
     ///   The event arguments.
     /// </param>
     private Task OnConnectedAsync(MqttClientConnectedEventArgs args) {
-        var hostname = _mqttClientOptions.ClientOptions.ChannelOptions switch {
+        var hostname = _mqttClientOptions.ChannelOptions switch {
             MqttClientTcpOptions tcpOptions => tcpOptions.RemoteEndpoint switch {
                 System.Net.DnsEndPoint dns => $"{dns.Host}:{dns.Port}",
                 System.Net.IPEndPoint ip => $"{ip.Address}:{ip.Port}",
@@ -355,7 +352,7 @@ public partial class MqttPublisher : RuuviTagPublisher {
             .WithTopic(topic)
             .WithPayload(JsonSerializer.SerializeToUtf8Bytes(payload, jsonTypeInfo));
 
-        if (_mqttClient.Options.ClientOptions.ProtocolVersion >= MQTTnet.Formatter.MqttProtocolVersion.V500) {
+        if (MqttClient.Options.ProtocolVersion >= MQTTnet.Formatter.MqttProtocolVersion.V500) {
             builder = builder.WithContentType("application/json");
         }
 
@@ -473,7 +470,7 @@ public partial class MqttPublisher : RuuviTagPublisher {
     protected override async Task RunAsync(ChannelReader<RuuviTagSample> samples, CancellationToken cancellationToken) {
         LogStartingMqttPublisher();
 
-        await _mqttClient.StartAsync(_mqttClientOptions).ConfigureAwait(false);
+        await MqttClient.ConnectAsync(_mqttClientOptions, cancellationToken).ConfigureAwait(false);
         try {
             while (await samples.WaitToReadAsync(cancellationToken).ConfigureAwait(false)) {
                 while (samples.TryRead(out var item)) {
@@ -481,7 +478,7 @@ public partial class MqttPublisher : RuuviTagPublisher {
 
                     try {
                         foreach (var message in BuildMqttMessages(item)) {
-                            await _mqttClient.EnqueueAsync(message).ConfigureAwait(false);
+                            await MqttClient.EnqueueAsync(message, cancellationToken).ConfigureAwait(false);
                         }
                     }
                     catch (Exception e) {
@@ -491,12 +488,19 @@ public partial class MqttPublisher : RuuviTagPublisher {
             }
         }
         finally {
-            await _mqttClient.StopAsync().ConfigureAwait(false);
+            await MqttClient.TryDisconnectAsync().ConfigureAwait(false);
             LogMqttPublisherStopped();
         }
     }
-        
-        
+
+
+    /// <inheritdoc />
+    protected override async ValueTask DisposeAsyncCore() {
+        await base.DisposeAsyncCore().ConfigureAwait(false);
+        MqttClient.Dispose();
+    }
+
+
     /// <summary>
     /// Matches hostnames in <c>{name}</c> and <c>{name}:{port}</c> formats.
     /// </summary>

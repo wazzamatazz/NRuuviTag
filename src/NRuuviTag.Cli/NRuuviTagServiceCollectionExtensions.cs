@@ -105,7 +105,7 @@ public static class NRuuviTagServiceCollectionExtensions {
         services.Configure<DeviceCollection>(configuration.GetSection("Devices"));
         services.AddScoped<IDeviceResolver, DeviceCollectionResolver>();
 
-        services.AddTransient<MqttFactory>();
+        services.AddTransient<MqttClientFactory>();
         services.AddHttpClient<NRuuviTag.Http.HttpPublisher>().AddStandardResilienceHandler();
 
         services.AddSpectreCommandApp(CommandUtilities.ConfigureCommandApp);

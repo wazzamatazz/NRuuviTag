@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using MQTTnet;
-using MQTTnet.Diagnostics;
+using MQTTnet.Diagnostics.Logger;
 using MQTTnet.Server;
 
 [assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
@@ -34,15 +34,9 @@ public class MqttPublishTests {
 
     [ClassInitialize]
     public static async Task ClassInitialize(TestContext context) {
-        s_loggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Trace).AddConsole());
+        s_loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Trace));
 
-        s_mqttServer = new MqttFactory().CreateMqttServer(
-            new MqttServerOptionsBuilder()
-                .WithDefaultEndpointPort(Port)
-                .WithDefaultEndpoint()
-                .Build(), 
-            new TestLogger(s_loggerFactory.CreateLogger<MqttServer>())
-        );
+        s_mqttServer = CreateMqttServer(Port);
 
         s_mqttServer.InterceptingPublishAsync += args => {
             MessageReceived?.Invoke(args.ApplicationMessage);
@@ -64,6 +58,17 @@ public class MqttPublishTests {
     }
 
 
+    private static MqttServer CreateMqttServer(int port) {
+        return new MqttServerFactory().CreateMqttServer(
+            new MqttServerOptionsBuilder()
+                .WithDefaultEndpointPort(port)
+                .WithDefaultEndpoint()
+                .Build(), 
+            new TestLogger(s_loggerFactory.CreateLogger<MqttServer>())
+        );
+    }
+
+
     private static TestRuuviTagListener CreateListener() {
         return new TestRuuviTagListener(new RuuviTagListenerOptions(), new NullDeviceResolver());
     }
@@ -81,7 +86,7 @@ public class MqttPublishTests {
             TlsOptions = new MqttPublisherTlsOptions() {
                 UseTls = false
             }
-        }, new MqttFactory(), s_loggerFactory);
+        }, new MqttClientFactory(), s_loggerFactory);
 
         var now = DateTimeOffset.Now;
         var signalStrength = -79;
@@ -144,7 +149,7 @@ public class MqttPublishTests {
                 UseTls = false
             },
             PrepareForPublish = s => s with { AccelerationX = null }
-        }, new MqttFactory(), s_loggerFactory);
+        }, new MqttClientFactory(), s_loggerFactory);
 
         var now = DateTimeOffset.Now;
         var signalStrength = -79;
@@ -206,7 +211,7 @@ public class MqttPublishTests {
             TlsOptions = new MqttPublisherTlsOptions() {
                 UseTls = false
             }
-        }, new MqttFactory(), s_loggerFactory);
+        }, new MqttClientFactory(), s_loggerFactory);
 
         var now = DateTimeOffset.Now;
         var signalStrength = -79;
@@ -367,7 +372,7 @@ public class MqttPublishTests {
                 UseTls = false
             },
             PrepareForPublish = s => s with { AccelerationX = null, AccelerationY = null }
-        }, new MqttFactory(), s_loggerFactory);
+        }, new MqttClientFactory(), s_loggerFactory);
 
         var now = DateTimeOffset.Now;
         var signalStrength = -79;
@@ -511,6 +516,61 @@ public class MqttPublishTests {
                 }
             }
         }
+    }
+
+
+    [TestMethod]
+    public async Task ShouldEnqueueMessagesWhileDisconnected() {
+        var port = Port + 1;
+        using var server = CreateMqttServer(port);
+        
+        var listener = CreateListener();
+
+        var bridge = new MqttPublisher(listener, new MqttPublisherOptions() {
+            Hostname = "localhost:" + port,
+            ClientId = TestContext.TestName,
+            ProtocolVersion = MQTTnet.Formatter.MqttProtocolVersion.V500,
+            PublishType = PublishType.SingleTopic,
+            TlsOptions = new MqttPublisherTlsOptions() {
+                UseTls = false
+            }
+        }, new MqttClientFactory(), s_loggerFactory);
+
+        var connected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        bridge.MqttClient.ConnectedAsync += args => {
+            connected.TrySetResult();
+            return Task.CompletedTask;
+        };
+        
+        using var ctSource = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        _ = bridge.RunAsync(ctSource.Token);
+        
+        var now = DateTimeOffset.Now;
+        var signalStrength = -79;
+
+        var sample = new RuuviTagSample(TestContext.TestName, now, signalStrength, RuuviTagUtilities.ParsePayload(Convert.FromHexString(RawDataV2Valid)));
+        var expectedTopicName = bridge.GetTopicNameForSample(sample);
+        await listener.PublishAsync(sample);
+
+        var received = new TaskCompletionSource<RuuviTagSample>(TaskCreationOptions.RunContinuationsAsynchronously);
+        server.InterceptingPublishAsync += args => {
+            if (!string.Equals(args.ApplicationMessage.Topic, expectedTopicName, StringComparison.Ordinal)) {
+                return Task.CompletedTask;
+            }
+            
+            var json = args.ApplicationMessage.ConvertPayloadToString();
+            received.TrySetResult(JsonSerializer.Deserialize<RuuviTagSample>(json, RuuviJsonSerializerContext.Default.RuuviTagSample)!);
+            
+            return Task.CompletedTask;
+        };
+
+        await server.StartAsync();
+        await connected.Task;
+        
+        var sampleFromMqtt = await received.Task.WaitAsync(ctSource.Token);
+        
+        Assert.IsNotNull(sampleFromMqtt);
+        Assert.AreEqual(sample, sampleFromMqtt);
     }
 
 
