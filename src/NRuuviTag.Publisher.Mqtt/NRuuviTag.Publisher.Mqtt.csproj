@@ -9,7 +9,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-    <PackageReference Include="MQTTnet.Extensions.ManagedClient" />
+    <PackageReference Include="MQTTnet" />
+    <PackageReference Include="Polly.Core" />
     <PackageReference Include="System.ComponentModel.Annotations" />
   </ItemGroup>
 
