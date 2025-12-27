@@ -66,5 +66,10 @@ public class MqttPublisherOptions : RuuviTagPublisherOptions {
     /// <seealso cref="DefaultTopicName"/>
     [Required]
     public string TopicName { get; set; } = DefaultTopicName;
+    
+    /// <summary>
+    /// The managed MQTT client options to use.
+    /// </summary>
+    public ManagedMqttClientOptions? ClientOptions { get; set; }
 
 }
