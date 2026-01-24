@@ -1,17 +1,59 @@
 #:sdk Cake.Sdk@6.0.0
 #:package Cake.MinVer
 
+using System.Collections.Immutable;
+
 InstallTool("dotnet:https://api.nuget.org/v3/index.json?package=minver-cli&version=6.0.0");
 InstallTool("dotnet:https://api.nuget.org/v3/index.json?package=CycloneDX&version=5.5.0");
 
-var target = Argument("target", "Test");
+var target = Argument("target", "Default");
+var ciBuild = !BuildSystem.IsLocalBuild || HasArgument("ci");
+var preparingRelease = "PrepareRelease".Equals(target, StringComparison.OrdinalIgnoreCase);
+
+if (string.Equals(target, "Default", StringComparison.OrdinalIgnoreCase)) {
+    AnsiConsole.Write(new FigletText("NRuuviTag"));
+    
+    AnsiConsole.Write(
+        new Table()
+            .AddColumns("Target", "Description")
+            .AddRow("[yellow]Clean[/]", "Cleans up artifacts")
+            .AddRow("[yellow]Build[/]", "Builds the solution")
+            .AddRow("[yellow]Test[/]", "Runs unit tests")
+            .AddRow("[yellow]Pack[/]", "Creates NuGet packages")
+            .AddRow("[yellow]PublishExe[/]", "Creates CLI executable")
+            .AddRow("[yellow]PublishContainer[/]", "Publishes CLI container image")
+            .AddRow("[yellow]BillOfMaterials[/]", "Generates a Bill of Materials (BOM) for the solution")
+            .AddRow("[yellow]PrepareRelease[/]", "Creates all build artifacts (NuGet packages, executables, container images, BOM)"));
+
+    AnsiConsole.Write(
+        new Table()
+            .AddColumns("Option", "Description")
+            .AddRow("[yellow]--configuration=<value>[/]", "The build configuration to use (default: Debug for local builds, Release for CI builds)")
+            .AddRow("[yellow]--clean[/]", "Cleans up artifacts before building")
+            .AddRow("[yellow]--no-tests[/]", "Skips running tests")
+            .AddRow("[yellow]--skip-tests[/]", "Skips running tests")
+            .AddRow("[yellow]--ci[/]", "Forces the build to run in CI mode")
+            .AddRow("[yellow]--build-counter=<value>[/]", "The build counter value (default: 0)")
+            .AddRow("[yellow]--container-registry=<value>[/]", "The container registry to use when publishing container images")
+            .AddRow("[yellow]--github-username=<value>[/]", "The GitHub username for Bill of Materials generation")
+            .AddRow("[yellow]--github-token=<value>[/]", "The GitHub personal access token for Bill of Materials generation")
+            .AddRow("[yellow]--property=<value>[/]", "A custom MSBuild property in NAME=VALUE format (can be specified multiple times)")
+        );
+
+    Environment.Exit(1);
+}
+
+// Validate that the target can be run in the current environment.
+if (!ciBuild && preparingRelease) {
+    AnsiConsole.MarkupLine("[red]This target can only be run in a CI environment.[/]");
+    Environment.Exit(1);
+}
 
 //////////////////////////////////////////////////////////////////////
 // TASKS
 //////////////////////////////////////////////////////////////////////
 
 Setup<BuildData>(context => {
-    var ciBuild = !BuildSystem.IsLocalBuild || HasArgument("ci");
     var buildCounter = Argument("build-counter", 0);
     
     var version = MinVer(settings => settings
@@ -23,6 +65,18 @@ Setup<BuildData>(context => {
     Environment.SetEnvironmentVariable("MinVerVersionOverride", version);
     Environment.SetEnvironmentVariable("CAKE_BUILD_COUNTER", buildCounter.ToString());
     
+    // We expect each custom build property to be in "NAME=VALUE" format.
+    var buildPropRegex = new System.Text.RegularExpressions.Regex(@"^(?<name>.+)=(?<value>.+)$");
+    
+    IReadOnlyDictionary<string, string> buildProps = Arguments<string>("property", []).Select(x => {
+        var m = buildPropRegex.Match(x);
+        if (!m.Success) {
+            return null;
+        }
+
+        return new { name = m.Groups["name"].Value, value = m.Groups["value"].Value };
+    }).Where(x => x != null).ToImmutableDictionary(x => x!.name, x => x!.value);
+    
     var data = new BuildData(
         new ProjectData(
             "NRuuviTag.slnx",
@@ -31,14 +85,15 @@ Setup<BuildData>(context => {
         BuildCounter: buildCounter,
         IsContinuousIntegrationBuild: ciBuild,
         Configuration: Argument("configuration", "Release"),
-        Clean: HasArgument("clean"),
+        Clean: preparingRelease || HasArgument("clean"),
         SkipTests: HasArgument("no-tests") || HasArgument("skip-tests"),
         ContainerRegistry: Argument("container-registry", ""),
         GitHubCredentials: HasArgument("github-username")
             ? new GitHubCredentials(
                 Argument("github-username", ""),
                 Argument("github-token", ""))
-            : null);
+            : null,
+        BuildProperties: buildProps);
     
     Information(System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions {
         WriteIndented = true
@@ -67,7 +122,7 @@ Task("Build")
             data.Projects.SolutionFile,
             new DotNetBuildSettings {
                 Configuration = data.Configuration,
-            });
+            }.ApplyBuildProperties(data.BuildProperties));
     });
 
 Task("Test")
@@ -79,7 +134,7 @@ Task("Test")
             new DotNetTestSettings {
                 Configuration = data.Configuration,
                 NoBuild = true
-            });
+            }.ApplyBuildProperties(data.BuildProperties));
     });
 
 Task("Pack")
@@ -91,7 +146,7 @@ Task("Pack")
                 Configuration = data.Configuration,
                 OutputDirectory = $"./artifacts/packages/{data.Configuration}",
                 NoBuild = true
-            });
+            }.ApplyBuildProperties(data.BuildProperties));
     });
 
 Task("PublishExe")
@@ -102,7 +157,7 @@ Task("PublishExe")
             var buildSettings = new DotNetPublishSettings {
                 Configuration = data.Configuration,
                 MSBuildSettings = new DotNetMSBuildSettings().WithProperty("PublishProfile", [publishProfileFile.FullPath])
-            };
+            }.ApplyBuildProperties(data.BuildProperties);
             
             DotNetPublish(
                 projectFile.FullPath, 
@@ -134,13 +189,8 @@ Task("PublishContainer")
             
         DotNetPublish(
             projectFile.FullPath, 
-            containerBuildSettings);
+            containerBuildSettings.ApplyBuildProperties(data.BuildProperties));
     });
-
-Task("Publish")
-    .IsDependentOn("PublishExe")
-    .IsDependentOn("PublishContainer")
-    .Does(() => { });
 
 Task("BillOfMaterials")
     .IsDependentOn("Clean")
@@ -181,9 +231,11 @@ Task("BillOfMaterials")
         });
     });
 
-Task("CreateArtifacts")
+Task("PrepareRelease")
+    .WithCriteria<BuildData>(data => data.IsContinuousIntegrationBuild)
     .IsDependentOn("Pack")
-    .IsDependentOn("Publish")
+    .IsDependentOn("PublishExe")
+    .IsDependentOn("PublishContainer")
     .IsDependentOn("BillOfMaterials")
     .Does(() => { });
 
@@ -206,7 +258,8 @@ public record BuildData(
     bool Clean = false,
     bool SkipTests = false,
     string? ContainerRegistry = null,
-    [property: System.Text.Json.Serialization.JsonIgnore] GitHubCredentials? GitHubCredentials = null);
+    [property: System.Text.Json.Serialization.JsonIgnore] GitHubCredentials? GitHubCredentials = null,
+    IReadOnlyDictionary<string, string>? BuildProperties = null);
 
 
 public record ProjectData(
@@ -218,3 +271,82 @@ public record GitHubCredentials(
     string Username,
     string Token);
 
+
+public static class BuildExtensions {
+
+    private static void ApplyBuildProperties(DotNetMSBuildSettings settings, IReadOnlyDictionary<string, string>? properties) {
+        if (properties is null) {
+            return;
+        }
+            
+        foreach (var item in properties) {
+            settings.WithProperty(item.Key, [item.Value]);
+        }
+    }
+    
+
+    extension(DotNetBuildSettings settings) {
+
+        public DotNetBuildSettings ApplyBuildProperties(IReadOnlyDictionary<string, string>? properties) {
+            if (properties is null) {
+                return settings;
+            }
+            
+            settings.MSBuildSettings ??= new DotNetMSBuildSettings();
+            ApplyBuildProperties(settings.MSBuildSettings, properties);
+            
+            return settings;
+        }
+
+    }
+    
+    
+    extension(DotNetTestSettings settings) {
+
+        public DotNetTestSettings ApplyBuildProperties(IReadOnlyDictionary<string, string>? properties) {
+            if (properties is null) {
+                return settings;
+            }
+            
+            settings.MSBuildSettings ??= new DotNetMSBuildSettings();
+            ApplyBuildProperties(settings.MSBuildSettings, properties);
+            
+            return settings;
+        }
+
+    }
+    
+    
+    extension(DotNetPackSettings settings) {
+
+        public DotNetPackSettings ApplyBuildProperties(IReadOnlyDictionary<string, string>? properties) {
+            if (properties is null) {
+                return settings;
+            }
+            
+            settings.MSBuildSettings ??= new DotNetMSBuildSettings();
+            ApplyBuildProperties(settings.MSBuildSettings, properties);
+            
+            return settings;
+        }
+
+    }
+    
+    
+    extension(DotNetPublishSettings settings) {
+
+        public DotNetPublishSettings ApplyBuildProperties(IReadOnlyDictionary<string, string>? properties) {
+            if (properties is null) {
+                return settings;
+            }
+            
+            settings.MSBuildSettings ??= new DotNetMSBuildSettings();
+            ApplyBuildProperties(settings.MSBuildSettings, properties);
+            
+            return settings;
+        }
+
+    }
+    
+
+}
