@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 
 using MQTTnet.Formatter;
+using MQTTnet.Protocol;
 
 namespace NRuuviTag.Mqtt;
 
@@ -66,6 +67,11 @@ public class MqttPublisherOptions : RuuviTagPublisherOptions {
     /// <seealso cref="DefaultTopicName"/>
     [Required]
     public string TopicName { get; set; } = DefaultTopicName;
+    
+    /// <summary>
+    /// The MQTT QoS level to use when publishing messages.
+    /// </summary>
+    public MqttQualityOfServiceLevel QoS { get; set; } = MqttQualityOfServiceLevel.AtMostOnce;
     
     /// <summary>
     /// The managed MQTT client options to use.

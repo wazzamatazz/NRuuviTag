@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 
 using MQTTnet;
 using MQTTnet.Formatter;
+using MQTTnet.Protocol;
 
 using NRuuviTag.Mqtt;
 
@@ -105,6 +106,7 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommand.Settings> {
             Password = settings.Password,
             ProtocolVersion = version,
             TopicName = settings.TopicName,
+            QoS = settings.QoS,
             PublishInterval = TimeSpan.FromSeconds(settings.PublishInterval),
             PerDevicePublishBehaviour = settings.PublishBehaviour,
             PublishType = settings.PublishType,
@@ -167,7 +169,12 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommand.Settings> {
         [DefaultValue(MqttPublisherOptions.DefaultTopicName)]
         [Description("The MQTT topic to publish messages to. In topic-per-measurement mode, this is used as the topic prefix.")]
         public string TopicName { get; set; } = default!;
-
+        
+        [CommandOption("--qos <QOS>")]
+        [Description("The MQTT Quality of Service (QoS) level to use for published messages. Possible values are: " + nameof(MqttQualityOfServiceLevel.AtMostOnce) + " (0), " + nameof(MqttQualityOfServiceLevel.AtLeastOnce) + " (1), " + nameof(MqttQualityOfServiceLevel.ExactlyOnce) + " (2).")]
+        [DefaultValue(MqttQualityOfServiceLevel.AtMostOnce)]
+        public MqttQualityOfServiceLevel QoS { get; set; }
+        
         [CommandOption("--use-tls")]
         [Description("Specifies if TLS should be used for the connection.")]
         public bool UseTls { get; set; }

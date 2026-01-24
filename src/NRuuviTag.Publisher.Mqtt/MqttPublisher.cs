@@ -350,6 +350,7 @@ public partial class MqttPublisher : RuuviTagPublisher {
     private MqttApplicationMessage BuildMqttMessage<T>(string topic, T payload, JsonTypeInfo<T> jsonTypeInfo) {
         var builder = new MqttApplicationMessageBuilder()
             .WithTopic(topic)
+            .WithQualityOfServiceLevel(_options.QoS)
             .WithPayload(JsonSerializer.SerializeToUtf8Bytes(payload, jsonTypeInfo));
 
         if (MqttClient.Options.ProtocolVersion >= MQTTnet.Formatter.MqttProtocolVersion.V500) {
