@@ -1,6 +1,5 @@
 <Solution>
   <Folder Name="/build/">
-    <File Path="build/version.json" />
     <File Path="build\cake.cs" />
   </Folder>
   <Folder Name="/common/">
