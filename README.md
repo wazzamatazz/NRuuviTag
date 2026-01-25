@@ -58,7 +58,7 @@ public async Task RunMqttPublisherAsync(
     await using var publisher = new MqttPublisher(
         listener, 
         options, 
-        new MQTTnet.MqttFactory(), 
+        new MQTTnet.MqttClientFactory(), 
         loggerFactory?.CreateLogger<MqttPublisher>());
   
     await publisher.RunAsync(cancellationToken);
