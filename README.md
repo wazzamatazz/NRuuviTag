@@ -1,8 +1,14 @@
 # NRuuviTag
 
-A collection of .NET libraries to simplify interacting with RuuviTag IoT sensors from [Ruuvi](https://www.ruuvi.com/).
+A collection of .NET libraries to simplify interacting with [Ruuvi IoT sensors](https://www.ruuvi.com/).
 
-The repository contains a [core library](/src/NRuuviTag.Core) that defines common types, and listener implementations that observe the Bluetooth LE advertisements emitted by RuuviTag devices. Samples received from RuuviTags can be automatically published to an [MQTT server](#publishing-samples-to-mqtt), to an [Azure Event Hub](#publishing-samples-to-azure-event-hubs), or to an [HTTP endpoint](#publishing-samples-to-an-http-endpoint).
+The repository contains a [core library](/src/NRuuviTag.Core) that defines common types, and listener implementations that observe the Bluetooth LE advertisements emitted by Ruuvi devices. Samples can be automatically published to an [MQTT server](#publishing-samples-to-mqtt), to an [Azure Event Hub](#publishing-samples-to-azure-event-hubs), or to an [HTTP endpoint](#publishing-samples-to-an-http-endpoint).
+
+The following Ruuvi data formats are supported:
+
+- [RAWv2](https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-5-rawv2) - RuuviTag
+- [Extended v1](https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-e1) - Ruuvi Air
+- [Data Format 6](https://docs.ruuvi.com/communication/bluetooth-advertisements/data-format-6) - Ruuvi Air compatibility mode for Bluetooth adapters that do not support extended advertisements
 
 The repository contains the following listener implementations:
 
@@ -240,5 +246,5 @@ The command-line application can be run as a Linux service using systemd. See [h
 
 The repository uses [Cake](https://cakebuild.net/) for cross-platform build automation. The build script allows for metadata such as a build counter to be specified when called by a continuous integration system such as TeamCity.
 
-A build can be run from the command line using the [build.ps1](/build.ps1) PowerShell script or the [build.sh](/build.sh) Bash script. For documentation about the available build script parameters, see [build.cake](/build.cake).
+A build can be run from the command line using the [build.ps1](/build.ps1) PowerShell script or the [build.sh](/build.sh) Bash script. For documentation about the available build script parameters, run the script without any arguments.
 
