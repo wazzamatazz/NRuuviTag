@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -63,9 +64,9 @@ public class WindowsSdkListener : RuuviTagListener {
                         ArrayPool<byte>.Shared.Return(buffer);
                         buffer = ArrayPool<byte>.Shared.Rent((int) manufacturerData.Data.Length);
                     }
-                        
-                    using (var reader = DataReader.FromBuffer(manufacturerData.Data)) {
-                        reader.ReadBytes(buffer);
+
+                    await using (var stream = manufacturerData.Data.AsStream()) {
+                        await stream.ReadExactlyAsync(buffer, 0, (int) manufacturerData.Data.Length, cancellationToken);
                     }
 
                     DataReceived(macAddress, args.RawSignalStrengthInDBm, new Span<byte>(buffer, 0, (int) manufacturerData.Data.Length));
