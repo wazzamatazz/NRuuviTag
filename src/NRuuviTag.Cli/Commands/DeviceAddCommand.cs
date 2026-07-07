@@ -39,7 +39,7 @@ public class DeviceAddCommand : AsyncCommand<DeviceAddCommand.Settings> {
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
+    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
         var device = new Device() { 
             MacAddress = settings.MacAddress,
             DisplayName = settings.DisplayName,

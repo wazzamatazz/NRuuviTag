@@ -78,7 +78,7 @@ public class PublishMqttCommand : AsyncCommand<PublishMqttCommand.Settings> {
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
+    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
         if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
             try { await Task.Delay(-1, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
             catch (OperationCanceledException) { }
