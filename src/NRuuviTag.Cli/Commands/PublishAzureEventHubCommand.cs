@@ -58,7 +58,7 @@ public class PublishAzureEventHubCommand : AsyncCommand<PublishAzureEventHubComm
 
 
     /// <inheritdoc/>
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
+    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
         if (!_appLifetime.ApplicationStarted.IsCancellationRequested) {
             try { await Task.Delay(Timeout.InfiniteTimeSpan, _appLifetime.ApplicationStarted).ConfigureAwait(false); }
             catch (OperationCanceledException) when (_appLifetime.ApplicationStarted.IsCancellationRequested) { }
