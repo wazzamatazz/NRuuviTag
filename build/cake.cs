@@ -252,7 +252,7 @@ RunTarget(target);
 public record BuildData(
     [property: System.Text.Json.Serialization.JsonIgnore] ProjectData Projects,
     string BuildVersion,
-    int BuildCounter = 0,
+    long BuildCounter = 0L,
     bool IsContinuousIntegrationBuild = false,
     string Configuration = "Release",
     bool Clean = false,
