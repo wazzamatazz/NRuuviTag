@@ -242,9 +242,14 @@ See [here](/docs/Docker.md) for details about how to build the image.
 The command-line application can be run as a Linux service using systemd. See [here](/docs/LinuxSystemdService.md) for details.
 
 
+# OpenTelemetry
+
+Logs and metrics are automatically exported to an OTLP-compatible endpoint if standard OpenTelemetry environment variables are set. See [here](https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/) for details about configuring OpenTelemetry.
+
+
 # Building the Solution
 
-The repository uses [Cake](https://cakebuild.net/) for cross-platform build automation. The build script allows for metadata such as a build counter to be specified when called by a continuous integration system such as TeamCity.
+The repository uses [Cake](https://cakebuild.net/) for cross-platform build automation.
 
 A build can be run from the command line using the [build.ps1](/build.ps1) PowerShell script or the [build.sh](/build.sh) Bash script. For documentation about the available build script parameters, run the script without any arguments.
 
