@@ -3,6 +3,9 @@
 
 using System.Collections.Immutable;
 
+// MinVer minimum major.minor version to use.
+var minimumMajorMinorVersion = "6.0";
+
 InstallTool("dotnet:https://api.nuget.org/v3/index.json?package=minver-cli&version=7.0.0");
 InstallTool("dotnet:https://api.nuget.org/v3/index.json?package=CycloneDX&version=6.2.0");
 
@@ -58,8 +61,9 @@ Setup<BuildData>(context => {
     
     var version = MinVer(settings => settings
         .WithTagPrefix("v")
-        .WithVerbosity(MinVerVerbosity.Info)
-    );
+        .WithDefaultPreReleasePhase("pre")
+        .WithMinimumMajorMinor(minimumMajorMinorVersion)
+        .WithVerbosity(MinVerVerbosity.Info));
     
     Environment.SetEnvironmentVariable("ContinuousIntegrationBuild", ciBuild ? "true" : "false");
     Environment.SetEnvironmentVariable("MinVerVersionOverride", version);

@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using NRuuviTag.Cli;
-
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -43,16 +41,14 @@ public static class NRuuviTagHostBuilderExtensions {
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(args);
 
-        builder.ConfigureServices((context, services) => {
+        builder.ConfigureServices((_, services) => {
             services.AddOpenTelemetry()
-                .ConfigureResource(resource => resource.AddService<DeviceCollection>())
-                .AddOtlpExporter(context.Configuration)
-                .WithLogging(null, options => {
-                    options.IncludeFormattedMessage = true;
-                })
-                .WithMetrics(metrics => { 
-                    metrics.AddNRuuviTagInstrumentation();
-                });
+                .ConfigureResource(resource => resource.AddService(
+                    "nruuvitag-cli", 
+                    serviceVersion: typeof(NRuuviTagHostBuilderExtensions).Assembly.GetName().Version?.ToString(3)))
+                .WithLogging(null, options => options.IncludeFormattedMessage = true)
+                .WithMetrics(metrics => metrics.AddNRuuviTagInstrumentation())
+                .UseOtlpExporter();
         });
             
         return await builder.BuildAndRunCommandAppAsync(args).ConfigureAwait(false);
