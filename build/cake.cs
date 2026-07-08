@@ -54,7 +54,7 @@ if (!ciBuild && preparingRelease) {
 //////////////////////////////////////////////////////////////////////
 
 Setup<BuildData>(context => {
-    var buildCounter = Argument("build-counter", 0);
+    var buildCounter = Argument("build-counter", 0L);
     
     var version = MinVer(settings => settings
         .WithTagPrefix("v")
