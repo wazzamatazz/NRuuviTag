@@ -1,0 +1,32 @@
+name: Pull Request
+
+on: [pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+  
+concurrency: 
+  group: ${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.run_id }}
+  cancel-in-progress: true
+  
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+    steps:
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Build Solution
+        run: ./build.sh --target Test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BuildUrl: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

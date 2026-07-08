@@ -35,8 +35,8 @@ if (string.Equals(target, "Default", StringComparison.OrdinalIgnoreCase)) {
             .AddRow("[yellow]--ci[/]", "Forces the build to run in CI mode")
             .AddRow("[yellow]--build-counter=<value>[/]", "The build counter value (default: 0)")
             .AddRow("[yellow]--container-registry=<value>[/]", "The container registry to use when publishing container images")
-            .AddRow("[yellow]--github-username=<value>[/]", "The GitHub username for Bill of Materials generation")
-            .AddRow("[yellow]--github-token=<value>[/]", "The GitHub personal access token for Bill of Materials generation")
+            .AddRow("[yellow]--github-username=<value>[/]", "The GitHub username for licence resolution during Bill of Materials generation. Can be omitted if GITHUB_TOKEN environment variable is specified.")
+            .AddRow("[yellow]--github-token=<value>[/]", "The GitHub personal access token for licence resolution during Bill of Materials generation. Can be omitted if GITHUB_TOKEN environment variable is specified.")
             .AddRow("[yellow]--property=<value>[/]", "A custom MSBuild property in NAME=VALUE format (can be specified multiple times)")
         );
 
@@ -54,7 +54,7 @@ if (!ciBuild && preparingRelease) {
 //////////////////////////////////////////////////////////////////////
 
 Setup<BuildData>(context => {
-    var buildCounter = Argument("build-counter", 0);
+    var buildCounter = Argument("build-counter", 0L);
     
     var version = MinVer(settings => settings
         .WithTagPrefix("v")
@@ -217,8 +217,12 @@ Task("BillOfMaterials")
             .Append("-F")
             .Append("Json");
 
+        var enableGitHubLicenceResolution = !string.IsNullOrWhiteSpace(githubUser) || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GITHUB_TOKEN"));
+        if (enableGitHubLicenceResolution) {
+            cycloneDxArgs.Append("-egl");
+        }
+        
         if (!string.IsNullOrWhiteSpace(githubUser)) {
-            cycloneDxArgs.Append("-egl"); // Enable GitHub licence resolution.
             cycloneDxArgs.Append("-gu").Append(githubUser);
         }
 
@@ -252,7 +256,7 @@ RunTarget(target);
 public record BuildData(
     [property: System.Text.Json.Serialization.JsonIgnore] ProjectData Projects,
     string BuildVersion,
-    int BuildCounter = 0,
+    long BuildCounter = 0L,
     bool IsContinuousIntegrationBuild = false,
     string Configuration = "Release",
     bool Clean = false,
