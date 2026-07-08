@@ -1,12 +1,17 @@
-name: Pull Request
+name: Continuous Integration
 
-on: [pull_request, workflow_dispatch]
+on: 
+  pull_request: 
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
   
 concurrency: 
-  group: ${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.run_id }}
+  group: ${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref_name || github.run_id }}
   cancel-in-progress: true
   
 jobs:
@@ -25,6 +30,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          filter: tree:0
       - name: Build Solution
         run: ./build.sh --target Test
         env:

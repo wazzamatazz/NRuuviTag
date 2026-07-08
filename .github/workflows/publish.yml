@@ -1,0 +1,74 @@
+name: Publish Artifacts
+
+on: 
+  workflow_dispatch:
+    inputs: 
+      version:
+        description: 'Version to publish in SemVer v2 format (e.g. 1.2.3 or 1.2.3-rc.1). Leave blank to infer version from latest tag.'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+  
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  publish-artifacts:
+    name: Publish
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+      CONTAINER_REGISTRY: ghcr.io
+    steps:
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+      - name: Create Tag
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          SEMVER_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$'
+
+          if [ -z "$INPUT_VERSION" ]; then
+            echo "Skipping tag creation: no version provided"
+          elif ! [[ "$INPUT_VERSION" =~ $SEMVER_REGEX ]]; then
+            echo "::error::'$INPUT_VERSION' is not a valid SemVer v2 version (e.g. 1.2.3 or 1.2.3-rc.1)"
+            exit 1
+          else
+            TAG="v$INPUT_VERSION"
+            if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null 2>&1; then
+              echo "Skipping tag creation: tag $TAG already exists"
+            else
+              git tag "$TAG"
+              git push origin "$TAG"
+            fi
+          fi
+      - name: GHCR Login
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Solution
+        run: ./build.sh --target PrepareRelease --container-registry ${{ env.CONTAINER_REGISTRY }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: NuGet Login
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: ${{ secrets.NUGET_USERNAME }}
+      - name: NuGet Push
+        run: dotnet nuget push --source https://api.nuget.org/v3/index.json --api-key ${{steps.nuget-login.outputs.NUGET_API_KEY}} ./artifacts/packages/Release/*.nupkg
