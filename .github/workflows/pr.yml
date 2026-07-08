@@ -29,4 +29,3 @@ jobs:
         run: ./build.sh --target Test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BuildUrl: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
