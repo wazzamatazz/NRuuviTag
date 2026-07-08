@@ -33,7 +33,7 @@ if (string.Equals(target, "Default", StringComparison.OrdinalIgnoreCase)) {
             .AddRow("[yellow]--no-tests[/]", "Skips running tests")
             .AddRow("[yellow]--skip-tests[/]", "Skips running tests")
             .AddRow("[yellow]--ci[/]", "Forces the build to run in CI mode")
-                .AddRow("[yellow]--build-counter=<value>[/]", "The build counter value (default: 0)")
+            .AddRow("[yellow]--build-counter=<value>[/]", "The build counter value (default: 0)")
             .AddRow("[yellow]--container-registry=<value>[/]", "The container registry to use when publishing container images")
             .AddRow("[yellow]--github-username=<value>[/]", "The GitHub username for Bill of Materials generation")
             .AddRow("[yellow]--github-token=<value>[/]", "The GitHub personal access token for Bill of Materials generation")
