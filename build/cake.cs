@@ -1,10 +1,10 @@
-#:sdk Cake.Sdk@6.0.0
+#:sdk Cake.Sdk@6.2.0
 #:package Cake.MinVer
 
 using System.Collections.Immutable;
 
-InstallTool("dotnet:https://api.nuget.org/v3/index.json?package=minver-cli&version=6.0.0");
-InstallTool("dotnet:https://api.nuget.org/v3/index.json?package=CycloneDX&version=5.5.0");
+InstallTool("dotnet:https://api.nuget.org/v3/index.json?package=minver-cli&version=7.0.0");
+InstallTool("dotnet:https://api.nuget.org/v3/index.json?package=CycloneDX&version=6.2.0");
 
 var target = Argument("target", "Default");
 var ciBuild = !BuildSystem.IsLocalBuild || HasArgument("ci");
