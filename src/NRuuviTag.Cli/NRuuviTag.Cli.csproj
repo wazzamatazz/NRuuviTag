@@ -8,10 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="Jaahas.CertificateUtilities" />
-    <PackageReference Include="Jaahas.OpenTelemetry.Extensions" />
     <PackageReference Include="Jaahas.Spectre.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+    <PackageReference Include="OpenTelemetry.Api" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
     <PackageReference Include="Spectre.Console.Cli" />
   </ItemGroup>
 
