@@ -30,7 +30,7 @@ public sealed class TestRuuviTagListener : RuuviTagListener {
         var channel = Channel.CreateUnbounded<RuuviTagSample>(new UnboundedChannelOptions() { 
             SingleReader = true,
             SingleWriter = true,
-            AllowSynchronousContinuations = true
+            AllowSynchronousContinuations = false
         });
         _subscriptions[channelId] = channel;
         
