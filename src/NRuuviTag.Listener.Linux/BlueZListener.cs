@@ -63,9 +63,10 @@ public partial class BlueZListener : RuuviTagListener {
 
     /// <inheritdoc/>
     protected override async Task RunAsync(CancellationToken cancellationToken) {
-        // Get the adapter from BlueZ.
+        // Get the adapter from BlueZ and power it on.
         using var adapter = await BlueZManager.GetAdapterAsync(_adapterName).ConfigureAwait(false);
-            
+        await adapter.SetPoweredAsync(true);
+        
         // Registrations for devices that we are observing.
         var watchers = new ConcurrentDictionary<string, IDisposable>(StringComparer.OrdinalIgnoreCase);
 

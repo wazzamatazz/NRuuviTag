@@ -16,7 +16,7 @@
     <PackageVersion Include="Jaahas.CertificateUtilities" Version="1.2.0" />
     <PackageVersion Include="Jaahas.OpenTelemetry.Extensions" Version="3.0.0" />
     <PackageVersion Include="Jaahas.Spectre.Extensions.Hosting" Version="3.0.0" />
-    <PackageVersion Include="Linux.Bluetooth" Version="6.0.0-pre2" />
+    <PackageVersion Include="Linux.Bluetooth" Version="6.0.0-pre3" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Systemd" Version="10.0.9" />
