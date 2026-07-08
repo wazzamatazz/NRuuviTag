@@ -11,7 +11,7 @@ concurrency:
   
 jobs:
   build:
-    name: Build and test
+    name: Build and Test
     runs-on: ubuntu-latest
     env:
       DOTNET_NOLOGO: "true"
@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Build Solution
-        run: ./build.sh --target Test --build-counter ${{ github.run_id }}
+        run: ./build.sh --target Test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BuildUrl: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
