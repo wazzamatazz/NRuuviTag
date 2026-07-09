@@ -49,3 +49,28 @@ jobs:
           user: ${{ secrets.NUGET_USERNAME }}
       - name: NuGet Push
         run: dotnet nuget push --source https://api.nuget.org/v3/index.json --api-key ${{steps.nuget-login.outputs.NUGET_API_KEY}} ./artifacts/packages/Release/*.nupkg
+      - name: Upload Artifacts
+          if: ${{ github.ref_type == 'tag' }}
+          env:
+            GH_TOKEN: ${{ github.token }}
+          run: |
+            shopt -s nullglob
+            assets=()
+            
+            bom="artifacts/bom/Release/bom.json"
+            if [ -f "$bom" ]; then
+              assets+=("$bom")
+            fi
+            
+            for dir in artifacts/publish/Release/NRuuviTag.Cli/*/; do
+              name=$(basename "$dir")
+              zip -r "$name.zip" "$dir"
+              assets+=("$name.zip")
+            done
+            
+            if [ ${#assets[@]} -eq 0 ]; then
+              echo "No assets to upload" >&2
+              exit 1
+            fi
+            
+            gh release upload "${{ github.ref_name }}" "${assets[@]}" --clobber
