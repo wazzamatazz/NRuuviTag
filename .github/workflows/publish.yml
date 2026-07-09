@@ -1,12 +1,9 @@
 name: Publish Artifacts
 
-on: 
+on:
+  release: 
+    types: [published]
   workflow_dispatch:
-    inputs: 
-      version:
-        description: 'Version to publish in SemVer v2 format (e.g. 1.2.3 or 1.2.3-rc.1). Leave blank to infer version from latest tag.'
-        required: false
-        type: string
 
 permissions:
   contents: write
@@ -35,26 +32,6 @@ jobs:
         with:
           fetch-depth: 0
           filter: tree:0
-      - name: Create Tag
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
-        run: |
-          SEMVER_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$'
-
-          if [ -z "$INPUT_VERSION" ]; then
-            echo "Skipping tag creation: no version provided"
-          elif ! [[ "$INPUT_VERSION" =~ $SEMVER_REGEX ]]; then
-            echo "::error::'$INPUT_VERSION' is not a valid SemVer v2 version (e.g. 1.2.3 or 1.2.3-rc.1)"
-            exit 1
-          else
-            TAG="v$INPUT_VERSION"
-            if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null 2>&1; then
-              echo "Skipping tag creation: tag $TAG already exists"
-            else
-              git tag "$TAG"
-              git push origin "$TAG"
-            fi
-          fi
       - name: GHCR Login
         uses: docker/login-action@v4
         with:
