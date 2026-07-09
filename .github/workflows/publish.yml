@@ -50,10 +50,10 @@ jobs:
       - name: NuGet Push
         run: dotnet nuget push --source https://api.nuget.org/v3/index.json --api-key ${{steps.nuget-login.outputs.NUGET_API_KEY}} ./artifacts/packages/Release/*.nupkg
       - name: Upload Artifacts
-          if: ${{ github.ref_type == 'tag' }}
-          env:
-            GH_TOKEN: ${{ github.token }}
-          run: |
+        if: ${{ github.ref_type == 'tag' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
             shopt -s nullglob
             assets=()
             
