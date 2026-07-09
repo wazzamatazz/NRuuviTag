@@ -219,7 +219,9 @@ Task("BillOfMaterials")
             .Append("-o")
             .Append($"./artifacts/bom/{data.Configuration}")
             .Append("-F")
-            .Append("Json");
+            .Append("Json")
+            .Append("-sv")
+            .Append(data.BuildVersion);
 
         var enableGitHubLicenceResolution = !string.IsNullOrWhiteSpace(githubUser) || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GITHUB_TOKEN"));
         if (enableGitHubLicenceResolution) {
