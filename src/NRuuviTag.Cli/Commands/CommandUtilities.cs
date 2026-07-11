@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-using Spectre.Console;
+﻿using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace NRuuviTag.Cli.Commands;
@@ -10,17 +7,6 @@ namespace NRuuviTag.Cli.Commands;
 /// Utility methods for use in <see cref="CommandApp"/> commands.
 /// </summary>
 internal static class CommandUtilities {
-
-    /// <summary>
-    /// Folder under the user's profile that the devices.json will be stored in.
-    /// </summary>
-    private const string LocalDataFolderName = ".nruuvitag";
-
-    /// <summary>
-    /// The file name that contains known devices.
-    /// </summary>
-    private const string DevicesJsonFileName = "devices.json";
-
 
     /// <summary>
     /// Configures the NRuuviTag command app.
@@ -78,42 +64,7 @@ internal static class CommandUtilities {
                 .WithExample(["devices", "remove", "\"Master Bedroom\""]);
         });
     }
-
-
-    /// <summary>
-    /// Gets a <see cref="FileInfo"/> object for the <c>devices.json</c> file containing known 
-    /// device configurations.
-    /// </summary>
-    /// <returns>
-    ///   A new <see cref="FileInfo"/> object.
-    /// </returns>
-    internal static FileInfo GetDevicesJsonFile() => GetDevicesJsonFile(null);
-
-
-    /// <summary>
-    /// Gets a <see cref="FileInfo"/> object for the <c>devices.json</c> file containing known 
-    /// device configurations.
-    /// </summary>
-    /// <param name="path">
-    ///   The path to the directory containing the <c>devices.json</c> file. Specify <see langword="null"/> 
-    ///   to use the <c>.nruuvitag</c> folder under the <see cref="Environment.SpecialFolder.UserProfile"/> 
-    ///   folder.
-    /// </param>
-    /// <returns>
-    ///   A new <see cref="FileInfo"/> object.
-    /// </returns>
-    internal static FileInfo GetDevicesJsonFile(string? path) {
-        if (string.IsNullOrEmpty(path)) {
-            path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), LocalDataFolderName);
-        }
-        if (!Path.IsPathRooted(path)) {
-            path = Path.GetFullPath(path, Environment.CurrentDirectory);
-        } 
-
-        return new FileInfo(Path.Combine(path, DevicesJsonFileName));
-    }
-
-
+    
     /// <summary>
     /// Prints information about the specified <see cref="DeviceCollection"/> to the console.
     /// </summary>
