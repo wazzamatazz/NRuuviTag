@@ -19,7 +19,7 @@ The repository contains the following listener implementations:
 
 `nruuvitag` is a command-line tool for [Windows](/src/NRuuviTag.Cli.Windows) and [Linux](/src/NRuuviTag.Cli.Linux) that can scan for nearby RuuviTags, and publish device readings to the console, or to an MQTT server or Azure Event Hub.
 
-Starting from v6, executables for Windows and Linux are available on the [releases](https://github.com/wazzamatazz/NRuuviTag/releases/) page. Linux container images ([see below](#linux-container-image)) are available on [ghcr.io](github.com/wazzamatazz/NRuuviTag/pkgs/container/nruuvitag).
+Starting from v6, executables for Windows and Linux are available on the [releases](https://github.com/wazzamatazz/NRuuviTag/releases/) page. Linux container images ([see below](#linux-container-image)) are available on [ghcr.io](https://github.com/wazzamatazz/NRuuviTag/pkgs/container/nruuvitag).
 
 > [!TIP]
 > Add `--help` to any command to view help.
@@ -93,7 +93,7 @@ mkdir -p "$local_bin"
 cat > "$exe_path" <<'EOF'
 #!/usr/bin/env bash
 
-# See GCR for available image tags
+# See GHCR for available image tags
 image="ghcr.io/wazzamatazz/nruuvitag:latest"
 
 # Run `nruuvitag update` to pull the latest container image
