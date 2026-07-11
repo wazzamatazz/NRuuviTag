@@ -1,7 +1,8 @@
 ﻿using System;
 
-using NRuuviTag.Cli.Commands;
+using NRuuviTag.Cli;
 
+// ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.Configuration;
 
 /// <summary>
@@ -10,10 +11,13 @@ namespace Microsoft.Extensions.Configuration;
 public static class NRuuviTagConfigurationBuilderExtensions {
 
     /// <summary>
-    /// Adds known MQTT devices to the <see cref="IConfigurationBuilder"/>.
+    /// Adds local configuration and known Ruuvi devices to the <see cref="IConfigurationBuilder"/>.
     /// </summary>
     /// <param name="builder">
     ///   The <see cref="IConfigurationBuilder"/>.
+    /// </param>
+    /// <param name="directoryResolver">
+    ///   The <see cref="IDirectoryResolver"/> to resolve the local configuration files with.
     /// </param>
     /// <returns>
     ///   The <see cref="IConfigurationBuilder"/>.
@@ -21,10 +25,11 @@ public static class NRuuviTagConfigurationBuilderExtensions {
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="builder"/> is <see langword="null"/>.
     /// </exception>
-    public static IConfigurationBuilder AddRuuviTagDeviceConfiguration(this IConfigurationBuilder builder) {
+    public static IConfigurationBuilder AddLocalConfiguration(this IConfigurationBuilder builder, IDirectoryResolver directoryResolver) {
         ArgumentNullException.ThrowIfNull(builder);
-
-        builder.AddJsonFile(CommandUtilities.GetDevicesJsonFile().FullName, optional: true, reloadOnChange: true);
+        ArgumentNullException.ThrowIfNull(directoryResolver);
+        builder.AddJsonFile(directoryResolver.GetLocalAppSettingsFilePath().FullName, optional: true, reloadOnChange: true);
+        builder.AddJsonFile(directoryResolver.GetDevicesDataFilePath().FullName, optional: true, reloadOnChange: true);
 
         return builder;
     }

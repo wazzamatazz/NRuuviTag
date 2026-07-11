@@ -20,11 +20,15 @@ public static class NRuuviTagHostBuilder {
     /// <param name="args">
     ///   The command-line arguments.
     /// </param>
+    /// <param name="directoryResolver">
+    ///   The <see cref="IDirectoryResolver"/> that is used to resolve the location of the devices file.
+    /// </param>
     /// <returns>
     ///   A new <see cref="IHostBuilder"/> instance.
     /// </returns>
-    public static IHostBuilder CreateHostBuilder<TListenerFactory>(string[]? args) where TListenerFactory : class, IRuuviTagListenerFactory {
-        return CreateHostBuilderCore(args, (hostContext, services) => {
+    public static IHostBuilder CreateHostBuilder<TListenerFactory>(string[]? args, IDirectoryResolver directoryResolver) where TListenerFactory : class, IRuuviTagListenerFactory {
+        ArgumentNullException.ThrowIfNull(directoryResolver);
+        return CreateHostBuilderCore(args, directoryResolver, (hostContext, services) => {
             services.AddRuuviTagCommandApp<TListenerFactory>(hostContext.Configuration);
         });
     }
@@ -39,15 +43,19 @@ public static class NRuuviTagHostBuilder {
     /// <param name="args">
     ///   The command-line arguments.
     /// </param>
+    /// <param name="directoryResolver">
+    ///   The <see cref="IDirectoryResolver"/> that is used to resolve the location of the devices file.
+    /// </param>
     /// <param name="factory">
     ///   The listener instance to use.
     /// </param>
     /// <returns>
     ///   A new <see cref="IHostBuilder"/> instance.
     /// </returns>
-    public static IHostBuilder CreateHostBuilder<TListenerFactory>(string[]? args, TListenerFactory factory) where TListenerFactory : class, IRuuviTagListenerFactory {
+    public static IHostBuilder CreateHostBuilder<TListenerFactory>(string[]? args, IDirectoryResolver directoryResolver, TListenerFactory factory) where TListenerFactory : class, IRuuviTagListenerFactory {
+        ArgumentNullException.ThrowIfNull(directoryResolver);
         ArgumentNullException.ThrowIfNull(factory);
-        return CreateHostBuilder(args, _ => factory);
+        return CreateHostBuilder(args, directoryResolver, _ => factory);
     }
 
 
@@ -61,15 +69,19 @@ public static class NRuuviTagHostBuilder {
     /// <param name="args">
     ///   The command-line arguments.
     /// </param>
+    /// <param name="directoryResolver">
+    ///   The <see cref="IDirectoryResolver"/> that is used to resolve the location of the devices file.
+    /// </param>
     /// <param name="factory">
     ///   The listener factory to use.
     /// </param>
     /// <returns>
     ///   A new <see cref="IHostBuilder"/> instance.
     /// </returns>
-    public static IHostBuilder CreateHostBuilder<TListenerFactory>(string[]? args, Func<IServiceProvider, TListenerFactory> factory) where TListenerFactory : class, IRuuviTagListenerFactory {
+    public static IHostBuilder CreateHostBuilder<TListenerFactory>(string[]? args, IDirectoryResolver directoryResolver, Func<IServiceProvider, TListenerFactory> factory) where TListenerFactory : class, IRuuviTagListenerFactory {
+        ArgumentNullException.ThrowIfNull(directoryResolver);
         ArgumentNullException.ThrowIfNull(factory);
-        return CreateHostBuilderCore(args, (hostContext, services) => {
+        return CreateHostBuilderCore(args, directoryResolver, (hostContext, services) => {
             services.AddRuuviTagCommandApp(hostContext.Configuration, factory.Invoke);
         });
     }
@@ -78,13 +90,16 @@ public static class NRuuviTagHostBuilder {
     /// <summary>
     /// Configures core services for a host builder.
     /// </summary>
-    private static IHostBuilder CreateHostBuilderCore(string[]? args, Action<HostBuilderContext, IServiceCollection> configureServices) {
+    private static IHostBuilder CreateHostBuilderCore(string[]? args, IDirectoryResolver directoryResolver, Action<HostBuilderContext, IServiceCollection> configureServices) {
         return Host.CreateDefaultBuilder(args)
             .UseContentRoot(AppContext.BaseDirectory)
             .ConfigureAppConfiguration(config => {
-                config.AddRuuviTagDeviceConfiguration();
+                config.AddLocalConfiguration(directoryResolver);
             })
-            .ConfigureServices(configureServices);
+            .ConfigureServices((context, services) => {
+                configureServices.Invoke(context, services);
+                services.AddSingleton(directoryResolver);
+            });
     }
 
 }

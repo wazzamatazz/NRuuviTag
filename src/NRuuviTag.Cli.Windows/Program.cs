@@ -4,6 +4,6 @@ using NRuuviTag.Cli;
 using NRuuviTag.Cli.Windows;
 
 return await NRuuviTagHostBuilder
-    .CreateHostBuilder<WindowsSdkListenerFactory>(args)
+    .CreateHostBuilder<WindowsSdkListenerFactory>(args, new WindowsDirectoryResolver())
     .BuildHostAndRunNRuuviTagAsync(args)
     .ConfigureAwait(false);

@@ -22,6 +22,11 @@ public class DeviceRemoveCommand : AsyncCommand<DeviceRemoveCommand.Settings> {
     /// The known devices.
     /// </summary>
     private readonly DeviceCollection _devices;
+    
+    /// <summary>
+    /// The <see cref="IDirectoryResolver"/> that is used to resolve the location of the devices file.
+    /// </summary>
+    private readonly IDirectoryResolver _directoryResolver;
 
 
     /// <summary>
@@ -30,8 +35,12 @@ public class DeviceRemoveCommand : AsyncCommand<DeviceRemoveCommand.Settings> {
     /// <param name="devices">
     ///   The known devices.
     /// </param>
-    public DeviceRemoveCommand(IOptions<DeviceCollection> devices) {
+    /// <param name="directoryResolver">
+    ///   The <see cref="IDirectoryResolver"/> that is used to resolve the location of the devices file.
+    /// </param>
+    public DeviceRemoveCommand(IOptions<DeviceCollection> devices, IDirectoryResolver directoryResolver) {
         _devices = devices.Value;
+        _directoryResolver = directoryResolver;
     }
 
 
@@ -71,7 +80,7 @@ public class DeviceRemoveCommand : AsyncCommand<DeviceRemoveCommand.Settings> {
             Devices = _devices
         };
 
-        var devicesJsonFile = CommandUtilities.GetDevicesJsonFile();
+        var devicesJsonFile = _directoryResolver.GetDevicesDataFilePath();
 
         // Ensure directory exists.
         devicesJsonFile.Directory!.Create();

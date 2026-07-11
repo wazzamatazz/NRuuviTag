@@ -7,7 +7,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 using NRuuviTag.Mqtt;
@@ -25,6 +24,11 @@ public class DeviceAddCommand : AsyncCommand<DeviceAddCommand.Settings> {
     /// The known devices.
     /// </summary>
     private readonly DeviceCollection _devices;
+    
+    /// <summary>
+    /// The <see cref="IDirectoryResolver"/> that is used to resolve the location of the devices file.
+    /// </summary>
+    private readonly IDirectoryResolver _directoryResolver;
 
 
     /// <summary>
@@ -33,8 +37,9 @@ public class DeviceAddCommand : AsyncCommand<DeviceAddCommand.Settings> {
     /// <param name="devices">
     ///   The known devices.
     /// </param>
-    public DeviceAddCommand(IOptions<DeviceCollection> devices) {
+    public DeviceAddCommand(IOptions<DeviceCollection> devices, IDirectoryResolver directoryResolver) {
         _devices = devices.Value;
+        _directoryResolver = directoryResolver;
     }
 
 
@@ -66,7 +71,7 @@ public class DeviceAddCommand : AsyncCommand<DeviceAddCommand.Settings> {
             Devices = _devices
         };
 
-        var devicesJsonFile = CommandUtilities.GetDevicesJsonFile();
+        var devicesJsonFile =_directoryResolver.GetDevicesDataFilePath();
 
         // Ensure directory exists.
         devicesJsonFile.Directory!.Create();
