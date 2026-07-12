@@ -82,43 +82,10 @@ The command-line application can be run on Linux as a container image.
 
 ### Happy Path
 
-You can copy and paste the following shell script to create an executable `nruuvitag` command on your host machine that bootstraps the container image for you:
+Download and run the [container bootstrap script](./scripts/bootstrap_container.sh) to create an executable `nruuvitag` command on your host machine in `~/.local/bin` that bootstraps the container image for you:
 
 ```sh
-local_bin="$HOME/.local/bin"
-exe_path="$local_bin/nruuvitag"
-
-mkdir -p "$local_bin"
-
-cat > "$exe_path" <<'EOF'
-#!/usr/bin/env bash
-
-# See GHCR for available image tags
-image="ghcr.io/wazzamatazz/nruuvitag:latest"
-
-# Run `nruuvitag update` to pull the latest container image
-if [[ $1 == "update" ]]; then
-  docker pull $image
-  exit 0
-fi
-
-# nruuvitag uses the XDG Base Directory Specification to determine where to 
-# store configuration files. If XDG_DATA_HOME is not set, ~/.local/share is
-# used by default.
-if [[ -z "$XDG_DATA_HOME" ]]; then
-    XDG_DATA_HOME="$HOME/.local/share"
-fi
-
-mkdir -p "$XDG_DATA_HOME/nruuvitag"
-
-docker run -it --rm \
-    -v /var/run/dbus:/var/run/dbus \
-    -v $XDG_DATA_HOME/nruuvitag:/root/.local/share/nruuvitag \
-    $image \
-    "$@"
-EOF
-
-chmod +x "$exe_path"
+curl -fsSL https://raw.githubusercontent.com/wazzamatazz/NRuuviTag/refs/heads/main/scripts/bootstrap_container.sh | bash
 ```
 
 You can then invoke the `nruuvitag` command as if it were installed locally on your host machine:
@@ -127,7 +94,7 @@ You can then invoke the `nruuvitag` command as if it were installed locally on y
 # List known devices
 nruuvitag devices list
 
-# Pull the latest container image (handled automatically by the script)
+# Pull the latest container image
 nruuvitag update
 ```
 
