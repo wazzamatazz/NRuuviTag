@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Messaging.EventHubs" />
-    <PackageReference Include="System.ComponentModel.Annotations" />
   </ItemGroup>
 
   <ItemGroup>
