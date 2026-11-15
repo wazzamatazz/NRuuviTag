@@ -333,3 +333,7 @@ ASALocalRun/
 
 # Local History for Visual Studio
 .localhistory/
+
+# Allow non-local Claude settings
+!.claude/
+.claude/*.local.*

@@ -1,4 +1,4 @@
-#:sdk Cake.Sdk@6.2.0
+#:sdk Cake.Sdk@7.0.0
 #:package Cake.MinVer
 
 using System.Collections.Immutable;

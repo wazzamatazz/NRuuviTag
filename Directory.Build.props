@@ -18,6 +18,11 @@
     <CopyrightStartYear>2021</CopyrightStartYear>
   </PropertyGroup>
 
+  <!-- Use runtime-native async (Runtime Async) instead of compiler-generated async state machines. -->
+  <PropertyGroup>
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+
   <PropertyGroup>
     <MinVerMinimumMajorMinor>6.0</MinVerMinimumMajorMinor>
     <MinVerTagPrefix>v</MinVerTagPrefix>
