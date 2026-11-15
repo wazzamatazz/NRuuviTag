@@ -366,12 +366,14 @@ public sealed class HttpPublishTests {
         
         var receivedSamples = new List<RuuviTagSample>(samples.Count);
 
-        if (await channel.Reader.WaitToReadAsync(TestContext.CancellationToken)) {
+        // The HTTP handler writes samples to the channel as it deserializes the request
+        // body, so keep reading until we have received every sample (or the test times out).
+        while (receivedSamples.Count < samples.Count && await channel.Reader.WaitToReadAsync(TestContext.CancellationToken)) {
             while (channel.Reader.TryRead(out var sample)) {
                 receivedSamples.Add(sample);
             }
         }
-        
+
         CollectionAssert.AreEquivalent(samples, receivedSamples);
     }
 
