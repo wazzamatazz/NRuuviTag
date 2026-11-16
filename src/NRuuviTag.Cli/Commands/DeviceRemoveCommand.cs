@@ -45,7 +45,7 @@ public class DeviceRemoveCommand : AsyncCommand<DeviceRemoveCommand.Settings> {
 
 
     /// <inheritdoc/>
-    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
         if (_devices == null || _devices.Count == 0) {
             // No devices defined
             Console.WriteLine(string.Format(CultureInfo.CurrentCulture, Resources.LogMessage_DeviceNotFound, settings.Device));
