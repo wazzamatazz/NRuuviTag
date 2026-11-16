@@ -54,7 +54,7 @@ Run the application as follows:
 docker run -it --rm \
     -v /var/run/dbus:/var/run/dbus \
     -v $HOME/.local/share/nruuvitag:/root/.local/share/nruuvitag \
-    wazzamatazz/nruuvitag:latest
+    ghcr.io/wazzamatazz/nruuvitag:latest
 ```
 
 You can append the command arguments to the end of the call to `docker run` e.g. to list known devices:
@@ -63,6 +63,6 @@ You can append the command arguments to the end of the call to `docker run` e.g.
 docker run -it --rm \
     -v /var/run/dbus:/var/run/dbus \
     -v $HOME/.local/share/nruuvitag:/root/.local/share/nruuvitag \
-    nruuvitag:latest \
+    ghcr.io/wazzamatazz/nruuvitag:latest \
     devices list
 ```
